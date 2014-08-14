@@ -1,0 +1,151 @@
+/*
+void recurLC_Tree(Treechildren ichd, Object irs, int ilvl)
+{
+	st = kiboo.replaceSingleQuotes( schbox.getValue().trim() );
+	whts = "";
+	if(!st.equals("")) whts = " and lc.customer_name like '%" + st + "%' ";
+
+	for(d : irs)
+	{
+		Treeitem titem = new Treeitem();
+		Treerow newrow = new Treerow();
+		Treecell[] mcells = new Treecell[] { new Treecell(), new Treecell(), new Treecell(), 
+		new Treecell(), new Treecell(), new Treecell(), new Treecell(), new Treecell(), new Treecell(), new Treecell(), new Treecell() };
+		for(i=0; i<mcells.length; i++)
+		{
+			mcells[i].setParent(newrow);
+			mcells[i].setStyle("font-size:9px");
+		}
+		check_parlc = kiboo.checkNullString(d.get("prev_lc"));
+
+		if(!check_parlc.equals("") && ilvl == 0)
+		{
+			sqlstm = "select lc.origid, lc.lc_id, lc.customer_name, lc.invoice_date, lc.lstatus, " +
+			"(select count(origid) from rw_lc_equips where lc_parent=lc.origid) as aqty, lc.prev_lc, lc.order_type, " +
+			"lc.lstartdate, lc.lenddate, " +
+			"( DATEDIFF(mm,lc.lstartdate,GETDATE()) - DATEDIFF(mm,lc.lstartdate,lc.lenddate) ) as bmonth, " +
+			"lc.manual_inv, lc.remarks " +
+			//"DATEDIFF(mm,lc.lstartdate,GETDATE()) as invmm " +
+			//"DATEDIFF(mm,lc.invoice_date,GETDATE()) as lstinvmonth " +
+			"from rw_lc_records lc " +
+			"where lc.lc_id = '" + check_parlc + "'";
+			// lstatus='inactive';
+			subr = sqlhand.gpSqlGetRows(sqlstm);
+			if(subr.size() > 0)
+			{
+				Treechildren newone = new Treechildren();
+				newone.setParent(titem);
+				recurLC_Tree(newone,subr,ilvl);
+			}
+		}
+
+		idt = d.get("bmonth");
+
+		mcells[0].setLabel( kiboo.checkNullString(d.get("lc_id")) );
+		mcells[0].setStyle("font-weight:bold;font-size:9px");
+		mcells[1].setLabel( kiboo.checkNullString(d.get("customer_name")) );
+		mcells[1].setStyle("font-weight:bold;font-size:9px");
+
+		invd = (d.get("invoice_date") == null) ? "" : dtf2.format(d.get("invoice_date"));
+
+		mcells[2].setLabel( invd );
+		mcells[3].setLabel( (d.get("lstartdate") == null) ? "" : dtf2.format(d.get("lstartdate")) );
+		mcells[4].setLabel( (d.get("lenddate") == null) ? "" : dtf2.format(d.get("lenddate")) );
+		mcells[5].setLabel( (idt < 0) ? "0" : idt.toString() );
+
+		mcells[6].setLabel( d.get("order_type") );
+		mcells[7].setLabel( d.get("aqty").toString() );
+
+		lst = kiboo.checkNullString(d.get("lstatus")).toUpperCase();
+
+		//if(lst.equals("EXTENSION"))
+		//{
+		//	newrow.setStyle("background:#f10c4f");
+		//}
+
+		mcells[LC_STAT_POS].setLabel(lst);
+		mcells[LC_REMARKS_POS].setLabel( kiboo.checkNullString(d.get("remarks")) ); // 03/06/2014: add-back for waygu to keep track on things.. haha
+
+		mcells[LC_ORIGI_POS].setLabel( d.get("origid").toString() );
+
+		if(idt != null)
+		{
+			styl = "";
+			if(idt > 0 && idt <= 2) styl = "background:#BFB663";
+			if(idt > 2)
+			{
+				styl = "background:#F5768B";
+				for(i=0; i<mcells.length; i++)
+				{
+					//mcells[i].setStyle(mcells[i].getStyle() + ";color:#ffffff;");
+					//mcells[i].setSclass("blink");
+				}
+			}
+			newrow.setStyle(styl);
+		}
+
+		if(invd.equals("")) 
+		{
+			newrow.setStyle("background:#5c3566"); // no invoice-date hilite
+			for(i=0; i<mcells.length; i++)
+			{
+				mcells[i].setStyle(mcells[i].getStyle() + ";color:#ffffff;");
+				//mcells[i].setSclass("blink");
+			}
+		}
+
+		newrow.setParent(titem);
+		newrow.addEventListener("onDoubleClick", tidcliker);
+		newrow.addEventListener("onClick", titicliker);
+		titem.setOpen(false);
+		titem.setParent(ichd);
+	}
+}
+*/
+
+//showLC_tree(0, mainlc_tree);
+/*
+<hbox>
+	<button id="asscust_b" label="Select customer" style="font-size:9px" onClick="pickcustomer_popup.open(self)" />
+	<label id="fc6id_lb" style="font-size:9px" />
+	<label value="Rental invoices between" style="font-size:9px;color:#ffffff" />
+	<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(startdate)" />
+	<label value="and" style="font-size:9px;color:#ffffff" />
+	<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(enddate)" />
+	<button id="loadrwi_b" label="Load" style="font-size:9px" onClick="listFC6_RWI(1)" />
+</hbox>
+*/
+/*
+Object[] rwihds =
+{
+	new listboxHeaderWidthObj("RWI#",true,"90px"),
+	new listboxHeaderWidthObj("Dated",true,"80px"),
+	new listboxHeaderWidthObj("Amount",true,"150px"),
+	new listboxHeaderWidthObj("ROC",true,""),
+	new listboxHeaderWidthObj("DO",true,""),
+	new listboxHeaderWidthObj("Remarks",true,""),
+	new listboxHeaderWidthObj("OrderType",true,""),
+	new listboxHeaderWidthObj("Asgn",true,"60px"),
+	new listboxHeaderWidthObj("rwlcid",true,""),
+	new listboxHeaderWidthObj("fc6id",true,""),
+};
+
+void listFC6_RWI(int itype)
+{
+	sdate = kiboo.getDateFromDatebox(startdate);
+    edate = kiboo.getDateFromDatebox(enddate);
+	// TODO might need to chg, the dup RW with diff smaller amount is for diem-billing
+	sqlstm = "select distinct d.voucherno, convert(datetime, dbo.ConvertFocusDate(d.date_), 112) as voucherdate, " +
+	"kd.remarksyh, kd.rocnoyh, kd.dorefyh, kd.ordertypeyh, " + 
+	"(select sum(amount1) from data where voucherno=d.voucherno) as rwiamt, " +
+	"lr.assigned, lr.origid, (select top 1 bodyid from data where voucherno=d.voucherno order by bodyid) as fc6bid " +
+	"from data d " + 
+	"left join u001b kd on kd.extraid = d.extraheaderoff " +
+	"left join rwsdb2.dbo.rw_lc_records lr on lr.rwno = d.voucherno " +
+	"where d.vouchertype=3329 and d.amount1 <> 0 " +
+	"and d.bookno=" + global_selected_customerid +
+	" and convert(datetime, dbo.ConvertFocusDate(d.date_), 112) between '" + sdate + "' and '" + edate + "' " +
+	//"group by d.voucherno, d.date_, d.amount1, kd.remarksyh, kd.rocnoyh, kd.dorefyh, kd.ordertypeyh " +
+	"order by voucherdate;" ;
+}
+*/
