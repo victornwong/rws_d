@@ -18,7 +18,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "Goods Collection Note / Order";
-MYVERSION = "v0.2.2";
+MYVERSION = "v0.2.3";
 MYPANEL = "goodscolpa";
 /*
 Title		: Goods/assets collection management
@@ -31,6 +31,8 @@ Collection-list status : complete, partial, pending
 08/04/2014: search by GCO. Can list out GCO by transporter(to monitor sabah/sarawak collections)
 16/04/2014: track progress in working-days: GCO -> transporter -> T.GRN(3,5days) -> ADT (6days)
 02/06/2014: link-up t.grn to MRN and able to view 'em both. Can export GCO list to EXCEL
+18/08/2014: remove GCO-id from LC's assets if GCO is partial and assets not collected - req Huiping (updLC_GCO_links())
+19/08/2014: list gco by username and between dates
 
 */
 import java.util.*;
@@ -43,12 +45,9 @@ myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
-dmshand = new DMSFuncs();
+kiboo = new Generals(); sqlhand = new SqlFuncs();
+lbhand = new ListboxHandler(); guihand = new GuiFuncs();
+luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 /*
 SimpleDateFormat dtf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 SimpleDateFormat dtf2 = new SimpleDateFormat("yyyy-MM-dd");
@@ -263,6 +262,12 @@ void doFunc(Object iwhat)
 	{
 		if(glob_sel_mrn.equals("")) return;
 		gp_viewMRN(glob_sel_mrn,winsholder);
+	}
+
+	// Update LC which link assets linked to this GCO - req WOngHuiPing 18/08/2014
+	if(itype.equals("updatelc_b"))
+	{
+		updLC_GCO_links();
 	}
 
 	if(itype.equals("importitems_b"))
@@ -480,19 +485,22 @@ void exportGCOList()
 
 <div sclass="shadowbox" style="background:#2e3436;" >
 <hbox>
-	<label value="Start" class="k9b" />
+	<label value="Start" sclass="k9b" />
 	<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
-	<label value="End" class="k9b" />
+	<label value="End" sclass="k9b" />
 	<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
-	<textbox id="searhtxt_tb" width="200px" class="k9" />
-	<button label="Load/Search" class="k9" onClick="showGoodsCollection(1)" />
-	<textbox id="asstga_tb" sclass="k9" width="80px" />
+	<textbox id="searhtxt_tb" width="100px" class="k9" />
+	<button label="Load/Search" sclass="k9" onClick="showGoodsCollection(1)" />
+	<textbox id="asstga_tb" sclass="k9" width="70px" />
 	<button sclass="k9" label="by asset-tag" onClick="showGoodsCollection(4)" />
-	<textbox id="searchgco_tb" class="k9" width="40px" />
-	<button label="by GCO" class="k9" onClick="showGoodsCollection(2)" />
+	<textbox id="searchgco_tb" sclass="k9" width="40px" />
+	<button label="by GCO" sclass="k9" onClick="showGoodsCollection(2)" />
 
 	<listbox id="bytransp_lb" mold="select" class="k9" />
-	<button label="by transporter" class="k9" onClick="showGoodsCollection(3)" />
+	<button label="by transporter" sclass="k9" onClick="showGoodsCollection(3)" />
+
+	<listbox id="byuser_lb" mold="select" sclass="k9" />
+	<button label="by user" sclass="k9" onClick="showGoodsCollection(5)" />
 
 	<button id="admin_b" label="Admin" visible="false" style="color:#cc0000" onClick="adminpopup.open(self)" />
 </hbox>
@@ -600,6 +608,8 @@ void exportGCOList()
 	onClick="showTransientItems_bypartner(global_selected_customerid, imppartners_holder); imppartnerreq_pop.open(self)" />
 
 	<button id="saveitems_b" label="SAVE" style="font-weight:bold" onClick="doFunc(self)" />
+	<button id="updatelc_b" label="Update LC-link" style="k9mo" onClick="doFunc(self)" />
+
 </hbox>
 <separator height="3px" />
 <div id="pitems_holder" />
@@ -613,6 +623,8 @@ void exportGCOList()
 
 <zscript>
 <![CDATA[
+
+fillListbox_uniqField("rw_goodscollection", "username", byuser_lb);
 
 luhand.populateListbox_ByLookup(g_transporter, "TRANSPORTER_COURIER", 2);
 luhand.populateListbox_ByLookup(bytransp_lb, "TRANSPORTER_COURIER", 2);

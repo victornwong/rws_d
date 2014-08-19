@@ -17,6 +17,24 @@ void removeSubDiv(Div idivholder) // bc
 	ngfun.removeSubDiv(idivholder);
 }
 
+void fillListbox_uniqField(String itbn, String ifl, Listbox ilb)
+{
+	sqlstm = "select distinct " + ifl + " from " + itbn;
+	r = sqlhand.gpSqlGetRows(sqlstm);
+	if(r.size() == 0) return;
+	String[] kabom = new String[1];
+	for(d : r)
+	{
+		dk = d.get(ifl);
+		if(dk != null)
+		{
+			kabom[0] = dk;
+			lbhand.insertListItems(ilb,kabom,"false","");
+		}
+	}
+	ilb.setSelectedIndex(0);
+}
+
 void disableUI_obj(Object[] iob, boolean iwhat) // ngfuncs.jav
 {
 	ngfun.disableUI_obj(iob,iwhat);

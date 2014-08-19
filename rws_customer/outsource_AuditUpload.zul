@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page id="outsouceuploadutwin"?>
+<zk>
+<zscript src="../rwglobal/rwglobaldefs.zs" />
+<zscript src="../rwglobal/uploadDocu_v1.zs" />
+<zscript>
+<![CDATA[
+MYTITLE = "Load/View Outsource-Partner Audit-Forms";
+MYVERSION = "v0.1";
+MY_ID = "outsoruceaiodppael";
+/*
+Title : View outsource-partner uploaded audit-forms
+Written by	: Victor Wong
+Dated				: 18/08/2014
+NOTES:
+*/
+import org.victor.*;
+sechand = new SecurityFuncs();
+myincludeid = Executions.getCurrent().getParameter("myid");
+useraccessobj = sechand.getUserAccessObject();
+if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
+kiboo = new Generals(); sqlhand = new SqlFuncs();
+lbhand = new ListboxHandler(); guihand = new GuiFuncs();
+luhand = new LookupFuncs(); dmshand = new DMSFuncs();
+
+ADTPREFIX = "OSA";
+selected_file_id = "";
+glob_sel_outsouce = "1"; // default 1=EIS
+
+]]>
+</zscript>
+
+<style src="/real-world.css" />
+
+<window id="${MY_ID}" title="${MYTITLE} ${MYVERSION}" position="center" mode="overlapped" border="normal" closable="true">
+
+<div>
+	<hbox>
+		<button id="viewdoc_btn" label="View file" class="k9" onClick="viewFile()" />
+		<button id="deletedoc_btn" label="Delete" visible="false" class="k9" onClick="deleteFile(documents_holder,AUDITITEM_PREFIX,glob_sel_audit)" />
+	</hbox>
+	<separator height="3px" />
+	<div id="documents_holder" width="700px" />
+
+<groupbox visible="false">
+<caption id="updatefiledesc_label" visible="false" />
+<textbox id="fileupl_file_title" visible="false" />
+<textbox id="fileupl_file_description" visible="false" />
+<textbox id="update_file_description" visible="false" />
+</groupbox>
+
+</div>
+
+<zscript>
+<![CDATA[
+
+fillDocumentsList(documents_holder,ADTPREFIX,"1"); // show 'em outsourcer uploaded audit-forms
+
+if(useraccessobj.accesslevel == 9)
+{
+	deletedoc_btn.setVisible(true);
+}
+
+]]>
+</zscript>
+
+</window>
+</zk>
+

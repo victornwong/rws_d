@@ -127,7 +127,7 @@ void showGCOMeta(String iwhat)
 		isn = sqlhand.clobToString(grc.get("items_sn")).split("~");
 		icol = kiboo.checkNullString(grc.get("items_coll")).split("~");
 		ifrm = sqlhand.clobToString(grc.get("items_fromlc")).split("~");
-		
+
 		f9 = "font-size:9px";
 
 		for(i=0; i<itag.length; i++)
@@ -231,7 +231,7 @@ class gdcolOnC implements org.zkoss.zk.ui.event.EventListener
 }
 gdcliker = new gdcolOnC();
 
-// itype: 0=def, 2=by GCO, 3=by date+transporter, 4=by asset-tags
+// itype: 0=def, 2=by GCO, 3=by date+transporter, 4=by asset-tags, 5=by user
 void showGoodsCollection(int itype)
 {
 	last_list_type = itype;
@@ -240,7 +240,8 @@ void showGoodsCollection(int itype)
 	st = kiboo.replaceSingleQuotes( asstga_tb.getValue().trim() );
 	gcoi = kiboo.replaceSingleQuotes(searchgco_tb.getValue()).trim();
 	sdate = kiboo.getDateFromDatebox(startdate);
-    edate = kiboo.getDateFromDatebox(enddate);
+	edate = kiboo.getDateFromDatebox(enddate);
+	bunm = byuser_lb.getSelectedItem().getLabel();
 
 	Listbox newlb = lbhand.makeVWListbox_Width(collections_holder, gdcols_headers, "goodscol_lb", 5);
 
@@ -250,6 +251,7 @@ void showGoodsCollection(int itype)
 	if(itype == 2) scsql = "where origid=" + gcoi;
 	if(itype == 3) scsql = "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' and transporter='" + bytp + "' ";
 	if(itype == 4) scsql = "where items_code like '%" + st + "%' or items_desc like '%" + st + "%' or items_sn like '%" + st + "%' ";
+	if(itype == 5) scsql = "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' and username='" + bunm + "' ";
 
 	sqlstm = "select gc.origid, gc.datecreated, gc.username, gc.customer_name, gc.status, gc.pickupdate, gc.completedate, gc.lc_id," +
 	"gc.ackdate, gc.transporter, gc.tempgrn, gc.sv_no, gc.qc_id, gc.logregion, " +
@@ -418,10 +420,41 @@ void saveCollectItems(String iwhat)
 	sqlstm += "update rw_goodscollection set items_code='" + icods + "', items_desc='" + idesc + "', items_sn='" + isn + "', " + 
 	"items_coll='" + itik + "', items_fromlc='" + ifrmlc + "'" + jstat + " where origid=" + iwhat;
 
-	//alert(sqlstm);
 	sqlhand.gpSqlExecuter(sqlstm);
 
 	if(refresh) showGoodsCollection(last_list_type);
+}
+
+// 18/08/2014: remove GCO-id from LC's assets if GCO is partial and assets not collected - req Huiping
+void updLC_GCO_links()
+{
+	if(pitems_holder.getFellowIfAny("pickitems_grid") == null) return;
+
+	gcor = getGCO_rec(glob_sel_gco); // re-get the latest gco meta
+	if(gcor == null) return;
+	stt = gcor.get("status");
+	if(!stt.equals("PARTIAL")) { guihand.showMessageBox("Can only update PARTIAL GCO for LC-EOL"); return; }
+
+	cds = items_rows.getChildren().toArray();
+	sqlstm = "";
+
+	for(i=0; i<cds.length; i++)
+	{
+		c1 = cds[i].getChildren().toArray();
+		chklc = kiboo.replaceSingleQuotes( c1[5].getValue().trim() );
+		if(!c1[4].isChecked())
+		{
+			if( !chklc.equals("") )
+			{
+				icods = kiboo.replaceSingleQuotes( c1[1].getValue().trim() );
+				sqlstm += "update rw_lc_equips set gcn_id=null where lc_parent=(select origid from rw_lc_records where lc_id='" + chklc + "')" + 
+				" and asset_tag='" + icods + "';";
+			}
+		}
+	}
+	//alert(sqlstm);
+	sqlhand.gpSqlExecuter(sqlstm);
+	guihand.showMessageBox("LC assets GCO-id cleared..");
 }
 
 void removeCollectItems(Object irows)

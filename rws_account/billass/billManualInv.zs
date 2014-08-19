@@ -125,7 +125,7 @@ void procInstalmentPrintout(int itype)
 			montot += d.get("mthtotal");
 			kc++;
 			rowcnt += xct; // blnk 1 row
-			rwper = d.get("rentperiod");
+			if(d.get("rentperiod") != 0) rwper = d.get("rentperiod");
 		}
 	}
 
