@@ -7,6 +7,7 @@ import org.zkoss.util.media.AMedia;
 import org.victor.*;
 
 // 10/07/2013: moved 'em funcs here TODO byte-compile later
+// 11/08/2014: byte-compiled some funcs
 
 NGfuncs ngfun = new NGfuncs();
 RWMS_sql rwsqlfun = new RWMS_sql();

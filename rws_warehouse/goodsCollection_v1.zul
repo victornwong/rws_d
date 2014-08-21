@@ -48,6 +48,8 @@ if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 kiboo = new Generals(); sqlhand = new SqlFuncs();
 lbhand = new ListboxHandler(); guihand = new GuiFuncs();
 luhand = new LookupFuncs(); dmshand = new DMSFuncs();
+NGfuncs ngfun = new NGfuncs(); RWMS_sql rwsqlfun = new RWMS_sql();
+
 /*
 SimpleDateFormat dtf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 SimpleDateFormat dtf2 = new SimpleDateFormat("yyyy-MM-dd");
@@ -240,11 +242,17 @@ void doFunc(Object iwhat)
 	if(itype.equals("savetransp_b"))
 	{
 		if(glob_sel_gco.equals("")) return;
+		Object[] jkl = { g_transporter, g_transp_ref, g_tempgrn, g_sv_no, g_logregion, g_opartner };
+		dt = getString_fromUI(jkl);
+
+		/*
 		tsp = g_transporter.getSelectedItem().getLabel();
 		tsr = kiboo.replaceSingleQuotes(g_transp_ref.getValue().trim());
 		tmg = kiboo.replaceSingleQuotes(g_tempgrn.getValue().trim());
 		svn = kiboo.replaceSingleQuotes(g_sv_no.getValue().trim());
 		lrg = g_logregion.getSelectedItem().getLabel();
+		prt = g_opartner.getSelectedItem.getLabel();
+		*/
 
 		sqlstm = "update rw_goodscollection set transporter='" + tsp + "', transp_ref='" + tsr + 
 		"', tempgrn='" + tmg + "',sv_no='" + svn + "', logregion='" + lrg + "' where origid=" + glob_sel_gco;
@@ -346,6 +354,8 @@ void exportGCOList()
 	exportExcelFromListbox(goodscol_lb, kasiexport, gdcols_headers, "GCOexport.xls","GCOexport");
 	} catch (Exception e) {}
 }
+
+BOXWIDTH = "800px";
 
 ]]>
 </zscript>
@@ -527,96 +537,106 @@ void exportGCOList()
 </div>
 </hbox>
 
-<hbox id="workarea"  visible="false" > <!-- main workarea hbox -->
+<tabbox id="workarea"  visible="false">
+	<tabs>
+		<tab label="Customer and transporter" />
+		<tab label="Collect items" />
+		<tab label="Attachments" />
+	</tabs>
+	<tabpanels>
+		<tabpanel> <!-- customer/transporter -->
+			<div sclass="shadowbox" style="background:#2e3436;" width="${BOXWIDTH}" >
+			<grid>
+				<rows>
+					<row>
+						<label value="GCO" style="font-size:9px;font-weight:bold" />
+						<label id="collection_id_lbl" style="font-weight:bold" />
+						<label id="fc6custid_lbl" class="k9" />
+					</row>
+					<row>
+						<label value="Customer" class="k9" />
+						<label id="customername" style="font-weight:bold" />
+						<button id="assigncust_b" label="Assign customer" style="font-weight:bold;font-size:9px" onClick="pickcustomer_popup.open(glob_sel_gcoli)" />
+					</row>
+				</rows>
+			</grid>
+			<separator height="3px" />
+			<button id="updategco_b" label="Update GCO details" style="font-weight:bold" onClick="doFunc(self)" />
+			<button id="showaudit_b" label="Audit logs" onClick="showGCOauditlogs(self)" />
+			<separator height="3px" />
+			<div id="collectionform_holder" />
+			<separator height="3px" />
 
-<div sclass="shadowbox" style="background:#2e3436;"  width="600px" >
-<grid>
-	<rows>
-		<row>
-			<label value="GCO" style="font-size:9px;font-weight:bold" />
-			<label id="collection_id_lbl" style="font-weight:bold" />
-			<label id="fc6custid_lbl" class="k9" />
-		</row>
-		<row>
-			<label value="Customer" class="k9" />
-			<label id="customername" style="font-weight:bold" />
-			<button id="assigncust_b" label="Assign customer" style="font-weight:bold;font-size:9px" onClick="pickcustomer_popup.open(glob_sel_gcoli)" />
-		</row>
-	</rows>
-</grid>
-<separator height="3px" />
-<button id="updategco_b" label="Update GCO details" style="font-weight:bold" onClick="doFunc(self)" />
-<button id="showaudit_b" label="Audit logs" onClick="showGCOauditlogs(self)" />
-<separator height="3px" />
-<div id="collectionform_holder" />
-<separator height="3px" />
+			<grid>
+				<rows>
+					<row spans="4" style="background:#eb0904">
+						<label sclass="blink" style=";color:#ffffff;font-size:14px;font-weight:bold;">
+						DO NOT USE NATIONWIDE EXPRESS COURIER SERVICES BERHAD FOR MARIGOLD KULIM
+						</label>
+					</row>
+					<row style="background:#204a87">
+						<label value="Transporter" style="color:#ffffff" />
+						<listbox id="g_transporter" mold="select" />
+						<label value="Ref No." style="color:#ffffff" />
+						<textbox id="g_transp_ref" />
+					</row>
+					<row style="background:#204a87" >
+						<label value="Region" style="color:#ffffff" />
+						<listbox id="g_logregion" mold="select" />
+						<label value="Partner" style="color:#ffffff" />
+						<listbox id="g_opartner" mold="select" />
+					</row>
+					<row style="background:#204a87">
+						<label value="TEMP GRN" style="color:#ffffff" />
+						<textbox id="g_tempgrn" />
+						<label value="CSV" style="color:#ffffff" />
+						<textbox id="g_sv_no" />
+					</row>
+					<row spans="4" style="background:#204a87">
+						<button id="savetransp_b" label="Save progress info" style="font-weight:bold" onClick="doFunc(self)" />
+					</row>
+				</rows>
+			</grid>
+			</div>
+		</tabpanel>
 
-<grid>
-	<rows>
-		<row spans="4" style="background:#eb0904">
-			<label sclass="blink" style=";color:#ffffff;font-size:16px;font-weight:bold;">
-			DO NOT USE NATIONWIDE EXPRESS COURIER SERVICES BERHAD FOR MARIGOLD KULIM
-			</label>
-		</row>
-		<row style="background:#204a87">
-			<label value="Transporter" style="color:#ffffff" />
-			<listbox id="g_transporter" mold="select" />
-			<label value="Ref No." style="color:#ffffff" />
-			<textbox id="g_transp_ref" />
-		</row>
-		<row style="background:#204a87" >
-			<label value="Region" style="color:#ffffff" />
-			<listbox id="g_logregion" mold="select" />
-		</row>
-		<row style="background:#204a87">
-			<label value="TEMP GRN" style="color:#ffffff" />
-			<textbox id="g_tempgrn" />
-			<label value="SV/RMA No." style="color:#ffffff" />
-			<textbox id="g_sv_no" />
-		</row>
-		<row spans="4" style="background:#204a87">
-			<button id="savetransp_b" label="Save progress info" style="font-weight:bold" onClick="doFunc(self)" />
-		</row>
-	</rows>
-</grid>
-<separator height="3px" />
-	<div sclass="shadowbox" style="background:#555753" id="docholder">
-		<label sclass="subhead1">ATTACHMENT / DOCUMENTS</label>
-		<separator height="3px" />
-		<hbox>
-			<button id="uploaddoc_btn" label="Upload file" class="k9" onClick="showUploadPopup(COLLECTION_PREFIX,glob_sel_gco)" />
-			<button id="viewdoc_btn" label="View file" class="k9" onClick="viewFile()" />
-			<button id="editdoc_btn" label="Update" class="k9" onClick="updatefiledesc_popup.open(self)" />
-			<button id="deletedoc_btn" label="Delete" class="k9" onClick="deleteFile(documents_holder,COLLECTION_PREFIX,glob_sel_gco)" />
-		</hbox>
-		<separator height="3px" />
-		<div id="documents_holder" />
-	</div>
+		<tabpanel> <!-- collect items -->
+			<div sclass="shadowbox" style="background:#555753" width="${BOXWIDTH}">
+			<hbox>
+				<button id="additem_b" label="Add collection item" class="k9" onClick="doFunc(self)" />
+				<button id="removeitem_b" label="Remove item" class="k9" onClick="doFunc(self)" />
+				<!--
+				<button id="importitems_b" label="Import" style="font-size:9px" onClick="impasset_pop.open(additem_b)" />
+				-->
+				<button id="imptransient_b" label="Imp. from LC" class="k9" onClick="showTransientItems_bycustomer();imptransient_pop.open(self)" />
 
-</div>
+				<button id="imppartreq_b" label="Imp. from partner" class="k9"
+				onClick="showTransientItems_bypartner(global_selected_customerid, imppartners_holder); imppartnerreq_pop.open(self)" />
 
-<div sclass="shadowbox" style="background:#555753">
-<hbox>
-	<button id="additem_b" label="Add collection item" class="k9" onClick="doFunc(self)" />
-	<button id="removeitem_b" label="Remove item" class="k9" onClick="doFunc(self)" />
-	<!--
-	<button id="importitems_b" label="Import" style="font-size:9px" onClick="impasset_pop.open(additem_b)" />
-	-->
-	<button id="imptransient_b" label="Imp. from LC" class="k9" onClick="showTransientItems_bycustomer();imptransient_pop.open(self)" />
+				<button id="saveitems_b" label="SAVE" style="font-weight:bold" onClick="doFunc(self)" />
+				<button id="updatelc_b" label="Update LC-link" style="k9mo" onClick="doFunc(self)" />
+			</hbox>
+			<separator height="3px" />
+			<div id="pitems_holder" />
+			</div>
+		</tabpanel>
 
-	<button id="imppartreq_b" label="Imp. from partner" class="k9"
-	onClick="showTransientItems_bypartner(global_selected_customerid, imppartners_holder); imppartnerreq_pop.open(self)" />
-
-	<button id="saveitems_b" label="SAVE" style="font-weight:bold" onClick="doFunc(self)" />
-	<button id="updatelc_b" label="Update LC-link" style="k9mo" onClick="doFunc(self)" />
-
-</hbox>
-<separator height="3px" />
-<div id="pitems_holder" />
-
-</div>
-
-</hbox> <!-- ENDOF main workarea hbox -->
+		<tabpanel> <!-- attachments -->
+			<div sclass="shadowbox" style="background:#555753" id="docholder" width="${BOXWIDTH}">
+				<label sclass="subhead1">ATTACHMENT / DOCUMENTS</label>
+				<separator height="3px" />
+				<hbox>
+					<button id="uploaddoc_btn" label="Upload file" class="k9" onClick="showUploadPopup(COLLECTION_PREFIX,glob_sel_gco)" />
+					<button id="viewdoc_btn" label="View file" class="k9" onClick="viewFile()" />
+					<button id="editdoc_btn" label="Update" class="k9" onClick="updatefiledesc_popup.open(self)" />
+					<button id="deletedoc_btn" label="Delete" class="k9" onClick="deleteFile(documents_holder,COLLECTION_PREFIX,glob_sel_gco)" />
+				</hbox>
+				<separator height="3px" />
+				<div id="documents_holder" />
+			</div>
+		</tabpanel>
+	</tabpanels>
+</tabbox> <!-- ENDOF main workarea -->
 
 <div id="kasiexport" visible="false" />
 <div id="winsholder" />
@@ -626,6 +646,7 @@ void exportGCOList()
 
 fillListbox_uniqField("rw_goodscollection", "username", byuser_lb);
 
+luhand.populateListbox_ByLookup(g_opartner, "OUTSOURCE_PARTNERS", 2);
 luhand.populateListbox_ByLookup(g_transporter, "TRANSPORTER_COURIER", 2);
 luhand.populateListbox_ByLookup(bytransp_lb, "TRANSPORTER_COURIER", 2);
 luhand.populateListbox_ByLookup(g_logregion, "LOGISTIC_REGIONS", 2);
