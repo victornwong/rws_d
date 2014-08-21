@@ -62,16 +62,20 @@ int countMonthYearDiff(int itype, Object ist, Object ied) // generals.jav
 	*/
 }
 
+/*
 // convert 1023,3929,2990 to '1023','3929'..
 String makeQuotedFromComma(String iwhat) // bc
 {
 	return kiboo.makeQuotedFromComma(iwhat);
 }
+*/
 
+/*
 Object vMakeWindow(Object ipar, String ititle, String iborder, String ipos, String iw, String ih) // bc
 {
 	return ngfun.vMakeWindow(ipar, ititle, iborder, ipos, iw, ih);
 }
+*/
 
 /*
 void popuListitems_Data2(ArrayList ikb, String[] ifl, Object ir)
