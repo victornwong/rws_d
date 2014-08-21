@@ -95,7 +95,7 @@ void showTicketMetadata(String iwhat)
 	t_asset_tag, t_serial_no, t_product_name, t_assign_to, t_problem, t_action, t_resolved_by, t_resolve_type,
 	t_resolution, t_os_id, t_os_user, t_os_pickup, t_os_resolve, t_os_resolution, t_priority, hd_priority, hd_tstatus };
 
-	populateUI_Data(ob,fl,tkr);
+	ngfun.populateUI_Data(ob,fl,tkr);
 
 	//t_resolved_on
 	//t_resolve_type.setValue( kiboo.checkNullString(tkr.get("resolve_type")) );
@@ -169,20 +169,22 @@ void showEquipmentActivity(String iwhat)
 	rmr = sqlhand.gpSqlFirstRow(sqlstm);
 	if(rmr == null) return;
 
+	k9 = "font-size:9px";
+
 	Grid rgrid = new Grid();
 	rgrid.setId("rma_grid");
 	mrows = gridhand.gridMakeRows("","",rgrid);
 	prow = gridhand.gridMakeRow("","","",mrows);
-	gridhand.makeLabelToParent("RMA#", "font-size:9px",prow);
-	gridhand.makeLabelToParent(rmr.get("rmaid").toString(), "font-size:9px",prow);
-	gridhand.makeLabelToParent("Dated", "font-size:9px",prow);
-	gridhand.makeLabelToParent(rmr.get("datecreated").toString().substring(0,10), "font-size:9px",prow);
+	gridhand.makeLabelToParent("RMA#", k9, prow);
+	gridhand.makeLabelToParent(rmr.get("rmaid").toString(), k9, prow);
+	gridhand.makeLabelToParent("Dated", k9, prow);
+	gridhand.makeLabelToParent(dtf2.format(rmr.get("datecreated")), k9, prow);
 	gridhand.makeLabelToParent("Pickup", "font-size:9px",prow);
-	gridhand.makeLabelToParent(kiboo.checkNullDate(rmr.get("pickupdate"),""), "font-size:9px",prow);
+	gridhand.makeLabelToParent(kiboo.checkNullDate(rmr.get("pickupdate"),""), k9, prow);
 	gridhand.makeLabelToParent("Pick.By", "font-size:9px",prow);
-	gridhand.makeLabelToParent(kiboo.checkNullString(rmr.get("pickupby")), "font-size:9px",prow);
+	gridhand.makeLabelToParent(kiboo.checkNullString(rmr.get("pickupby")), k9, prow);
 	gridhand.makeLabelToParent("Complete", "font-size:9px",prow);
-	gridhand.makeLabelToParent(kiboo.checkNullDate(rmr.get("completed"),""), "font-size:9px",prow);
+	gridhand.makeLabelToParent(kiboo.checkNullDate(rmr.get("completed"),""), k9, prow);
 
 	rgrid.setParent(equip_rma_holder);
 	vequiprma_b.setVisible(true);
@@ -193,13 +195,14 @@ void showEquipmentActivity(String iwhat)
 Object[] tkslb_headers =
 {
 	new listboxHeaderWidthObj("CSV#",true,"40px"),
-	new listboxHeaderWidthObj("Dated",true,"65px"),
+	new listboxHeaderWidthObj("Dated",true,""),
 	new listboxHeaderWidthObj("Customer",true,""),
 	new listboxHeaderWidthObj("Priority",true,"60px"),
 	new listboxHeaderWidthObj("Status",true,"60px"),
 	new listboxHeaderWidthObj("User",true,"60px"),
+	new listboxHeaderWidthObj("GCO",true,"60px"),
 	new listboxHeaderWidthObj("OS",true,"40px"),
-	new listboxHeaderWidthObj("OSC",true,"60px"),
+	new listboxHeaderWidthObj("OSC",true,""),
 };
 
 class tkslbClick implements org.zkoss.zk.ui.event.EventListener
@@ -214,12 +217,10 @@ class tkslbClick implements org.zkoss.zk.ui.event.EventListener
 		glob_ticket_status = lbhand.getListcellItemLabel(isel,4);
 		global_selected_customername = lbhand.getListcellItemLabel(isel,2);
 
-		disb = false;
-		if(!glob_ticket_status.equals("NEW")) disb = true;
+		disb = (!glob_ticket_status.equals("NEW")) ? true : false;
 		disableButts(disb);
 
-		rsd = false;
-		if(glob_ticket_status.equals("CLOSE")) rsd = true;
+		rsd = (glob_ticket_status.equals("CLOSE")) ? true : false;
 		upreso_b.setDisabled(rsd); // update resolution
 
 		vequiprma_b.setVisible(false);
@@ -239,25 +240,30 @@ void showTickets(int itype)
 
 	Listbox newlb = lbhand.makeVWListbox_Width(tickets_holder, tkslb_headers, "tickets_lb", 5);
 
-	scsql = "";
-	if(!scht.equals("")) scsql = "and cust_name like '%" + scht + "%' ";
+	sqlstm = "select ht.origid,ht.calldatetime,ht.cust_name,ht.priority,ht.tstatus,ht.createdby,ht.os_id,ht.os_resolvedate," +
+	"(select top 1 origid from rw_goodscollection where ltrim(rtrim(sv_no))=convert(varchar(10),ht.origid) order by origid desc) as gcono " +
+	"from rw_helptickets ht ";
 
-	sqlstm = "select origid,calldatetime,cust_name,priority,tstatus,createdby,os_id,os_resolvedate from rw_helptickets " +
-	"where calldatetime between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' " +
-	scsql + "order by origid";
-
-	if(itype == 2 && !cvt.equals(""))
+	whstr = "where ht.calldatetime between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' ";
+	switch(itype)
 	{
-		try
-		{
-			tt = Integer.parseInt(cvt);
-			sqlstm = "select origid,calldatetime,cust_name,priority,tstatus,createdby,os_id,os_resolvedate from rw_helptickets where origid=" + cvt;
-		}
-		catch (Exception e)
-		{
-			return;
-		}
+		case 1:
+			if(!scht.equals("")) whstr += "and cust_name like '%" + scht + "%' ";
+			break;
+
+		case 2:
+			if(cvt.equals("")) return;
+			try
+			{
+				tt = Integer.parseInt(cvt);
+				whstr = "where ht.origid=" + cvt;
+			}
+			catch (Exception e) { return; }
+			break;
 	}
+	sqlstm += whstr + " order by ht.origid";
+
+	//debugmsg.setValue(sqlstm);
 
 	screcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(screcs.size() == 0) return;
@@ -265,18 +271,24 @@ void showTickets(int itype)
 	newlb.setMold("paging");
 	newlb.addEventListener("onSelect",tkslclicker);
 	ArrayList kabom = new ArrayList();
+	String[] fl = { "origid", "calldatetime", "cust_name", "priority", "tstatus", "createdby", "gcono", "os_id", "os_resolvedate" };
 	for(dpi : screcs)
 	{
+		ngfun.popuListitems_Data2(kabom,fl,dpi);
+		tprio = kiboo.checkNullString(dpi.get("priority"));
+		/*
 		kabom.add(dpi.get("origid").toString());
 		kabom.add(dpi.get("calldatetime").toString().substring(0,10));
 		kabom.add( kiboo.checkNullString(dpi.get("cust_name")) );
-		tprio = kiboo.checkNullString(dpi.get("priority"));
 		kabom.add(tprio);
 		kabom.add(kiboo.checkNullString(dpi.get("tstatus")));
 		kabom.add(kiboo.checkNullString(dpi.get("createdby")));
+		kabom.add( (dpi.get("gcono") == null) ? "" : dpi.get("gcono").toString() );
+
 		kabom.add(kiboo.checkNullString(dpi.get("os_id")));
 		osre = (dpi.get("os_resolvedate") == null) ? "" : dtf2.format( dpi.get("os_resolvedate") );
 		kabom.add(osre);
+		*/
 
 		mysty = "";
 		if(tprio.equals("CRITICAL")) mysty = "font-size:9px;" + CRITICAL_BACKGROUND;

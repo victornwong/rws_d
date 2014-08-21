@@ -46,6 +46,7 @@ kiboo = new Generals(); sqlhand = new SqlFuncs();
 lbhand = new ListboxHandler(); guihand = new GuiFuncs();
 luhand = new LookupFuncs(); gridhand = new GridHandler();
 dmshand = new DMSFuncs(); gridhand = new GridHandler();
+NGfuncs ngfun = new NGfuncs(); RWMS_sql rwsqlfun = new RWMS_sql();
 
 expire_lc_daysbefore = "30"; // to check expiring-LC days-before
 

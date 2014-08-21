@@ -142,7 +142,7 @@ void doFunc(Object iwhat)
 		if(glob_sel_gco.equals("")) return;
 
 		Object[] ob = { customername, contact_person, contact_tel, contact_email, location, collection_notes, lc_id, g_cartons };
-		dt = getString_fromUI(ob);
+		dt = ngfun.getString_fromUI(ob);
 
 		sqlstm = "update rw_goodscollection set customer_name='" + dt[0] + "',fc6_custid='" + global_selected_customerid + "'," +
 		"contact_person='" + dt[1] + "',contact_tel='" + dt[2] + "', contact_email='" + dt[3] + "', location='" + dt[4] + "'," +
@@ -243,7 +243,7 @@ void doFunc(Object iwhat)
 	{
 		if(glob_sel_gco.equals("")) return;
 		Object[] jkl = { g_transporter, g_transp_ref, g_tempgrn, g_sv_no, g_logregion, g_opartner };
-		dt = getString_fromUI(jkl);
+		dt = ngfun.getString_fromUI(jkl);
 
 		/*
 		tsp = g_transporter.getSelectedItem().getLabel();
@@ -254,8 +254,8 @@ void doFunc(Object iwhat)
 		prt = g_opartner.getSelectedItem.getLabel();
 		*/
 
-		sqlstm = "update rw_goodscollection set transporter='" + tsp + "', transp_ref='" + tsr + 
-		"', tempgrn='" + tmg + "',sv_no='" + svn + "', logregion='" + lrg + "' where origid=" + glob_sel_gco;
+		sqlstm = "update rw_goodscollection set transporter='" + dt[0] + "', transp_ref='" + dt[1] + 
+		"', tempgrn='" + dt[2] + "',sv_no='" + dt[3] + "', logregion='" + dt[4] + "', opartner='" + dt[5] + "' where origid=" + glob_sel_gco;
 
 		refresh = true;
 	}

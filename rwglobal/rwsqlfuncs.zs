@@ -36,16 +36,16 @@ void fillListbox_uniqField(String itbn, String ifl, Listbox ilb)
 	ilb.setSelectedIndex(0);
 }
 
+/*
 void disableUI_obj(Object[] iob, boolean iwhat) // ngfuncs.jav
 {
 	ngfun.disableUI_obj(iob,iwhat);
-	/*
 	for(i=0; i<iob.length; i++)
 	{
 		iob[i].setDisabled(iwhat);
 	}
-	*/
 }
+*/
 
 // itype, return value: 1=month, 2=year
 int countMonthYearDiff(int itype, Object ist, Object ied) // generals.jav
@@ -73,10 +73,11 @@ Object vMakeWindow(Object ipar, String ititle, String iborder, String ipos, Stri
 	return ngfun.vMakeWindow(ipar, ititle, iborder, ipos, iw, ih);
 }
 
+/*
 void popuListitems_Data2(ArrayList ikb, String[] ifl, Object ir)
 {
-	ngfun.popuListitems_Data2(ikb, ifl, ir);
-	/*
+	//ngfun.popuListitems_Data2(ikb, ifl, ir);
+
 	String kstr = "";
 
 	for(int i=0; i<ifl.length; i++)
@@ -116,13 +117,12 @@ void popuListitems_Data2(ArrayList ikb, String[] ifl, Object ir)
 		ikb.add( kstr );
 		//} catch (Exception e) {}
 	}
-	*/
 }
-
+*/
+/*
 void popuListitems_Data(ArrayList ikb, String[] ifl, Object ir)
 {
-	ngfun.popuListitems_Data(ikb, ifl, ir);
-	/*
+	//ngfun.popuListitems_Data(ikb, ifl, ir);
 	String kstr = "";
 
 	for(int i=0; i<ifl.length; i++)
@@ -159,18 +159,20 @@ void popuListitems_Data(ArrayList ikb, String[] ifl, Object ir)
 		ikb.add( kstr );
 		//} catch (Exception e) {}
 	}
-	*/
 }
+*/
 
+/*
 String[] getString_fromUI(Object[] iob) // bc
 {
 	return ngfun.getString_fromUI(iob);
 }
+*/
 
+/*
 void populateUI_Data(Object[] iob, String[] ifl, Object ir)
 {
-	ngfun.populateUI_Data(iob, ifl, ir);
-	/*
+	//ngfun.populateUI_Data(iob, ifl, ir);
 	for(int i=0;i<iob.length;i++)
 	{
 		try
@@ -211,13 +213,15 @@ void populateUI_Data(Object[] iob, String[] ifl, Object ir)
 			}
 		} catch (Exception e) {}
 	}
-	*/
 }
+*/
 
+/*
 void clearUI_Field(Object[] iob) // bc
 {
 	ngfun.clearUI_Field(iob);
 }
+*/
 
 int getWeekOfMonth(String thedate)
 {

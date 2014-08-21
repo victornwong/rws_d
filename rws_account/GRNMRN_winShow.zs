@@ -12,13 +12,13 @@ void gp_viewMRN(String iwhat, Object iwinholder)
 {
 	if(iwhat.equals("")) return;
 	whstr = " d.voucherno='" + iwhat + "' ";
-	if(iwhat.indexOf(",") != -1)
+	if(iwhat.indexOf(",") != -1 || iwhat.indexOf("/") != -1 )
 	{
 		wa = iwhat;
 		if(iwhat.indexOf("'") == -1) // no quotes, have to chipchop
 		{
 			wa = "";
-			t = iwhat.split(",");
+			t = iwhat.split("[, /]");
 			
 			for(i=0; i<t.length; i++)
 			{
@@ -50,7 +50,7 @@ void gp_viewMRN(String iwhat, Object iwinholder)
 	for(d : r)
 	{
 		kabom.add(lnc.toString() + "." );
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 		/*
 		kabom.add( kiboo.checkNullString(d.get("item_name")) );
 		kabom.add( kiboo.checkNullString(d.get("code2")) );
@@ -75,13 +75,13 @@ void gp_viewGRN(String iwhat, Object iwinholder)
 {
 	if(iwhat.equals("")) return;
 	whstr = " d.voucherno='" + iwhat + "' ";
-	if(iwhat.indexOf(",") != -1)
+	if(iwhat.indexOf(",") != -1 || iwhat.indexOf("/") != -1 )
 	{
 		wa = iwhat;
 		if(iwhat.indexOf("'") == -1) // no quotes, have to chipchop
 		{
 			wa = "";
-			t = iwhat.split(",");
+			t = iwhat.split("[, /]");
 			
 			for(i=0; i<t.length; i++)
 			{
@@ -115,7 +115,7 @@ void gp_viewGRN(String iwhat, Object iwinholder)
 	for(d : r)
 	{
 		kabom.add(lnc.toString() + "." );
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 		/*
 		kabom.add( kiboo.checkNullString(d.get("productname")) ); 
 		kabom.add( nf0.format(d.get("qty2")) );
