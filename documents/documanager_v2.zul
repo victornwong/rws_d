@@ -2,19 +2,23 @@
 <?page id="docmanag2"?>
 <zk>
 <zscript src="../rwglobal/rwglobaldefs.zs" />
-<zscript src="../rwglobal/rwsqlfuncs.zs" />
 <zscript src="./documan2_funcs.zs" />
+<zscript src="./docuformmanger.zs" />
+<zscript src="../rwglobal/formMaker_v1.zs" />
 <zscript>
 <![CDATA[
 MYTITLE = "Documents Handler";
-MYVERSION = "v0.2";
+MYVERSION = "v0.3";
 MYPANEL = "docmangpanel";
 /*
+
+<zscript src="../rwglobal/rwsqlfuncs.zs" />
 Title : Document manager - rework from the original to be general-purpose
 Written by : Victor Wong
 Dated	: 31/07/2014
 
 Notes:
+22/08/2014: modify to have due-date , for auto email-notification script to use. (folderstructure.actiondate, .actiontodo)
 
 */
 import java.util.*;
@@ -31,6 +35,9 @@ param_docutree = Executions.getCurrent().getParameter("dtr");
 kiboo = new Generals(); sqlhand = new SqlFuncs();
 lbhand = new ListboxHandler(); guihand = new GuiFuncs();
 luhand = new LookupFuncs(); dmshand = new DMSFuncs();
+NGfuncs ngfun = new NGfuncs(); RWMS_sql rwsqlfun = new RWMS_sql();
+
+vicFormMaker glob_formmaker = null;
 
 DOCUPREFIX = "FS"; // it's also hardcoded in DMSfuncs.java
 
@@ -40,12 +47,19 @@ selected_directory_folderid = selected_directory = selected_subdirectory = selec
 marked_dir = "";
 Object selected_treeitem = prev_sel_treeitem = null;
 
+String JN_linkcode()
+{
+	if(selected_subdirectory.equals("")) return "";
+	return DOCUPREFIX + selected_subdirectory;
+}
+
 void showDocuTreeTitle(String iwhat, Object ilbl)
 {
 	sqlstm = "select folderid from folderstructure where origid=" + iwhat;
 	k = dmshand.dmsgpSqlFirstRow(sqlstm);
 	if(k == null) return;
-	ilbl.setValue( kiboo.checkNullString(k.get("folderid")) );
+	//ilbl.setValue( kiboo.checkNullString(k.get("folderid")) );
+	westside.setTitle( kiboo.checkNullString(k.get("folderid")) );
 }
 
 void hideDocumentSpace()
@@ -70,6 +84,9 @@ void subdirectoryOnSelect(Tree wTree)
 	u_description.setValue( guihand.getTreecellItemLabel(selitem,1) );
 
 	hideDocumentSpace();
+
+	// 22/08/2014: put selected directory-name in eastside
+	eastside.setTitle(foldid);
 
 } // end of subdirectoryOnSelect()
 
@@ -209,7 +226,39 @@ void adminFunc(String itype)
 	if(!sqlstm.equals("")) dmshand.dmsgpSqlExecuter(sqlstm);
 	//if(refresh) dmshand.showSubdirectoryTree(maindir_parent, subdirectory_tree);
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
+}
 
+// 22/08/2014: save folderstructure action and date
+void saveFolderActionDate()
+{
+	if(selected_subdirectory.equals("")) return;
+	adate = kiboo.getDateFromDatebox( f_actiondate );
+	atodo = kiboo.replaceSingleQuotes( f_actiontodo.getValue().trim() );
+	if(atodo.equals("")) { guihand.showMessageBox("No action, not saving.."); return; }
+	sqlstm = "update folderstructure set actiontodo='" + atodo + "', actiondate='" + adate + "' where origid=" + selected_subdirectory;
+	//dmshand.dmsgpSqlExecuter(sqlstm);a
+	//dmshand.showSubdirectoryTree(maindir_parent, subdirectory_tree); // refresh
+	alert(sqlstm);
+}
+
+void clearFolderActionDate()
+{
+	Object[] jkl = { f_actiontodo, f_actiondate };
+	ngfun.clearUI_Field(jkl);
+}
+
+void showDocuFormsList()
+{
+	if(selected_subdirectory.equals("")) return;
+	listFormStorage(2, JN_linkcode());
+}
+
+void addFormToFolderStruct()
+{
+	if(selected_subdirectory.equals("")) return;
+	if( !lbhand.check_ListboxExist_SelectItem(xmlfmholder,"xlformslb") ) return;
+	kk = xlformslb.getSelectedItem().getLabel();
+	insertFormTypeToFolderstruct( JN_linkcode(), kk );
 }
 
 DIRWIDTH = "530px";
@@ -333,6 +382,33 @@ DIRWIDTH = "530px";
 </div>
 </popup>
 
+<popup id="actionpopup">
+<div sclass="shadowbox" style="background:#6084A3" width="450px">
+<grid sclass="GridLayoutNoBorder">
+	<rows>
+		<row>
+			<label value="Action date" sclass="k9" />
+			<datebox id="f_actiondate" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
+		</row>
+		<row>
+			<label value="Action" sclass="k9" />
+			<textbox id="f_actiontodo" sclass="k9" width="99%" multiline="true" height="60px" />
+		</row>
+	</rows>
+</grid>
+<separator height="3px" />
+<button label="Save" sclass="k9mo" onClick="saveFolderActionDate()" />
+</div>
+</popup>
+
+<popup id="formselect_pop">
+<div sclass="shadowbox" style="background:#6084A3" width="600px">
+	<div id="xmlfmholder" />
+	<separator height="3px" />
+	<button label="Add form" sclass="k9mo" onClick="addFormToFolderStruct()" />
+</div>
+</popup>
+
 <style src="/real-world.css" />
 <style>
 .GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
@@ -345,6 +421,11 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 <div width="1200px">
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
 <panelchildren style="background:#803c33">
+
+<borderlayout width="100%" height="800px">
+
+<west id="westside" sclass="k9" size="99%" collapsible="true" border="0" style="background:#254257;" >
+<div>
 
 <hbox>
 	<separator width="10px" />
@@ -371,6 +452,8 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 				<treecols>
 					<treecol label="Folder" />
 					<treecol label="Description" />
+					<treecol label="Action" />
+					<treecol label="Due" />
 				</treecols>
 			</tree>
 			<label id="subdir_label" sclass="subhead1" />
@@ -380,6 +463,8 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 				<button id="viewdoc_btn" label="View file" sclass="k9mo" onClick="docuFunc_DM(self.getId())" />
 				<button label="Update" sclass="k9mo" onClick="updatefiledesc_popup.open(self)" />
 				<button id="deletedoc_btn" label="Delete" sclass="k9mo" onClick="docuFunc_DM(self.getId())" />
+				<separator width="10px" />
+				<button label="Set action/date" sclass="k9mo" onClick="clearFolderActionDate(); actionpopup.open(self)" />
 			</hbox>
 			<div id="docu_holder" width="${DIRWIDTH}" />
 			<label sclass="k9b">
@@ -400,6 +485,50 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 	</div>
 
 </hbox>
+
+</div>
+</west>
+
+<east id="eastside" title="Forms/Extras" sclass="k9" size="98%" border="0" style="background:#254257;">
+<div style="padding:3px">
+
+<hbox>
+
+<div sclass="shadowbox" style="background:#97b83a;" width="500px">
+	<grid>
+		<rows>
+			<row style="background:#babdb6;padding:3px">
+				<label value="Search text" sclass="k9" />
+				<textbox id="searchtext_tb" sclass="k9" width="99%" />
+				<button label="Search/Load" sclass="k9mo" onClick="showDocuFormsList()" />
+			</row>
+			<row spans="3">
+			<label style="font-size:9px">
+			(Max. 200 forms per click, empty search-text will load available forms)
+			</label>
+			</row>
+			<row spans="3">
+				<hbox>
+					<button label="New form" sclass="k9mo" onClick='populateFormsList(xmlfmholder,"xlformslb"); formselect_pop.open(self)' />
+					<button label="Delete" sclass="k9mo" />
+				</hbox>
+			</row>
+		</rows>
+	</grid>
+	<separator height="2px" />
+	<div id="formslist_holder" />
+</div>
+
+<div sclass="shadowbox" style="background:#97b83a;">
+	<div id="formholder" />
+</div>
+
+</hbox>
+
+</div>
+</east>
+
+</borderlayout>
 
 <zscript>
 <![CDATA[

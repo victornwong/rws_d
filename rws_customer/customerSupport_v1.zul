@@ -59,7 +59,7 @@ void pickcustomer_Callback()
 {
 	custr = getFocus_CustomerRec(global_selected_customerid);
 	locstr = custds =  custr.get("address1yh") + ",\n" + custr.get("address2yh") + ",\n" +
-		custr.get("address3yh") + ",\n" + custr.get("address4yh");
+	custr.get("address3yh") + ",\n" + custr.get("address4yh");
 	t_cust_location.setValue(locstr);
 
 	global_selected_customername = kiboo.checkNullString( custr.get("name") ); // save for later use

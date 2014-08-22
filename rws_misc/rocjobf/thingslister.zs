@@ -255,7 +255,8 @@ void showDO_details(String ido, Div idivholder)
 				"Transporter: " + dr.get("transporteryh") + "\n" +
 				"DeliveryRef: " + dr.get("deliveryrefyh") + "\n" +
 				"Del.Status: " + dr.get("deliverystatusyh") + "\n" +
-				"Del.Date: " +  dr.get("deliverydateyh");
+				"Del.Date: " +  dr.get("deliverydateyh") + "\n" +
+				"Del.Addr: " + dr.get("deliveryaddressyh");
 
 				kl.setValue(dstr);
 			}

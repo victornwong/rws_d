@@ -4,54 +4,22 @@ import org.zkoss.zk.ui.*;
 import org.zkoss.zk.zutl.*;
 import java.math.BigDecimal;
 import org.zkoss.util.media.AMedia;
-import org.victor.*;
 
 // 10/07/2013: moved 'em funcs here TODO byte-compile later
-// 11/08/2014: byte-compiled some funcs
-
-NGfuncs ngfun = new NGfuncs();
-RWMS_sql rwsqlfun = new RWMS_sql();
 
 // GP: remove sub-div from DIV if any
-void removeSubDiv(Div idivholder) // bc
+void removeSubDiv(Div idivholder)
 {
-	ngfun.removeSubDiv(idivholder);
-}
-
-void fillListbox_uniqField(String itbn, String ifl, Listbox ilb)
-{
-	sqlstm = "select distinct " + ifl + " from " + itbn;
-	r = sqlhand.gpSqlGetRows(sqlstm);
-	if(r.size() == 0) return;
-	String[] kabom = new String[1];
-	for(d : r)
+	prvds = idivholder.getChildren().toArray();
+	for(i=0;i<prvds.length;i++) // remove prev sub-divs if any
 	{
-		dk = d.get(ifl);
-		if(dk != null)
-		{
-			kabom[0] = dk;
-			lbhand.insertListItems(ilb,kabom,"false","");
-		}
-	}
-	ilb.setSelectedIndex(0);
-}
-
-/*
-void disableUI_obj(Object[] iob, boolean iwhat) // ngfuncs.jav
-{
-	ngfun.disableUI_obj(iob,iwhat);
-	for(i=0; i<iob.length; i++)
-	{
-		iob[i].setDisabled(iwhat);
+		prvds[i].setParent(null);
 	}
 }
-*/
 
 // itype, return value: 1=month, 2=year
-int countMonthYearDiff(int itype, Object ist, Object ied) // generals.jav
+int countMonthYearDiff(int itype, Object ist, Object ied)
 {
-	return kiboo.countMonthYearDiff(itype, ist, ied);
-	/*
 	Calendar std = new GregorianCalendar();
 	Calendar edd = new GregorianCalendar();
 	std.setTime(ist.getValue());
@@ -59,173 +27,152 @@ int countMonthYearDiff(int itype, Object ist, Object ied) // generals.jav
 	diffYear = edd.get(Calendar.YEAR) - std.get(Calendar.YEAR);
 	diffMonth = diffYear * 12 + edd.get(Calendar.MONTH) - std.get(Calendar.MONTH);
 	return (itype == 1) ? diffMonth : diffYear;
-	*/
 }
 
-/*
 // convert 1023,3929,2990 to '1023','3929'..
-String makeQuotedFromComma(String iwhat) // bc
+String makeQuotedFromComma(String iwhat)
 {
-	return kiboo.makeQuotedFromComma(iwhat);
+	if(iwhat.equals("")) return "";
+	pp = iwhat.split("\n");
+	lcs = "";
+	for(i=0; i<pp.length; i++)
+	{
+		lcs += "'" + pp[i].trim() + "',";
+	}
+	try { lcs = lcs.substring(0,lcs.length()-1); } catch (Exception e) {}
+	return lcs;
 }
-*/
 
-/*
-Object vMakeWindow(Object ipar, String ititle, String iborder, String ipos, String iw, String ih) // bc
+Object vMakeWindow(Object ipar, String ititle, String iborder, String ipos, String iw, String ih)
 {
-	return ngfun.vMakeWindow(ipar, ititle, iborder, ipos, iw, ih);
+	rwin = new Window(ititle,iborder,true);
+	rwin.setWidth(iw);
+	rwin.setHeight(ih);
+	rwin.setPosition(ipos);
+	rwin.setParent(ipar);
+	rwin.setMode("overlapped");
+	return rwin;
 }
-*/
 
-/*
 void popuListitems_Data2(ArrayList ikb, String[] ifl, Object ir)
 {
-	//ngfun.popuListitems_Data2(ikb, ifl, ir);
-
-	String kstr = "";
-
-	for(int i=0; i<ifl.length; i++)
+	for(i=0; i<ifl.length; i++)
 	{
-		//try {
+		try {
 		kk = ir.get(ifl[i]);
-
-		if(kk == null) kstr = "";
+		if(kk == null) kk = "";
 		else
-			if(kk instanceof Date) kstr = dtf.format(kk);
+			if(kk instanceof Date) kk = dtf.format(kk);
 		else
-			if(kk instanceof Integer) kstr = nf0.format(kk);
+			if(kk instanceof Integer) kk = nf0.format(kk);
 		else
 			if(kk instanceof BigDecimal)
 			{
-				BigDecimal xt = (BigDecimal)kk;
-				BigDecimal rt = xt.remainder(BigDecimal.ONE);
+				rt = kk.remainder(BigDecimal.ONE);
 				if(rt.floatValue() != 0.0)
-					kstr = nf2.format(kk);
+					kk = nf2.format(kk);
 				else
-					kstr = nf0.format(kk);
+					kk = nf0.format(kk);
 			}
 		else
-			if(kk instanceof Double) kstr = nf2.format(kk);
+			if(kk instanceof Double) kk = nf2.format(kk);
 		else
-			if(kk instanceof Float) kstr = kk.toString();
+			if(kk instanceof Float) kk = kk.toString();
 		else
-			if(kk instanceof Boolean)
-			{
-				Boolean mm = (Boolean)kk;
-				String wi = (mm) ? "Y" : "N";
-				kstr = wi;
-			}
-		else
-			kstr = kk;
+			if(kk instanceof Boolean) { wi = (kk) ? "Y" : "N"; kk = wi; }
 
-		ikb.add( kstr );
-		//} catch (Exception e) {}
-	}
-}
-*/
-/*
-void popuListitems_Data(ArrayList ikb, String[] ifl, Object ir)
-{
-	//ngfun.popuListitems_Data(ikb, ifl, ir);
-	String kstr = "";
-
-	for(int i=0; i<ifl.length; i++)
-	{
-		//try {
-		kk = ir.get(ifl[i]);
-		if(kk == null) kstr = "";
-		else
-			if(kk instanceof Date) kstr = dtf2.format(kk);
-		else
-			if(kk instanceof Integer) kstr = nf0.format(kk);
-		else
-			if(kk instanceof BigDecimal)
-			{
-				BigDecimal xt = (BigDecimal)kk;
-				BigDecimal rt = xt.remainder(BigDecimal.ONE);
-				if(rt.floatValue() != 0.0)
-					kstr = nf2.format(kk);
-				else
-					kstr = nf0.format(kk);
-			}
-		else
-			if(kk instanceof Double) kstr = nf2.format(kk);
-		else
-			if(kk instanceof Float) kstr = kk.toString();
-		else
-			if(kk instanceof Boolean)
-			{
-				Boolean mm = (Boolean)kk;
-				String wi = (mm) ? "Y" : "N";
-				kstr = wi;
-			}
-
-		ikb.add( kstr );
-		//} catch (Exception e) {}
-	}
-}
-*/
-
-/*
-String[] getString_fromUI(Object[] iob) // bc
-{
-	return ngfun.getString_fromUI(iob);
-}
-*/
-
-/*
-void populateUI_Data(Object[] iob, String[] ifl, Object ir)
-{
-	//ngfun.populateUI_Data(iob, ifl, ir);
-	for(int i=0;i<iob.length;i++)
-	{
-		try
-		{
-			woi = ir.get(ifl[i]);
-
-			if(iob[i] instanceof Textbox || iob[i] instanceof Label)
-			{
-				String kk = "";
-				if(woi == null) kk = "";
-				else
-				if(woi instanceof Date) kk = dtf2.format(woi);
-				else
-				if(woi instanceof Integer || woi instanceof Double || woi instanceof BigDecimal) kk = woi.toString();
-				else
-				if(woi instanceof Float) kk = nf2.format(woi);
-
-				iob[i].setValue(kk);
-
-				//if(iob[i] instanceof Textbox) { Textbox mm = (Textbox)iob[i]; mm.setValue(kk); }
-				//if(iob[i] instanceof Label) { Label mm = (Label)iob[i]; mm.setValue(kk); }
-			}
-
-			if(iob[i] instanceof Checkbox)
-			{
-				//Checkbox kk = (Checkbox)iob[i];
-				iob[i].setChecked( (woi == null ) ? false : (Boolean)woi);
-			}
-
-			if(iob[i] instanceof Listbox)
-			{
-				lbhand.matchListboxItems( (Listbox) iob[i], kiboo.checkNullString((String)woi).toUpperCase() );
-			}
-			if(iob[i] instanceof Datebox)
-			{
-				//Datebox kk = (Datebox)iob[i];
-				iob[i].setValue( (Date)woi );
-			}
+		ikb.add( kk );
 		} catch (Exception e) {}
 	}
 }
-*/
 
-/*
-void clearUI_Field(Object[] iob) // bc
+void popuListitems_Data(ArrayList ikb, String[] ifl, Object ir)
 {
-	ngfun.clearUI_Field(iob);
+	for(i=0; i<ifl.length; i++)
+	{
+		try {
+		kk = ir.get(ifl[i]);
+		if(kk == null) kk = "";
+		else
+			if(kk instanceof Date) kk = dtf2.format(kk);
+		else
+			if(kk instanceof Integer) kk = nf0.format(kk);
+		else
+			if(kk instanceof BigDecimal)
+			{
+				rt = kk.remainder(BigDecimal.ONE);
+				if(rt.floatValue() != 0.0)
+					kk = nf2.format(kk);
+				else
+					kk = nf0.format(kk);
+			}
+		else
+			if(kk instanceof Double) kk = nf2.format(kk);
+		else
+			if(kk instanceof Float) kk = kk.toString();
+		else
+			if(kk instanceof Boolean) { wi = (kk) ? "Y" : "N"; kk = wi; }
+
+		ikb.add( kk );
+		} catch (Exception e) {}
+	}
 }
-*/
+
+String[] getString_fromUI(Object[] iob)
+{
+	rdt = new String[iob.length];
+	for(i=0; i<iob.length; i++)
+	{
+		rdt[i] = "";
+		try {
+		if(iob[i] instanceof Textbox || iob[i] instanceof Label) rdt[i] = kiboo.replaceSingleQuotes(iob[i].getValue().trim());
+		if(iob[i] instanceof Listbox) rdt[i] = iob[i].getSelectedItem().getLabel();
+		if(iob[i] instanceof Datebox) rdt[i] = dtf2.format( iob[i].getValue() );
+		if(iob[i] instanceof Checkbox) rdt[i] = (iob[i].isChecked()) ? "1" : "0";
+		}
+		catch (Exception e) {}
+	}
+	return rdt;
+}
+
+void populateUI_Data(Object[] iob, String[] ifl, Object ir)
+{
+	for(i=0;i<iob.length;i++)
+	{
+		try {
+		if(iob[i] instanceof Textbox || iob[i] instanceof Label)
+		{
+			kk = ir.get(ifl[i]);
+			if(kk == null) kk = "";
+			else
+			if(kk instanceof Date) kk = dtf2.format(kk);
+			else
+			if(kk instanceof Integer || kk instanceof Double || kk instanceof BigDecimal) kk = kk.toString();
+			else
+			if(kk instanceof Float) kk = nf2.format(kk);
+
+			iob[i].setValue(kk);
+		}
+
+		if(iob[i] instanceof Checkbox) iob[i].setChecked( (ir.get(ifl[i]) == null ) ? false : ir.get(ifl[i]) );
+		if(iob[i] instanceof Listbox)
+		{
+			lbhand.matchListboxItems( iob[i], kiboo.checkNullString( ir.get(ifl[i]) ).toUpperCase() );
+		}
+		if(iob[i] instanceof Datebox) iob[i].setValue( ir.get(ifl[i]) );
+		} catch (Exception e) {}
+	}
+}
+
+void clearUI_Field(Object[] iob)
+{
+	for(i=0; i<iob.length; i++)
+	{
+		if(iob[i] instanceof Textbox || iob[i] instanceof Label) iob[i].setValue("");
+		if(iob[i] instanceof Datebox) kiboo.setTodayDatebox(iob[i]);
+		if(iob[i] instanceof Listbox) iob[i].setSelectedIndex(0);
+	}
+}
 
 int getWeekOfMonth(String thedate)
 {
@@ -239,10 +186,8 @@ int getWeekOfMonth(String thedate)
 }
 
 // Lookup-func: get value1-value8 from lookup table by parent-name
-String getFieldsCommaString(String iparents,int icol) // lookupfuncs.java
+String getFieldsCommaString(String iparents,int icol)
 {
-	return luhand.getFieldsCommaString(iparents, icol);
-	/*
 	aprs = luhand.getLookups_ByParent(iparents);
 	retv = "";
 	fld = "value" + icol.toString();
@@ -258,44 +203,35 @@ String getFieldsCommaString(String iparents,int icol) // lookupfuncs.java
 	} catch (Exception e) {}
 
 	return retv;
-	*/
 }
 
 // Merge 2 object-arrays into 1 - codes copied from some website
-Object[] mergeArray(Object[] lst1, Object[] lst2) // generals.java
+Object[] mergeArray(Object[] lst1, Object[] lst2)
 {
-	return kiboo.mergeArray(lst1,lst2);
-	/*
 	List list = new ArrayList(Arrays.asList(lst1));
 	list.addAll(Arrays.asList(lst2));
 	Object[] c = list.toArray();
 	return c;
-	*/
 }
 
-void blindTings(Object iwhat, Object icomp) // ngfuncs.java
+void blindTings(Object iwhat, Object icomp)
 {
-	ngfun.blindTings(iwhat, icomp);
-	/*
 	itype = iwhat.getId();
 	klk = iwhat.getLabel();
 	bld = (klk.equals("+")) ? true : false;
 	iwhat.setLabel( (klk.equals("-")) ? "+" : "-" );
 	icomp.setVisible(bld);
-	*/
 }
 
-void blindTings_withTitle(Object iwhat, Object icomp, Object itlabel) // ngfuncs.java
+void blindTings_withTitle(Object iwhat, Object icomp, Object itlabel)
 {
-	ngfun.blindTings_withTitle(iwhat, icomp, itlabel);
-	/*
 	itype = iwhat.getId();
 	klk = iwhat.getLabel();
 	bld = (klk.equals("+")) ? true : false;
 	iwhat.setLabel( (klk.equals("-")) ? "+" : "-" );
 	icomp.setVisible(bld);
+
 	itlabel.setVisible((bld == false) ? true : false );
-	*/
 }
 
 void downloadFile(Div ioutdiv, String ifilename, String irealfn)
@@ -312,27 +248,25 @@ void downloadFile(Div ioutdiv, String ifilename, String irealfn)
 	newiframe.setContent(amedia);
 }
 
-void activateModule(String iplayg, String parentdiv_name, String winfn, String windId, String uParams, Object uAO) // ngfuncs.java
+void activateModule(String iplayg, String parentdiv_name, String winfn, String windId, String uParams, Object uAO)
 {
-	ngfun.activateModule(iplayg, parentdiv_name, winfn, windId, uParams, uAO);
-	/*
 	Include newinclude = new Include();
 	newinclude.setId(windId);
+
 	includepath = winfn + "?myid=" + windId + "&" + uParams;
 	newinclude.setSrc(includepath);
+
 	sechand.setUserAccessObj(newinclude, uAO); // securityfuncs.zs
+
 	Div contdiv = Path.getComponent(iplayg + parentdiv_name);
 	newinclude.setParent(contdiv);
-	*/
+
 } // activateModule()
 
 // Use to refresh 'em checkboxes labels -- can be used for other mods
 // iprefix: checkbox id prefix, inextcount: next id count
-// NOTES: dunno why this is hard-coded with items_grid -- CHECK which modu using this !!!
 void refreshCheckbox_CountLabel(String iprefix, int inextcount)
 {
-	ngfun.refreshCheckbox_CountLabel(iprefix, inextcount, items_grid);
-	/*
 	count = 1;
 	for(i=1;i<inextcount; i++)
 	{
@@ -344,13 +278,15 @@ void refreshCheckbox_CountLabel(String iprefix, int inextcount)
 			count++;
 		}
 	}
-	*/
 }
 
 // itype: 1=width, 2=height
-gpMakeSeparator(int itype, String ival, Object iparent) // bc
+gpMakeSeparator(int itype, String ival, Object iparent)
 {
-	ngfun.gpMakeSeparator(itype,ival,iparent);
+	sep = new Separator();
+	if(itype == 1) sep.setWidth(ival);
+	if(itype == 2) sep.setHeight(ival);
+	sep.setParent(iparent);
 }
 
 class dropMe implements org.zkoss.zk.ui.event.EventListener
@@ -364,31 +300,71 @@ class dropMe implements org.zkoss.zk.ui.event.EventListener
 }
 droppoMe = new dropMe();
 
-Textbox gpMakeTextbox(Object iparent, String iid, String ivalue, String istyle, String iwidth) // ngfuncs.jav
+Textbox gpMakeTextbox(Object iparent, String iid, String ivalue, String istyle, String iwidth)
 {
-	ngfun.gpMakeTextbox(iparent, iid, ivalue, istyle, iwidth, droppoMe);
+	Textbox retv = new Textbox();
+	if(!iid.equals("")) retv.setId(iid);
+	if(!istyle.equals("")) retv.setStyle(istyle);
+	if(!ivalue.equals("")) retv.setValue(ivalue);
+	if(!iwidth.equals("")) retv.setWidth(iwidth);
+	retv.setDroppable("true");
+	retv.addEventListener("onDrop", droppoMe);
+	retv.setParent(iparent);
+	return retv;
 }
 
-Button gpMakeButton(Object iparent, String iid, String ilabel, String istyle, Object iclick) // bc
+Button gpMakeButton(Object iparent, String iid, String ilabel, String istyle, Object iclick)
 {
-	return ngfun.gpMakeButton(iparent, iid, ilabel, istyle, iclick);
+	Button retv = new Button();
+	if(!istyle.equals("")) retv.setStyle(istyle);
+	if(!ilabel.equals("")) retv.setLabel(ilabel);
+	if(!iid.equals("")) retv.setId(iid);
+	if(iclick != null) retv.addEventListener("onClick", iclick);
+	retv.setParent(iparent);
+	return retv;
 }
 
-Label gpMakeLabel(Object iparent, String iid, String ivalue, String istyle) // bc
+Label gpMakeLabel(Object iparent, String iid, String ivalue, String istyle)
 {
-	return ngfun.gpMakeLabel(iparent, iid, ivalue, istyle);
+	Label retv = new Label();
+	if(!iid.equals("")) retv.setId(iid);
+	if(!istyle.equals("")) retv.setStyle(istyle);
+	retv.setValue(ivalue);
+	retv.setParent(iparent);
+	return retv;
 }
 
-Checkbox gpMakeCheckbox(Object iparent, String iid, String ilabel, String istyle) // bc
+Checkbox gpMakeCheckbox(Object iparent, String iid, String ilabel, String istyle)
 {
-	return ngfun.gpMakeCheckbox(iparent, iid, ilabel, istyle);
+	Checkbox retv = new Checkbox();
+	if(!iid.equals("")) retv.setId(iid);
+	if(!istyle.equals("")) retv.setStyle(istyle);
+	if(!ilabel.equals("")) retv.setLabel(ilabel);
+	retv.setParent(iparent);
+	return retv;
 }
 
 // knock from GridHandler.java (javac prob -- 19/03/2014)
-void gpmakeGridHeaderColumns_Width(String[] icols, String[] iwidths, Object iparent) // bc
+void gpmakeGridHeaderColumns_Width(String[] icols, String[] iwidths, Object iparent)
 {
-	ngfun.gpmakeGridHeaderColumns_Width(icols, iwidths, iparent);
+	Columns colms = new Columns();
+	for(int i=0; i<icols.length; i++)
+	{
+		Column hcolm = new Column();
+		hcolm.setLabel(icols[i]);
+		/*
+		Comp asc = new Comp(true,i);
+		Comp dsc = new Comp(false,i);
+		hcolm.setSortAscending(asc);
+		hcolm.setSortDescending(dsc);
+		*/
+		hcolm.setStyle("font-size:9px");
+		hcolm.setWidth(iwidths[i]);
+		hcolm.setParent(colms);	
+	}
+	colms.setParent((Component)iparent);
 }
+
 
 // Add something to rw_systemaudit, datecreated will have time too
 // ilinkc=linking_code, isubc=linking_sub, iwhat=audit_notes
@@ -400,172 +376,231 @@ void add_RWAuditLog(String ilinkc, String isubc, String iwhat, String iuser)
 	sqlhand.gpSqlExecuter(sqlstm);
 }
 
-Object getStockItem_rec(String istkcode) // rwms_sql.jav
+Object getStockItem_rec(String istkcode)
 {
-	return rwsqlfun.getStockItem_rec(istkcode);
+	sqlstm = "select * from stockmasterdetails where stock_code='" + istkcode + "'";
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
-boolean checkStockExist(String istkc) // rwms_sql.jav
+boolean checkStockExist(String istkc)
 {
-	return rwsqlfun.checkStockExist(istkc);
+	sqlstm = "select id from stockmasterdetails where stock_code='" + istkc + "'";
+	krr = sqlhand.gpSqlFirstRow(sqlstm);
+	retval = false;
+	if(krr != null) retval = true;
+	return retval;
 }
 
-Object getFocus_CustomerRec(String icustid) // bc
+Object getFocus_CustomerRec(String icustid)
 {
-	return rwsqlfun.getFocus_CustomerRec(icustid);
+	focsql = sqlhand.rws_Sql();
+	if(focsql == null) return null;
+	sqlstm = "select cust.name,cust.code,cust.code2, " +
+	"custd.address1yh, custd.address2yh, custd.address3yh, custd.address4yh, " +
+	"custd.telyh, custd.faxyh, custd.contactyh, custd.deliverytoyh, " +
+	"custd.manumberyh, custd.rentaltermyh, custd.interestayh, " +
+	"custd.credit4yh, custd.credit5yh, custd.creditlimityh, " +
+	"custd.salesrepyh,custd.interestayh,custd.emailyh, cust.type from mr000 cust " +
+	"left join u0000 custd on custd.extraid = cust.masterid " +
+	"where cust.masterid=" + icustid;
+	retval = focsql.firstRow(sqlstm);
+	focsql.close();
+	return retval;
 }
 
-String getFocus_CustomerName(String icustid) // bc
+String getFocus_CustomerName(String icustid)
 {
-	return rwsqlfun.getFocus_CustomerName(icustid);
+	if(icustid.equals("")) return "NEW";
+	focsql = sqlhand.rws_Sql();
+	if(focsql == null) return "NEW";
+	sqlstm = "select cust.name from mr000 cust where cust.masterid=" + icustid;
+	retval = focsql.firstRow(sqlstm);
+	focsql.close();
+	if(retval == null) return "NEW";
+	return retval.get("name");
 }
 
-Object getGCO_rec(String iwhat) // bc
+Object getGCO_rec(String iwhat)
 {
-	return rwsqlfun.getGCO_rec(iwhat);
+	sqlstm = "select * from rw_goodscollection where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getGRN_rec(String iwhat)
 {
-	return rwsqlfun.getGRN_rec(iwhat);
+	sqlstm = "select * from tblgrnmaster where id=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getHelpTicket_rec(String iwhat)
 {
-	return rwsqlfun.getHelpTicket_rec(iwhat);
+	sqlstm = "select * from rw_helptickets where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getLocalRMA_rec(String iwhat)
 {
-	return rwsqlfun.getLocalRMA_rec(iwhat);
+	sqlstm = "select * from rw_localrma where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getLocalRMAItem_rec(String iwhat)
 {
-	return rwsqlfun.getLocalRMAItem_rec(iwhat);
+	sqlstm = "select * from rw_localrma_items where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getLC_rec(String iwhat)
 {
-	return rwsqlfun.getLC_rec(iwhat);
+	sqlstm = "select * from rw_leasingcontract where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getLCAsset_rec(String iwhat)
 {
-	return rwsqlfun.getLCAsset_rec(iwhat);
+	sqlstm = "select * from rw_leaseequipments where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getLCEquips_rec(String iwhat)
 {
-	return rwsqlfun.getLCEquips_rec(iwhat);
+	sqlstm = "select * from rw_lc_equips where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getLCNew_rec(String iwhat)
 {
-	return rwsqlfun.getLCNew_rec(iwhat);
+	sqlstm = "select * from rw_lc_records where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getRentalItems_build(String iwhat)
 {
-	return rwsqlfun.getRentalItems_build(iwhat);
+	sqlstm = "select * from stockrentalitems_det where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getPickPack_rec(String iwhat)
 {
-	return rwsqlfun.getPickPack_rec(iwhat);
+	sqlstm = "select * from rw_pickpack where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getRWJob_rec(String iwhat)
 {
-	return rwsqlfun.getRWJob_rec(iwhat);
+	sqlstm = "select * from rw_jobs where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getBOM_rec(String iwhat)
 {
-	return rwsqlfun.getBOM_rec(iwhat);
+	sqlstm = "select * from stockrentalitems where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getDO_rec(String iwhat)
 {
-	return rwsqlfun.getDO_rec(iwhat);
+	sqlstm = "select * from rw_deliveryorder where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getDispatchManifest_rec(String iwhat)
 {
-	return rwsqlfun.getDispatchManifest_rec(iwhat);
+	sqlstm = "select * from rw_dispatchmanif where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getOfficeItem_rec(String iwhat)
 {
-	return rwsqlfun.getOfficeItem_rec(iwhat);
+	sqlstm = "select * from rw_officeitems where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getSoftwareLesen_rec(String iid)
 {
-	return rwsqlfun.getSoftwareLesen_rec(iid);
+	sqlstm = "select * from rw_clientswlicenses where origid=" + iid;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getPR_rec(String iwhat)
 {
-	return rwsqlfun.getPR_rec(iwhat);
+	sqlstm = "select * from purchaserequisition where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getSendout_rec(String iwhat)
 {
-	return rwsqlfun.getSendout_rec(iwhat);
+	sqlstm = "select * from rw_sendouttracker where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getQuotation_rec(String iwhat)
 {
-	return rwsqlfun.getQuotation_rec(iwhat);
+	sqlstm = "select * from rw_quotations where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getCheqRecv_rec(String iwhat)
 {
-	return rwsqlfun.getCheqRecv_rec(iwhat);
+	sqlstm = "select * from rw_cheqrecv where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getDrawdownAssignment_rec(String iwhat)
 {
-	return rwsqlfun.getDrawdownAssignment_rec(iwhat);
+	sqlstm = "select * from rw_assigned_rwi where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getActivitiesContact_rec(String iwhat)
 {
-	return rwsqlfun.getActivitiesContact_rec(iwhat);
+	sqlstm = "select * from rw_activities_contacts where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getActivity_rec(String iwhat)
 {
-	return rwsqlfun.getActivity_rec(iwhat);
+	sqlstm = "select * from rw_activities where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getReservation_Rec(String iwhat)
 {
-	return rwsqlfun.getReservation_Rec(iwhat);
+	sqlstm = "select * from rw_stockreservation where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 Object getEqReqStat_rec(String iwhat)
 {
-	return rwsqlfun.getEqReqStat_rec(iwhat);
+	sqlstm = "select * from reqthings_stat where parent_id='"+ iwhat + "'";
+	return sqlhand.rws_gpSqlFirstRow(sqlstm);
 }
 
 Object getFC_indta_rec(String iwhat)
 {
-	return rwsqlfun.getFC_indta_rec(iwhat);
+	sqlstm = "select * from indta where salesid=" + iwhat;
+	return sqlhand.rws_gpSqlFirstRow(sqlstm);
 }
 
-boolean existRW_inLCTab(String iwhat) // not BC
+boolean existRW_inLCTab(String iwhat)
 {
 	sqlstm = "select top 1 origid from rw_lc_records where rwno='" + iwhat + "' or lc_id='" + iwhat + "'";
 	return (sqlhand.gpSqlFirstRow(sqlstm) == null) ? false : true;
 }
 
-Object getFC6DO_rec(String iwhat)
+Object getFC6DO_rec(String iwhat) // TODO check java codes for this
 {
-	return rwsqlfun.getFC6DO_rec(iwhat);
+	sqlstm = "select top 1 convert(datetime, dbo.ConvertFocusDate(d.date_), 112) as vdate, d.voucherno, " +
+	"c.name as customer_name, k.deliverystatusyh, k.deliverydateyh, k.transporteryh, k.deliveryrefyh, k.deliveryaddressyh," +
+	"k.narrationyh, k.referenceyh from data d " +
+	"left join mr000 c on c.masterid = d.bookno " +
+	"left join u001c k on k.extraid = d.extraheaderoff " +
+	"where d.vouchertype=6144 " +
+	"and d.voucherno='" + iwhat + "'";
+
+	return sqlhand.rws_gpSqlFirstRow(sqlstm);
 }
-// all single-rec sql func done bc
+
 BOM_JOBID = 1; // BOM link to job-id
 PICKLIST_JOBID = 2; // pick-list link to job-id
 BOM_DOID = 3; // BOM link to DO
@@ -575,10 +610,8 @@ PR_JOB = 6; // PR link to job
 //DO_JOBPICKID = 6; // DO link to job-id
 
 // General purpose to return string of other things with linking job-id (ijid)
-String getLinkingJobID_others(int itype, String ijid) // bc
+String getLinkingJobID_others(int itype, String ijid)
 {
-	return rwsqlfun.getLinkingJobID_others(itype, ijid);
-	/*
 	retv = tablen = "";
 	lnkid = "job_id";
 
@@ -615,16 +648,14 @@ String getLinkingJobID_others(int itype, String ijid) // bc
 			} catch (Exception e) {}
 		}
 	}
+
 	return retv;
-	*/
 }
 
 // DOs link to bom/picklist link to job - can be used for other mods to comma-string something
 // itype: 1=picklist, 2=boms, 3=PR, 4=GRN(iorigids=PR), 5=ADT->GCO
-String getDOLinkToJob(int itype, String iorigids) // bc
+String getDOLinkToJob(int itype, String iorigids)
 {
-	return rwsqlfun.getDOLinkToJob(itype, iorigids);
-	/*
 	retv = sqlstm = "";
 	if(iorigids.equals("")) return "";
 
@@ -671,31 +702,25 @@ String getDOLinkToJob(int itype, String iorigids) // bc
 	}
 	return retv;
 	//return sqlstm;
-	*/
 }
 
 // FC6: Get MRN linked to T.GRN. iwhat=T.GRNs
-Object grnGetMRN(String iwhat) // bc
+Object grnGetMRN(String iwhat)
 {
-	return rwsqlfun.grnGetMRN(iwhat);
 /*
 	sqlstm = "select voucherno from v_link4 where vouchertype=1280 and sortlinkid=" + 
 	"(select top 1 links1 from data where vouchertype=1281 and voucherno='" + iwhat + "')";
 */
-/*	
 	sqlstm = "select distinct voucherno from v_link4 where vouchertype=1280 and sortlinkid in " + 
 	"(select links1 from data where vouchertype=1281 and voucherno in (" + iwhat + "))";
 
 //	return sqlhand.rws_gpSqlFirstRow(sqlstm);
 	return sqlhand.rws_gpSqlGetRows(sqlstm);
-*/
 }
 
 // Get MRNs from GRNs. iwhat: GRNs - split and put quotes to be used in grnGetMRN()
-String grnToMRN_str(String iwhat) // bc
+String grnToMRN_str(String iwhat)
 {
-	rwsqlfun.grnToMRN_str(iwhat);
-	/*
 	if(iwhat.equals("")) return "";
 	ks = iwhat.split(",");
 	if(ks.length < 1) return "";
@@ -716,12 +741,21 @@ String grnToMRN_str(String iwhat) // bc
 		try { wps = wps.substring(0,wps.length()-1); } catch (Exception e) {}
 	}
 	return wps;
-	*/
 }
 
 // Populate a listbox with usernames from portaluser
-void populateUsernames(Listbox ilb, String discardname) // bc
+void populateUsernames(Listbox ilb, String discardname)
 {
-	rwsqlfun.populateUsernames(ilb,discardname);
+	sqlstm = "select username from portaluser where username<>'" + discardname + "' and deleted=0 and locked=0 order by username";
+	recs = sqlhand.gpSqlGetRows(sqlstm);
+	if(recs.size() == 0) return;
+	ArrayList kabom = new ArrayList();
+	for( d : recs)
+	{
+		kabom.add( kiboo.checkNullString(d.get("username")) );
+		lbhand.insertListItems(ilb,kiboo.convertArrayListToStringArray(kabom),"false","");
+		kabom.clear();
+	}
+	ilb.setSelectedIndex(0);
 }
 
