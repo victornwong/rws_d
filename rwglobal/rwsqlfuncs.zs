@@ -7,6 +7,24 @@ import org.zkoss.util.media.AMedia;
 
 // 10/07/2013: moved 'em funcs here TODO byte-compile later
 
+void fillListbox_uniqField(String itbn, String ifl, Listbox ilb)
+{
+	sqlstm = "select distinct " + ifl + " from " + itbn;
+	r = sqlhand.gpSqlGetRows(sqlstm);
+	if(r.size() == 0) return;
+	String[] kabom = new String[1];
+	for(d : r)
+	{
+		dk = d.get(ifl);
+		if(dk != null)
+		{
+			kabom[0] = dk;
+			lbhand.insertListItems(ilb,kabom,"false","");
+		}
+	}
+	ilb.setSelectedIndex(0);
+}
+
 // GP: remove sub-div from DIV if any
 void removeSubDiv(Div idivholder)
 {

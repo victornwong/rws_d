@@ -241,7 +241,7 @@ void showGoodsCollection(int itype)
 	gcoi = kiboo.replaceSingleQuotes(searchgco_tb.getValue()).trim();
 	sdate = kiboo.getDateFromDatebox(startdate);
 	edate = kiboo.getDateFromDatebox(enddate);
-	bunm = byuser_lb.getSelectedItem().getLabel();
+	//bunm = byuser_lb.getSelectedItem().getLabel();
 
 	Listbox newlb = lbhand.makeVWListbox_Width(collections_holder, gdcols_headers, "goodscol_lb", 5);
 
