@@ -242,7 +242,7 @@ void doFunc(Object iwhat)
 	if(itype.equals("savetransp_b"))
 	{
 		if(glob_sel_gco.equals("")) return;
-		Object[] jkl = { g_transporter, g_transp_ref, g_tempgrn, g_sv_no, g_logregion, g_opartner };
+		Object[] jkl = { g_transporter, g_transp_ref, g_tempgrn, g_sv_no, g_logregion, g_opartner, g_res_date };
 		dt = ngfun.getString_fromUI(jkl);
 
 		/*
@@ -255,7 +255,8 @@ void doFunc(Object iwhat)
 		*/
 
 		sqlstm = "update rw_goodscollection set transporter='" + dt[0] + "', transp_ref='" + dt[1] + 
-		"', tempgrn='" + dt[2] + "',sv_no='" + dt[3] + "', logregion='" + dt[4] + "', opartner='" + dt[5] + "' where origid=" + glob_sel_gco;
+		"', tempgrn='" + dt[2] + "',sv_no='" + dt[3] + "', logregion='" + dt[4] + "', opartner='" + dt[5] + "'," +
+		"res_date='" + dt[6] + "' where origid=" + glob_sel_gco;
 
 		refresh = true;
 	}
@@ -569,7 +570,7 @@ BOXWIDTH = "800px";
 
 			<grid>
 				<rows>
-					<row spans="4" style="background:#eb0904">
+					<row spans="6" style="background:#eb0904">
 						<label sclass="blink" style=";color:#ffffff;font-size:14px;font-weight:bold;">
 						DO NOT USE NATIONWIDE EXPRESS COURIER SERVICES BERHAD FOR MARIGOLD KULIM
 						</label>
@@ -579,20 +580,22 @@ BOXWIDTH = "800px";
 						<listbox id="g_transporter" mold="select" />
 						<label value="Ref No." style="color:#ffffff" />
 						<textbox id="g_transp_ref" />
-					</row>
-					<row style="background:#204a87" >
 						<label value="Region" style="color:#ffffff" />
 						<listbox id="g_logregion" mold="select" />
+					</row>
+					<row style="background:#204a87" >
+						<label value="Act.Date" style="color:#ffffff" />
+						<datebox id="g_res_date" format="yyyy-MM-dd" onCreate="kiboo.setTodayDatebox(self);" />
+						<label value="CSV" style="color:#ffffff" />
+						<textbox id="g_sv_no" />
 						<label value="Partner" style="color:#ffffff" />
 						<listbox id="g_opartner" mold="select" />
 					</row>
-					<row style="background:#204a87">
+					<row style="background:#204a87" spans="1,5">
 						<label value="TEMP GRN" style="color:#ffffff" />
 						<textbox id="g_tempgrn" />
-						<label value="CSV" style="color:#ffffff" />
-						<textbox id="g_sv_no" />
 					</row>
-					<row spans="4" style="background:#204a87">
+					<row spans="6" style="background:#204a87">
 						<button id="savetransp_b" label="Save progress info" style="font-weight:bold" onClick="doFunc(self)" />
 					</row>
 				</rows>

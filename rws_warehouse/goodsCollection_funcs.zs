@@ -94,10 +94,10 @@ void showGCOMeta(String iwhat)
 	collection_id_lbl.setValue(iwhat);
 
 	String[] fl = { "contact_person", "contact_tel", "contact_email", "location", "collection_notes", "customer_name",
-	"lc_id", "transporter", "transp_ref", "tempgrn", "sv_no" };
+	"lc_id", "transporter", "transp_ref", "tempgrn", "sv_no", "res_date" };
 
 	Object[] ob = { contact_person, contact_tel, contact_email, location, collection_notes, customername,
-	lc_id, g_transporter, g_transp_ref, g_tempgrn, g_sv_no };
+	lc_id, g_transporter, g_transp_ref, g_tempgrn, g_sv_no, g_res_date };
 
 	ngfun.populateUI_Data(ob,fl,grc);
 
