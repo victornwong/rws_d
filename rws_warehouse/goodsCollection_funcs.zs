@@ -94,12 +94,12 @@ void showGCOMeta(String iwhat)
 	collection_id_lbl.setValue(iwhat);
 
 	String[] fl = { "contact_person", "contact_tel", "contact_email", "location", "collection_notes", "customer_name",
-	"lc_id", "transporter", "transp_ref", "tempgrn", "sv_no" };
+	"lc_id", "transporter", "transp_ref", "tempgrn", "sv_no", "res_date" };
 
 	Object[] ob = { contact_person, contact_tel, contact_email, location, collection_notes, customername,
-	lc_id, g_transporter, g_transp_ref, g_tempgrn, g_sv_no };
+	lc_id, g_transporter, g_transp_ref, g_tempgrn, g_sv_no, g_res_date };
 
-	populateUI_Data(ob,fl,grc);
+	ngfun.populateUI_Data(ob,fl,grc);
 
 	global_selected_customerid = kiboo.checkNullString( grc.get("fc6_custid") );
 	fc6custid_lbl.setValue(global_selected_customerid);
@@ -201,7 +201,7 @@ Object[] gdcols_headers =
 	new listboxHeaderWidthObj("Comp",true,""),
 	new listboxHeaderWidthObj("TempGRN",true,"70px"),
 	new listboxHeaderWidthObj("MRN",true,"70px"),
-	new listboxHeaderWidthObj("SV.No",true,"60px"),
+	new listboxHeaderWidthObj("CSV",true,"60px"),
 	new listboxHeaderWidthObj("ADT",true,"60px"),
 	/*
 	new listboxHeaderWidthObj("LOGSTAT",true,"60px"),
@@ -241,7 +241,7 @@ void showGoodsCollection(int itype)
 	gcoi = kiboo.replaceSingleQuotes(searchgco_tb.getValue()).trim();
 	sdate = kiboo.getDateFromDatebox(startdate);
 	edate = kiboo.getDateFromDatebox(enddate);
-	bunm = byuser_lb.getSelectedItem().getLabel();
+	//bunm = byuser_lb.getSelectedItem().getLabel();
 
 	Listbox newlb = lbhand.makeVWListbox_Width(collections_holder, gdcols_headers, "goodscol_lb", 5);
 
@@ -332,7 +332,7 @@ void showGoodsCollection(int itype)
 		if(d.get("adtchecker").equals("ADTNA")) sty += "background:#FAEF55;color:#000000;";
 		if(d.get("adtchecker").equals("ADTERR") || d.get("adtchecker").equals("ADTOD")) sty += "background:#F70C37;color:#ffffff;font-weight:bold";
 
-		popuListitems_Data2(kabom,fl,d);
+		ngfun.popuListitems_Data2(kabom,fl,d);
 		ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false",sty);
 
 		adts = getDOLinkToJob( 5, d.get("origid").toString() );

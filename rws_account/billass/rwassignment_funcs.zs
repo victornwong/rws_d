@@ -172,7 +172,7 @@ void showAssignmentJuggler()
 	"noa_submit", "coverletter_submit", "draw_date", "draw_amount", "financer_ref", "assigned" };
 	for(d : r)
 	{
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 		sty = "";
 		if(d.get("assigned")) sty = "font-size:9px;background:#3DB9DB";
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false",sty);

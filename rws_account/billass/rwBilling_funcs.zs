@@ -20,7 +20,7 @@ String[] fl = { "voucherno", "vdate", "customer_name", "dorefyh", "rocnoyh", "op
 	r = sqlhand.rws_gpSqlFirstRow(sqlstm);
 	if(r == null) { guihand.showMessageBox("ERR: cannot get FC6 RWI data.."); return; }
 
-	populateUI_Data(ob,fl,r);
+	ngfun.populateUI_Data(ob,fl,r);
 	impdiv.setVisible(true);
 }
 
@@ -138,7 +138,7 @@ String[] flns = {
 	ks = "font-size:9px";
 	for(d : asrs)
 	{
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 
 		if(d.get("gcn_id") != null)
 			if(!d.get("gcn_id").equals("0"))
@@ -471,7 +471,7 @@ void actuallyLinkExtension()
 	"from rw_lc_equips WHERE lc_parent=" + glob_selected_lc;
 
 	sqlhand.gpSqlExecuter(sqlstm);
-	clearUI_Field(ob);
+	ngfun.clearUI_Field(ob);
 	showLC_tree(0, mainlc_tree);
 	extbilling_pop.close();
 }

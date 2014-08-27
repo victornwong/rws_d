@@ -43,12 +43,10 @@ param_wintitle = Executions.getCurrent().getParameter("wt");
 param_flag1 = Executions.getCurrent().getParameter("fl1");
 param_flag2 = Executions.getCurrent().getParameter("fl2");
 
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
-dmshand = new DMSFuncs();
+kiboo = new Generals(); sqlhand = new SqlFuncs();
+lbhand = new ListboxHandler(); guihand = new GuiFuncs();
+luhand = new LookupFuncs(); dmshand = new DMSFuncs();
+NGfuncs ngfun = new NGfuncs(); RWMS_sql rwsqlfun = new RWMS_sql();
 
 // defaults - can be overidden by params passed by caller
 FORMSTORE_PARENT_ID = "formtest";
@@ -150,13 +148,8 @@ Object[] formslist_headers =
 	String[] fl = { "origid", "lastupdate", "form_title", "updateby" };
 	for(dpi : screcs)
 	{
-		popuListitems_Data(kabom,fl,dpi);
-/*
-		kabom.add(dpi.get("origid").toString());
-		kabom.add( dpi.get("lastupdate").toString().substring(0,10) );
-		kabom.add(dpi.get("form_title"));
-		kabom.add(dpi.get("updateby"));
-*/
+		ngfun.popuListitems_Data(kabom,fl,dpi);
+
 		if(chkinps) // need to put extra FLAG fields to list
 		{
 			if(dpi.get("inputs_value") != null)
@@ -330,7 +323,7 @@ void doFunc(int itype)
 
 	<separator height="3px" />
 	<div sclass="shadowbox" style="background:#555753;" id="docs_div" visible="false" >
-		<label sclass="subhead" value="ATTACHMENT / DOCUMENTS" />
+		<label sclass="subhead1" value="ATTACHMENT / DOCUMENTS" />
 		<separator height="3px" />
 		<hbox>
 			<button id="uploaddoc_btn" label="Upload file" sclass="k9" onClick="showUploadPopup(GPF_PREFIX,glob_selected_form)" />

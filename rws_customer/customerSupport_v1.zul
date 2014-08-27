@@ -12,7 +12,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "Customer Support (like Techcare)";
-MYVERSION = "v0.3";
+MYVERSION = "v0.3.1";
 MYPANEL = "custsupp1";
 /*
 Title		: Customer support / help-tickets
@@ -22,6 +22,7 @@ Dated		: 12/07/2013
 NOTES:
 
 12/08/2014: check asset-tag to see already log-in ticket. Search by CSV
+21/08/2014: update UI and show GCO-no in list
 
 */
 import java.util.*;
@@ -38,6 +39,7 @@ kiboo = new Generals(); sqlhand = new SqlFuncs();
 lbhand = new ListboxHandler(); guihand = new GuiFuncs();
 luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 gridhand = new GridHandler();
+NGfuncs ngfun = new NGfuncs(); RWMS_sql rwsqlfun = new RWMS_sql();
 
 glob_selected_ticket = glob_ticket_status = "";
 global_selected_customerid = global_selected_customername = "";
@@ -57,7 +59,7 @@ void pickcustomer_Callback()
 {
 	custr = getFocus_CustomerRec(global_selected_customerid);
 	locstr = custds =  custr.get("address1yh") + ",\n" + custr.get("address2yh") + ",\n" +
-		custr.get("address3yh") + ",\n" + custr.get("address4yh");
+	custr.get("address3yh") + ",\n" + custr.get("address4yh");
 	t_cust_location.setValue(locstr);
 
 	global_selected_customername = kiboo.checkNullString( custr.get("name") ); // save for later use
@@ -98,7 +100,7 @@ void doFunc(Object iwhat)
 		t_resolved_by, t_resolve_type, t_resolution, t_os_id, t_os_user
 		};
 
-		dt = getString_fromUI(ob);
+		dt = ngfun.getString_fromUI(ob);
 		//t_resolved_on
 		//restyp = kiboo.replaceSingleQuotes(t_resolve_type.getValue().trim());
 		//osid = kiboo.replaceSingleQuotes(t_os_id.getValue().trim());
@@ -469,6 +471,8 @@ void checkdupAssetsInSV(String iwhat)
 	checkdupAssSV_pop.open(asschk_tb);
 }
 
+BOXWIDTH = "800px";
+
 ]]>
 </zscript>
 
@@ -632,7 +636,7 @@ void checkdupAssetsInSV(String iwhat)
 
 <div width="1200px">
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
-<panelchildren style="background:#603f34">
+<panelchildren style="background:#556081">
 
 <!-- load/search div -->
 <div sclass="shadowbox" style="background:#3465a4;">
@@ -662,47 +666,57 @@ void checkdupAssetsInSV(String iwhat)
 
 <separator height="5px" />
 
-<hbox> <!-- main workarea HBOX -->
-
-<div sclass="shadowbox" style="background:#add8e6;" width="550px" >
-
-<hbox>
-	<button id="newreq_b" label="New case ticket" sclass="k9" onClick="doFunc(self)" />
-	<button id="opentog_b" label="Open case" sclass="k9" onClick="doFunc(self)" />
-	<button id="closetog_b" label="Close case" sclass="k9" onClick="custrate_pop.open(self)" />
-	<button id="emailnoti_b" label="Send notification" sclass="k9" onClick="doFunc(self)" />
-	<button id="viewsof_b" label="View SOF" sclass="k9" onClick="doFunc(self)" />
-	<button id="canceltick_b" label="CANCEL ticket" sclass="k9" onClick="checkOpenCancel()" />
-	<button id="admin_b" label="Admin" visible="false" style="color:#cc0000" onClick="adminpopup.open(self)" />
-</hbox>
-<separator height="3px" />
-<div id="tickets_holder" />
-
+<div sclass="shadowbox" style="background:#E1AB14" width="900px" >
+	<hbox>
+		<button id="newreq_b" label="New case ticket" sclass="k9" onClick="doFunc(self)" />
+		<button id="opentog_b" label="Open case" sclass="k9" onClick="doFunc(self)" />
+		<button id="closetog_b" label="Close case" sclass="k9" onClick="custrate_pop.open(self)" />
+		<button id="emailnoti_b" label="Send notification" sclass="k9" onClick="doFunc(self)" />
+		<button id="viewsof_b" label="View SOF" sclass="k9" onClick="doFunc(self)" />
+		<button id="canceltick_b" label="CANCEL ticket" sclass="k9" onClick="checkOpenCancel()" />
+		<button id="admin_b" label="Admin" visible="false" style="color:#cc0000" onClick="adminpopup.open(self)" />
+	</hbox>
+	<separator height="3px" />
+	<div id="tickets_holder" />
 </div> <!-- requests listbox area -->
 
-<vbox>
+<separator height="5px" />
 
-<div id="workarea" width="515px" visible="false" >
+<div sclass="shadowbox" style="background:#758C17" id="workarea" visible="false" >
 
-<grid>
-	<rows>
-		<row style="background:#2e3436" id="tickmeta_hd1" >
-			<label value="Ticket ID" style="font-size:14px;color:#eeeeee" />
-			<label id="t_origid" style="color:#eeeeee" />
-			<label value="Priority" sclass="k9b" />
-			<label id="hd_priority" style="color:#eeeeee" />
-			<label value="Status" sclass="k9b" />
-			<label id="hd_tstatus" style="color:#eeeeee" />
-		</row>
-		<row spans="1,5" style="background:#2e3436" id="tickmeta_hd2" >
-			<label value="Customer" sclass="k9b" />
-			<!-- <textbox id="customername" sclass="k9" width="99%" /> -->
-			<label id="customername" style="color:#eeeeee" />
-		</row>
-	</rows>
-</grid>
+<hbox>
+	<grid width="650px">
+		<rows>
+			<row style="background:#2e3436" id="tickmeta_hd1" >
+				<label value="Ticket ID" style="font-size:14px;color:#eeeeee" />
+				<label id="t_origid" style="color:#eeeeee" />
+				<label value="Priority" sclass="k9b" />
+				<label id="hd_priority" style="color:#eeeeee" />
+				<label value="Status" sclass="k9b" />
+				<label id="hd_tstatus" style="color:#eeeeee" />
+			</row>
+			<row spans="1,5" style="background:#2e3436" id="tickmeta_hd2" >
+				<label value="Customer" sclass="k9b" />
+				<!-- <textbox id="customername" sclass="k9" width="99%" /> -->
+				<label id="customername" style="color:#eeeeee" />
+			</row>
+		</rows>
+	</grid>
 
-<tabbox mold="accordion">
+	<div id="workbutts" visible="false">
+		<hbox>
+			<button id="selcustomer_b" label="Select customer" sclass="k9" onClick="pickcustomer_popup.open(newreq_b)" />
+			<button id="updatet_b" label="Update ticket" style="font-weight:bold" onClick="doFunc(self)" />
+			<!-- <button id="localrma_b" label="Local RMA" sclass="k9" onClick="doFunc(self)" /> -->
+			<button label="OS RMA" sclass="k9" disabled="true" />
+			<button label="Notify OS" sclass="k9" disabled="true" />
+		</hbox>
+	</div> <!-- ENDOF workbutts -->
+</hbox>
+
+<separator height="5px" />
+
+<tabbox>
 	<tabs>
 		<tab id="tab1" label="CASE TICKET DETAILS" />
 		<tab id="tab2" label="ACTIVITY" />
@@ -713,7 +727,7 @@ void checkdupAssetsInSV(String iwhat)
 	<tabpanels>
 
 	<tabpanel> <!-- SUPPORT TICKET METADATA -->
-		<grid width="500px">
+		<grid width="${BOXWIDTH}">
 		<rows>
 			<row>
 				<label value="Caller" sclass="k9" />
@@ -729,14 +743,14 @@ void checkdupAssetsInSV(String iwhat)
 			</row>
 			<row spans="1,3">
 				<label value="Customer location" sclass="k9" />
-				<textbox id="t_cust_location" multiline="true" width="99%" height="40px" sclass="k9" />
+				<textbox id="t_cust_location" multiline="true" width="99%" height="80px" sclass="k9" />
 			</row>
 		</rows>
 		</grid>
 	</tabpanel> <!-- ENDOF SUPPORT TICKET METADATA -->
 
 	<tabpanel> <!-- ACTIVITY -->
-		<grid>
+		<grid width="${BOXWIDTH}">
 		<rows>
 			<row spans="4" style="background:#fcaf3e" >
 				<vbox>
@@ -763,9 +777,9 @@ void checkdupAssetsInSV(String iwhat)
 		</rows>
 		</grid>
 		<separator height="2px" />
-		<div id="ticksactivs_holder" />
+		<div id="ticksactivs_holder" width="${BOXWIDTH}" />
 		<separator height="2px" />
-		<grid>
+		<grid width="${BOXWIDTH}">
 		<rows>
 			<row spans="1,2,1,2">
 				<label value="Assign to" sclass="k9" />
@@ -805,14 +819,14 @@ void checkdupAssetsInSV(String iwhat)
 	<tabpanel> <!-- CHARGES -->
 		<separator height="3px" />
 		<hbox>
-			<label value="Chargeable?" sclass="k9" />
+			<label value="Chargeable?" sclass="k9b" />
 			<listbox id="t_chargeable" mold="select" sclass="k9" />
 			<separator width="10px" />
 			<button id="notichargequote_b" label="Request items price" sclass="k9" onClick="chargeItems(self)" />
 			<!-- <button id="confirmquote_b" label="Update and confirm quote" sclass="k9" onClick="chargeItems(self)" disabled="true" /> -->
 		</hbox>
-		<separator height="3px" />
-		<grid id="chargeitems_grid">
+		<separator height="5px" />
+		<grid id="chargeitems_grid" width="${BOXWIDTH}">
 			<columns>
 				<column label="Item/Service Description" sclass="k9" />
 				<column label="Unit(RM)" width="70px" sclass="k9" />
@@ -861,7 +875,7 @@ void checkdupAssetsInSV(String iwhat)
 	</tabpanel>
 
 	<tabpanel> <!-- OUTSOURCE -->
-		<grid>
+		<grid width="${BOXWIDTH}">
 		<rows>
 			<row spans="4" style="background:#3465a4">
 				<label style="color:#eeeeee">OUTSOURCE</label>
@@ -896,7 +910,7 @@ void checkdupAssetsInSV(String iwhat)
 			<button id="deletedoc_btn" label="Delete" sclass="k9" onClick="deleteFile(documents_holder,TICKETSV_PREFIX,glob_selected_ticket)" />
 		</hbox>
 		<separator height="3px" />
-		<div id="documents_holder" />
+		<div id="documents_holder" width="${BOXWIDTH}" />
 	</tabpanel> <!-- ENDOF ATTACHMENTS -->
 
 	</tabpanels>
@@ -904,20 +918,7 @@ void checkdupAssetsInSV(String iwhat)
 
 </div> <!-- ENDOF workarea -->
 
-</vbox> <!-- ENDOF workarea + docs -->
-
-<div id="workbutts" visible="false">
-<vbox> <!-- side-buttons -->
-	<button id="updatet_b" label="Update ticket" sclass="k9" onClick="doFunc(self)" />
-	<button id="selcustomer_b" label="Select customer" sclass="k9" onClick="pickcustomer_popup.open(newreq_b)" />
-	<!-- <button id="localrma_b" label="Local RMA" sclass="k9" onClick="doFunc(self)" /> -->
-	<separator bar="true" />
-	<button label="OS RMA" sclass="k9" disabled="true" />
-	<button label="Notify OS" sclass="k9" disabled="true" />
-</vbox> <!-- ENDOF side-buttons -->
-</div> <!-- ENDOF workbutts -->
-
-</hbox> <!-- main workarea HBOX -->
+<label id="debugmsg" multiline="true" />
 
 <zscript>
 <![CDATA[
@@ -941,7 +942,7 @@ luhand.populateListbox_ByLookup(c_customer_rate3, "CUSTOMER_RATE_US", 2);
 // TODO confirmquote_b <-- hide/show depending on user's ability to confirm service-items quote
 //if(sechand.allowedUser(useraccessobj.username,"SERVICE_QUOTE_USERS")) confirmquote_b.setDisabled(false);
 
-showTickets(1);
+//showTickets(1);
 
 ]]>
 </zscript>
