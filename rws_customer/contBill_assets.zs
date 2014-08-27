@@ -20,7 +20,7 @@ void showAssetMetadata(String iwhat)
 	"type","osversion","offapps","serial_no", "RM_Month"
 	};
 	
-	ngfun.populateUI_Data(metflds, metfnms, rc);
+	populateUI_Data(metflds, metfnms, rc);
 	/*
 	for(i=0; i<metflds.length; i++)
 	{
@@ -82,7 +82,7 @@ void showAssets(String iwhat)
 	String[] fl = { "asset_tag", "serial_no", "brand", "model", "type", "gcn_id", "billable", "buyout", "impfromlc", "origid" };
 	for(d : asrs)
 	{
-		ngfun.popuListitems_Data(kabom,fl,d);
+		popuListitems_Data(kabom,fl,d);
 		ks = "font-size:9px";
 		if(d.get("gcn_id") != null && d.get("gcn_id") != 0 ) ks="background:#f77272;font-size:9px";
 		
@@ -127,7 +127,7 @@ void assFunc(Object iwhat)
 		m_type, m_cust_location, m_poweradaptor, m_serial_no, m_rm_month
 		};
 
-		inpdat = ngfun.getString_fromUI(inpflds);
+		inpdat = getString_fromUI(inpflds);
 		try { k = Float.parseFloat(inpdat[27]); } catch (Exception e) { inpdat[27] = "0"; } // chk RM/month is truly numba
 
 		sqlstm = "update rw_lc_equips set asset_tag='" + inpdat[0] + "', brand='" + inpdat[1] + "', model='" + inpdat[2] +"'," +
@@ -446,7 +446,7 @@ void replaceLCAsset()
 	r_type, r_cust_location, r_poweradaptor, r_serial_no
 	};
 
-	inpdat = ngfun.getString_fromUI(inpflds);
+	inpdat = getString_fromUI(inpflds);
 
 	sqlstm = "update rw_lc_equips set asset_tag='" + inpdat[0] + "', brand='" + inpdat[1] + "', model='" + inpdat[2] +"'," +
 	"battery='" + inpdat[3] + "', hdd='" + inpdat[4] + "', hdd2='" + inpdat[5] + "', hdd3='" + inpdat[6] + "', hdd4='" + inpdat[7] + "'," +
@@ -494,7 +494,7 @@ void clearReplaceAssetPopup()
 	r_type,r_osversion,r_offapps, r_serial_no
 	};
 
-	ngfun.clearUI_Field(metaflds);
+	clearUI_Field(metaflds);
 }
 
 // Delete assets from LC, reset SMD.lc_id
@@ -600,7 +600,7 @@ void impRWI_Extra()
 	Object[] ob = { customername, l_fc6_custid, i_lstartdate, i_lenddate, i_rocno, i_period,
 	i_remarks, i_order_type, i_inst_type, i_rm_contract, i_invoice_date };
 
-	ngfun.populateUI_Data(ob,fl,drc);
+	populateUI_Data(ob,fl,drc);
 
 	try {
 	mrnt = drc.get("contractamt") / Integer.parseInt(drc.get("noofinstallmentyh"));
@@ -656,7 +656,7 @@ void checkRMA_Reps()
 	Pattern pattern = Pattern.compile("([NAM])([0-9][0-9][0-9][0-9][0-9][0-9]?[0-9])");
 	for(d : rcs)
 	{
-		ngfun.popuListitems_Data(kabom,fl,d);
+		popuListitems_Data(kabom,fl,d);
 
 		ass1 = pattern.matcher(d.get("do_item"));
 		if(ass1.find())
@@ -703,7 +703,7 @@ Object[] dahds =
 	ArrayList kabom = new ArrayList();
 	for(d : drs)
 	{
-		ngfun.popuListitems_Data(kabom,fl,d);
+		popuListitems_Data(kabom,fl,d);
 		/*
 		kabom.add( kiboo.checkNullString(d.get("lc_id")) );
 		kabom.add( kiboo.checkNullString(d.get("prev_lc")) );

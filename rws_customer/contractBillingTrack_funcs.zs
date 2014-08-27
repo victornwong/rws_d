@@ -119,7 +119,7 @@ void showLCMetadata(String iwhat)
 	i_cust_project_id, i_noa_no, i_lstartdate, i_lenddate, i_charge_out_date, i_period, i_inst_type, i_invoice_date, i_batch_lc
 	};
 
-	ngfun.populateUI_Data(ibx, flns, lcr);
+	populateUI_Data(ibx, flns, lcr);
 
 	iass = (lcr.get("assigned") == null) ? "NO" : ( (lcr.get("assigned")) ? "YES" : "NO" );
 	lbhand.matchListboxItems(i_assigned, iass );
@@ -138,7 +138,7 @@ void showLCMetadata(String iwhat)
 	i_co_pv_drawdown, i_co_pv_drawdown_ex_deposit, i_co_assigned_interest,
 	};
 
-	ngfun.populateUI_Data(ibx2, fln2, lcr);
+	populateUI_Data(ibx2, fln2, lcr);
 
 	// remove previous DO/assets/RMA/etc boxes if any
 	/*
@@ -264,7 +264,7 @@ void listROCLC(int itype)
 	"inst_type", "lstatus", "username", "order_type" };
 	for(dpi : lcrecs)
 	{
-		ngfun.popuListitems_Data(kabom,fl,dpi);
+		popuListitems_Data(kabom,fl,dpi);
 		sty = "";
 		if(dpi.get("super_reminder")) sty = "background:#EBF531;font-weight:bold;font-size:9px";
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false",sty);
@@ -285,7 +285,7 @@ void clearLCMetaFields()
 	i_co_pv_drawdown, i_co_pv_drawdown_ex_deposit, i_co_assigned_interest, i_co_inv_to_financer, i_cust_project_id, i_batch_lc
 	};
 
-	ngfun.clearUI_Field(flds);
+	clearUI_Field(flds);
 }
 
 

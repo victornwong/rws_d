@@ -327,7 +327,7 @@ void show_FC_DO(Object iwher, int itype, Div iassholder, String ilbid )
 	ArrayList kabom = new ArrayList();
 	for(d : prds)
 	{
-		ngfun.popuListitems_Data(kabom, flds, d);
+		popuListitems_Data(kabom, flds, d);
 		kabom.add(do_deliveryto);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
@@ -347,7 +347,7 @@ void listBatchBillingLC()
 // 20/06/2014: import assets def in batch_lc -- for MISC mostly - i_batch_lc def in XML-form
 void impBatchLCAssets()
 {
-	kk = kiboo.makeQuotedFromComma( kiboo.replaceSingleQuotes(i_batch_lc.getValue().trim()) );
+	kk = makeQuotedFromComma( kiboo.replaceSingleQuotes(i_batch_lc.getValue().trim()) );
 	if(kk.equals("")) return;
 
 	sqlstm = "insert into rw_lc_equips (" + 

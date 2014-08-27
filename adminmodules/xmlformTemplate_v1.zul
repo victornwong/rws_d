@@ -7,7 +7,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "VIC-XML Form Maker";
-MYVERSION = "v0.2";
+MYVERSION = "v0.1";
 /*
 Title		: ZUL-XML Form maker/manager
 Written by	: Victor Wong
@@ -15,8 +15,6 @@ Dated		: 01/08/2012
 
 XML form defination store in database. Can be used in other modules by calling those utility funcs. Storing form-data back to file or
 database is to be programmed individually on each module.
-
-25/08/2014: set form into group, uses elb_formkeeper.groupi - can be used in other mod to segregate forms
 
 */
 /*
@@ -36,18 +34,15 @@ myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
-kiboo = new Generals(); sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler(); guihand = new GuiFuncs();
-luhand = new LookupFuncs(); gridhand = new GridHandler();
-NGfuncs ngfun = new NGfuncs();
+kiboo = new Generals();
+sqlhand = new SqlFuncs();
+lbhand = new ListboxHandler();
+guihand = new GuiFuncs();
+luhand = new LookupFuncs();
+gridhand = new GridHandler();
 
 vicFormMaker wopform;
 glob_selected_form = glob_example_values = "";
-
-void refresh_Groupi()
-{
-	ngfun.fillComboboxUniq("select distinct groupi from elb_formkeeper order by groupi" , "groupi", x_groupi);
-}
 
 void showFormMetadata(String iwhat)
 {
@@ -74,7 +69,6 @@ void showFormMetadata(String iwhat)
 	formorigid.setValue(frec.get("origid").toString());
 	form_name.setValue(frec.get("form_name"));
 	version.setValue(frec.get("version"));
-	x_groupi.setValue( kiboo.checkNullString(frec.get("groupi")) );
 	// radiobutts, yes=pos 0, no=pos 1
 	form_locked.setSelectedIndex( (frec.get("locked") == null) ? 1 : ( frec.get("locked") == 1) ? 0 : 1 );
 }
@@ -138,13 +132,11 @@ void doFunc(int itype)
 			frmname = form_name.getValue();
 			verst = version.getValue();
 			ilock = String.valueOf( (form_locked.getSelectedIndex() == 0) ? 1 : 0);
-			grpi = kiboo.replaceSingleQuotes( x_groupi.getValue().trim() );
 
 			towritestr = thestring.getValue();
 			sqlstm = "update elb_formkeeper set form_name='" + frmname + "', version='" + verst + "', " + 
-			"locked=" + ilock + ", xmlformstring='" + towritestr + "', groupi='" + grpi + "' where origid=" + glob_selected_form;
+			"locked=" + ilock + ", xmlformstring='" + towritestr + "' where origid=" + glob_selected_form;
 			refresh = true;
-			refresh_Groupi();
 			break;
 
 		case 4: // preview
@@ -232,10 +224,6 @@ void testme() throws Exception
 						<radio label="No" sclass="k9" selected="true" />
 					</radiogroup>
 				</row>
-				<row>
-					<label value="Groupi" sclass="k9" />
-					<combobox id="x_groupi" sclass="k9" />
-				</row>
 			</rows>
 		</grid>
 		<textbox id="thestring" multiline="true" width="850px" height="300px" />
@@ -259,8 +247,6 @@ void testme() throws Exception
 
 <zscript>
 <![CDATA[
-
-refresh_Groupi();
 
 populateFormsList();
 wopform = new vicFormMaker(form_holder,"wellaform","");

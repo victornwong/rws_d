@@ -28,7 +28,6 @@ Dated		: 16/10/2013
 20/06/2014: batch import from LC defined in i_batch_lc - req by Nurul for MISC mostly
 08/07/2014: toggler super_reminder flag for LC - hilite to remind user
 25/07/2014: nurul req import assets from other LC omit buyout and already GCN
-22/08/2014: huiping req put in "refresh" status-butt
 
 */
 import java.util.*;
@@ -41,11 +40,13 @@ myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
-kiboo = new Generals(); sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler(); guihand = new GuiFuncs();
-luhand = new LookupFuncs(); gridhand = new GridHandler();
+kiboo = new Generals();
+sqlhand = new SqlFuncs();
+lbhand = new ListboxHandler();
+guihand = new GuiFuncs();
+luhand = new LookupFuncs();
+gridhand = new GridHandler();
 dmshand = new DMSFuncs();
-NGfuncs ngfun = new NGfuncs(); RWMS_sql rwsqlfun = new RWMS_sql();
 
 SimpleDateFormat dtf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 SimpleDateFormat dtf2 = new SimpleDateFormat("yyyy-MM-dd");
@@ -186,7 +187,7 @@ sqlstm = "update rw_lc_records set lc_id='" + dth[0] + "', rocno='" + dth[1] + "
 
 	if(itype.equals("stactive_b") || itype.equals("sttermin_b") || itype.equals("stextens_b") ||
 	itype.equals("stinerti_b") || itype.equals("stbuyout_b") || itype.equals("stinactive_b") || itype.equals("stpartial_b") ||
-	itype.equals("partret_b") || itype.equals("creditn_b") || itype.equals("refreshlc_b"))
+	itype.equals("partret_b") || itype.equals("creditn_b"))
 	{
 		if(glob_selected_lc.equals("")) return;
 		sqlstm = "update rw_lc_records set lstatus='" + iwhat.getLabel() + "' where origid=" + glob_selected_lc;
@@ -562,7 +563,6 @@ BUTT_WIDTH2 = "190px";
 	<button id="stpartial_b" label="PARTIAL" width="100px" onClick="doFunc(self)" />
 	<button id="partret_b" label="PARTIAL_RET" width="100px" onClick="doFunc(self)" />
 	<button id="creditn_b" label="CN" width="100px" onClick="doFunc(self)" />
-	<button id="refreshlc_b" label="REFRESH" width="100px" onClick="doFunc(self)" />
 </vbox>
 </div>
 </popup>
