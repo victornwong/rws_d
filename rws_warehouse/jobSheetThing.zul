@@ -3,13 +3,13 @@
 <zk>
 <zscript src="../rwglobal/rwglobaldefs.zs" />
 <zscript src="../rwglobal/rwsqlfuncs.zs" />
-<zscript src="../rws_account/jobMaker_funcs.zs" />
 <zscript>
 <![CDATA[
 MYTITLE = "Production Job Sheet";
 MYVERSION = "v0.1";
 MYPANEL = "jobsheetpanel";
 /*
+<zscript src="../rws_account/jobMaker_funcs.zs" />
 @Title Job sheet thing for production
 @Author Victor Wong
 @Since 27/08/2014
@@ -32,10 +32,85 @@ NGfuncs ngfun = new NGfuncs(); RWMS_sql rwsqlfun = new RWMS_sql();
 
 glob_sel_job = "";
 
+void checkMakeItemsGrid()
+{
+	String[] colws = { "50px","",                "60px" ,"60px" };
+	String[] colls = { "No." ,"Item description","Color","Qty"  };
+
+	if(items_holder.getFellowIfAny("items_grid") == null) // make new grid if none
+	{
+		igrd = new Grid();
+		igrd.setId("items_grid");
+		igrd.setWidth("800px");
+
+		icols = new org.zkoss.zul.Columns();
+		for(i=0;i<colws.length;i++)
+		{
+			ico0 = new org.zkoss.zul.Column();
+			ico0.setWidth(colws[i]);
+			ico0.setLabel(colls[i]);
+			//ico0.setAlign("center");
+			ico0.setStyle("background:#97b83a");
+			ico0.setParent(icols);
+		}
+
+		icols.setParent(igrd);
+
+		irows = new org.zkoss.zul.Rows();
+		irows.setId("items_rows");
+		irows.setParent(igrd);
+		igrd.setParent(items_holder);
+	}
+}
+
+
+// Codes chopped from jobMaker_funcs.showJobItems()
+void showJobItems_chopped(Object tjrc)
+{
+	if(items_holder.getFellowIfAny("items_grid") != null) items_grid.setParent(null);
+	saved_label.setVisible(false);
+	grandtotalbox.setVisible(false);
+	
+	glob_icomponents_counter = 1; // reset for new grid
+
+	if(tjrc.get("items") == null) return; // nothing to show
+
+	checkMakeItemsGrid();
+	items = tjrc.get("items").split("::");
+	qtys = tjrc.get("qtys").split("::");
+	colors = tjrc.get("colors").split("::");
+	kk = "font-weight:bold;";
+
+	for(i=0;i<items.length;i++)
+	{
+		cmid = glob_icomponents_counter.toString();
+
+		irow = gridhand.gridMakeRow("IRW" + cmid ,"","",items_rows);
+		ngfun.gpMakeLabel(irow,"",cmid + ".", kk + "font-size:14px");
+
+		soms = "";
+		try { soms = items[i]; } catch (Exception e) {}
+
+		lk = ngfun.gpMakeLabel(irow,"",soms,"font-size:9px;font-weight:bold;");
+		lk.setMultiline(true);
+
+		soms = "";
+		try { soms = colors[i]; } catch (Exception e) {}
+		ngfun.gpMakeLabel(irow,"",soms,kk);
+
+		soms = "";
+		try { soms = qtys[i]; } catch (Exception e) {}
+		ngfun.gpMakeLabel(irow,"",soms,kk);
+
+		glob_icomponents_counter++;
+	}
+
+}
+
 void showThings(String iwhat)
 {
 	jrec = rwsqlfun.getRWJob_rec(iwhat);
-	showJobItems(jrec);
+	showJobItems_chopped(jrec);
 }
 
 Object[] jobslbhds = 
@@ -139,6 +214,7 @@ void jobItems(Object iwhat)
 </hbox>
 
 <div id="jobs_holder" />
+<separator height="3px" />
 
 <hbox>
 	<div id="items_holder" />
@@ -158,7 +234,6 @@ void jobItems(Object iwhat)
 	<!-- <label value="NOTI.ME" style="font-size:80px;color:#eb531a;font-weight:bold" /> -->
 	</vbox>
 </hbox>
-
 
 <zscript>
 <![CDATA[

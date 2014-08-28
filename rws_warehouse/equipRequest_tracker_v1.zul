@@ -36,16 +36,14 @@ if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
 p_vtype = Executions.getCurrent().getParameter("vt");
 
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
-dmshand = new DMSFuncs();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
+guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
+ngfun = new NGfuncs();
 
 lastlisttype = 0;
 glob_sel_ereq = glob_sel_pri = prev_asset_tags = "";
 g_vouchertype = g_extratbl = g_remarks = prev_sel_pri = prev_sel_req = "";
+found_vouchers = "";
 
 String JN_linkcode()
 {
@@ -221,6 +219,7 @@ class doclike implements org.zkoss.zk.ui.event.EventListener
 }
 doclikor = new doclike();
 
+// itype: 1=by date, 2=by search text, 3=by string of requests
 void listEquipRequest(int itype)
 {
 	lastlisttype = itype;
@@ -248,13 +247,16 @@ void listEquipRequest(int itype)
 	switch(itype)
 	{
 		case 1:
-		sqlstm += "and convert(datetime, dbo.ConvertFocusDate(d.date_), 112) between '" + sdate + "' and '" + edate + "' ";
-		break;
+			sqlstm += "and convert(datetime, dbo.ConvertFocusDate(d.date_), 112) between '" + sdate + "' and '" + edate + "' ";
+			break;
 		case 2:
-		if(st.equals("")) return;
-		sqlstm += "and (c.name like '%" + st + "%' or ri.ordernoyh like '%" + st + "%' or " +
-		"ri." + g_remarks + " like '%" + st + "%' or d.voucherno like '%" + st + "%') ";
-		break;
+			if(st.equals("")) return;
+			sqlstm += "and (c.name like '%" + st + "%' or ri.ordernoyh like '%" + st + "%' or " +
+			"ri." + g_remarks + " like '%" + st + "%' or d.voucherno like '%" + st + "%') ";
+			break;
+		case 3:
+			sqlstm += "and d.voucherno in (" + found_vouchers + ") ";
+			break;
 	}
 
 	sqlstm += "group by d.date_,d.voucherno, ri.requestbyyh, c.name, ro.name, ri.ordernoyh, ri." + g_remarks + "," +
@@ -271,7 +273,7 @@ void listEquipRequest(int itype)
 	"rstatus", "extranotes", "lastupdate", "username" };
 	for(d : trs)
 	{
-		popuListitems_Data(kabom, fl, d);
+		ngfun.popuListitems_Data(kabom, fl, d);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
 	}
@@ -321,15 +323,23 @@ Object[] dashds =
 	dv.setParent(mw);
 	Listbox newlb = lbhand.makeVWListbox_Width(dv, dashds, "digass_lb", 10);
 	ArrayList kabom = new ArrayList();
+	found_vouchers = "";
 	for(d : trs)
 	{
-		kabom.add( kiboo.checkNullString(d.get("voucherno")) );
+		vnm = kiboo.checkNullString(d.get("voucherno"));
+		kabom.add(vnm);
+		found_vouchers += "'" + vnm + "',";
 		//kabom.add( kiboo.checkNullString(d.get("name")) );
-		ats = sqlhand.clobToString( d.get("extra1") );
-		kabom.add( ats );
+		//ats = sqlhand.clobToString( d.get("extra1") );
+		kabom.add( d.get("extra1") );
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
 	}
+	try { found_vouchers = found_vouchers.substring(0,found_vouchers.length()-1); }
+	catch (Exception e) {}
+
+	listEquipRequest(3);
+
 	lbhand.setDoubleClick_ListItems(newlb, fndascliker);
 }
 

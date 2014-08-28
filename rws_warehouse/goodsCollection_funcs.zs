@@ -241,7 +241,7 @@ void showGoodsCollection(int itype)
 	gcoi = kiboo.replaceSingleQuotes(searchgco_tb.getValue()).trim();
 	sdate = kiboo.getDateFromDatebox(startdate);
 	edate = kiboo.getDateFromDatebox(enddate);
-	//bunm = byuser_lb.getSelectedItem().getLabel();
+	bunm = byuser_lb.getSelectedItem().getLabel();
 
 	Listbox newlb = lbhand.makeVWListbox_Width(collections_holder, gdcols_headers, "goodscol_lb", 5);
 
@@ -307,7 +307,7 @@ void showGoodsCollection(int itype)
 	ArrayList kabom = new ArrayList();
 
 	String[] fl = { "origid", "datecreated", "customer_name", "status", "lc_id", "username", "ackdate",
-	"pickupdate", "transporter", "logregion", "completedate", "tempgrn", "tempgrn", "sv_no", "qc_id" };
+	"pickupdate", "transporter", "logregion", "completedate", "tempgrn", "username", "sv_no", "qc_id" };
 	// "logstat", "overduestat", "adtchecker"
 
 	for(d : screcs)
@@ -337,9 +337,8 @@ void showGoodsCollection(int itype)
 
 		adts = getDOLinkToJob( 5, d.get("origid").toString() );
 		lbhand.setListcellItemLabel(ki,adt_field,adts);
-
 		mns = ""; // get MRNs if any..
-		try { mns = grnToMRN_str(d.get("tempgrn")); } catch (Exception e) {}
+		//try { mns = grnToMRN_str(d.get("tempgrn")); } catch (Exception e) {}
 		lbhand.setListcellItemLabel(ki,mrn_posi,mns);
 
 		kabom.clear();

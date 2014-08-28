@@ -364,8 +364,6 @@ void showJobItems(Object tjrc)
 	colors = tjrc.get("colors").split("::");
 	rental_periods = tjrc.get("rental_periods").split("::");
 	rent_perunits = tjrc.get("rent_perunits").split("::");
-
-	glob_icomponents_counter = 1;
 	
 	kk = "font-weight:bold;";
 

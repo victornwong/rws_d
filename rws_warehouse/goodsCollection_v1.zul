@@ -245,15 +245,6 @@ void doFunc(Object iwhat)
 		Object[] jkl = { g_transporter, g_transp_ref, g_tempgrn, g_sv_no, g_logregion, g_opartner, g_res_date };
 		dt = ngfun.getString_fromUI(jkl);
 
-		/*
-		tsp = g_transporter.getSelectedItem().getLabel();
-		tsr = kiboo.replaceSingleQuotes(g_transp_ref.getValue().trim());
-		tmg = kiboo.replaceSingleQuotes(g_tempgrn.getValue().trim());
-		svn = kiboo.replaceSingleQuotes(g_sv_no.getValue().trim());
-		lrg = g_logregion.getSelectedItem().getLabel();
-		prt = g_opartner.getSelectedItem.getLabel();
-		*/
-
 		sqlstm = "update rw_goodscollection set transporter='" + dt[0] + "', transp_ref='" + dt[1] + 
 		"', tempgrn='" + dt[2] + "',sv_no='" + dt[3] + "', logregion='" + dt[4] + "', opartner='" + dt[5] + "'," +
 		"res_date='" + dt[6] + "' where origid=" + glob_sel_gco;
