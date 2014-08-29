@@ -160,6 +160,8 @@ Object[] dayreslbhd =
 	new listboxHeaderWidthObj("GCO",true,"50px"),
 	new listboxHeaderWidthObj("Customer",true,""),
 	new listboxHeaderWidthObj("User",true,""),
+	new listboxHeaderWidthObj("User",true,""),
+	new listboxHeaderWidthObj("Status",true,""),
 };
 
 void showDayReservation(String iday)
@@ -170,7 +172,7 @@ void showDayReservation(String iday)
 
 	Listbox newlb = lbhand.makeVWListbox_Width(day_holder, dayreslbhd, "dayresv_lb", 5);
 
-	sqlstm = "select origid, customer_name, username from rw_goodscollection " + 
+	sqlstm = "select origid,customer_name,username,status from rw_goodscollection " + 
 	"where convert(datetime,convert(varchar,res_date,112),112)='" + dtf2.format(resv_date.getValue()) + "'";
 	rs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rs.size() == 0) return;
@@ -184,6 +186,7 @@ void showDayReservation(String iday)
 		kabom.add( d.get("origid").toString() );
 		kabom.add( d.get("customer_name") );
 		kabom.add( d.get("username") );
+		kabom.add( d.get("status") );
 
 		ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();

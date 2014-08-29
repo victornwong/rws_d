@@ -151,6 +151,8 @@ void showTicketMetadata(String iwhat)
 		upi = chargeitems_grid.getFellowIfAny("c_unitprice_" + i.toString());
 		upi.setDisabled(untps);
 	}
+	
+	showLCAss_RepTrack(tkr,lcreps_holder,"lcreps_lb"); // 29/08/2014: LC asset-replacements-tracker thing . LCassReplaceTracker.zs
 
 	workarea.setVisible(true);
 	workbutts.setVisible(true);
@@ -276,20 +278,6 @@ void showTickets(int itype)
 	{
 		ngfun.popuListitems_Data2(kabom,fl,dpi);
 		tprio = kiboo.checkNullString(dpi.get("priority"));
-		/*
-		kabom.add(dpi.get("origid").toString());
-		kabom.add(dpi.get("calldatetime").toString().substring(0,10));
-		kabom.add( kiboo.checkNullString(dpi.get("cust_name")) );
-		kabom.add(tprio);
-		kabom.add(kiboo.checkNullString(dpi.get("tstatus")));
-		kabom.add(kiboo.checkNullString(dpi.get("createdby")));
-		kabom.add( (dpi.get("gcono") == null) ? "" : dpi.get("gcono").toString() );
-
-		kabom.add(kiboo.checkNullString(dpi.get("os_id")));
-		osre = (dpi.get("os_resolvedate") == null) ? "" : dtf2.format( dpi.get("os_resolvedate") );
-		kabom.add(osre);
-		*/
-
 		mysty = "";
 		if(tprio.equals("CRITICAL")) mysty = "font-size:9px;" + CRITICAL_BACKGROUND;
 		if(tprio.equals("URGENT")) mysty = "font-size:9px;" + URGENT_BACKGROUND;

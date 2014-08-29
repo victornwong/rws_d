@@ -206,11 +206,11 @@ Treeitem showLCtreeDetails(Object ichd, Object d)
 	mcells[1].setLabel( kiboo.checkNullString(d.get("customer_name")) );
 	mcells[1].setStyle(kk);
 
-	invd = (d.get("invoice_date") == null) ? "" : dtf2.format(d.get("invoice_date"));
+	invd = (d.get("invoice_date") == null) ? "" : GlobalDefs.dtf2.format(d.get("invoice_date"));
 
 	mcells[2].setLabel( invd );
-	mcells[3].setLabel( (d.get("lstartdate") == null) ? "" : dtf2.format(d.get("lstartdate")) );
-	mcells[4].setLabel( (d.get("lenddate") == null) ? "" : dtf2.format(d.get("lenddate")) );
+	mcells[3].setLabel( (d.get("lstartdate") == null) ? "" : GlobalDefs.dtf2.format(d.get("lstartdate")) );
+	mcells[4].setLabel( (d.get("lenddate") == null) ? "" : GlobalDefs.dtf2.format(d.get("lenddate")) );
 	mcells[5].setLabel( (idt < 0) ? "0" : idt.toString() );
 
 	mcells[6].setLabel( d.get("order_type") );
@@ -280,7 +280,7 @@ void recurLC_Tree(Treechildren ichd, Object irs, int ilvl)
 	for(d : irs)
 	{
 		titem = showLCtreeDetails(ichd,d);
-		lk = d.get("lc_id").trim();
+		lk = kiboo.checkNullString(d.get("lc_id")).trim();
 		lcTreeCheckHash.put(lk,1);
 
 		check_parlc = kiboo.checkNullString(d.get("prev_lc")).trim();
@@ -360,8 +360,8 @@ void showLC_tree(int itype, Tree itree)
 			sqlstm = "select " + wola +
 			"from rw_lc_records lc " +
 			"where ( DATEDIFF(dd,lc.lenddate,GETDATE()) ) > " + expire_lc_daysbefore +
-			" and lc.lstatus in ('ACTIVE', 'EXTENSION', 'INERTIA', 'REFRESH') " +
-			"and lc.lstartdate between '" + sdate + "' and '" + edate + "' " +
+			" and lc.lstatus not in ('INACTIVE', 'TERMINATED', 'CN', 'BUYOUT', 'Buy Out') " +
+			//"and lc.lstartdate between '" + sdate + "' and '" + edate + "' " +
 			cph +
 			"order by lc.lenddate";
 			recurlvl = 1; // only 1 level branch
