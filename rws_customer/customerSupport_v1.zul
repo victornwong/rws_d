@@ -474,7 +474,7 @@ void checkdupAssetsInSV(String iwhat)
 }
 
 BOXWIDTH = "800px";
-ACTIVATY_BOXWIDTH = "600px";
+ACTIVATY_BOXWIDTH = "500px";
 
 ]]>
 </zscript>
@@ -659,7 +659,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 
 	<textbox id="searhtxt_tb" sclass="k9" />
 	<button label="Search/load" sclass="k9" onClick="showTickets(1)" />
-	<textbox id="csvtxt_tb" sclass="k9" width="50px" />
+	<textbox id="csvtxt_tb" sclass="k9" width="50px" value="1066" />
 	<button label="by CSV" sclass="k9" onClick="showTickets(2)" />
 
 	<textbox id="asschk_tb" sclass="k9" />
@@ -676,7 +676,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 
 <separator height="5px" />
 
-<div sclass="shadowbox" style="background:#E1AB14" width="900px" >
+<div sclass="shadowbox" style="background:#E1AB14">
 	<hbox>
 		<button id="newreq_b" label="New case ticket" sclass="k9" onClick="doFunc(self)" />
 		<button id="opentog_b" label="Open case" sclass="k9" onClick="doFunc(self)" />
@@ -829,27 +829,31 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 
 			<div sclass="shadowbox" style="background:#2B3B58">
 				<label sclass="subhead1" value="LC Assets Replacement Track" />
+				<div style="background:#D11A54;padding:3px">
+					<hbox>
+						<button label="Save for GCO" sclass="k9mo" onClick="saveLCrep_GCO()" />
+					</hbox>
+				</div>
 				<separator height="3px" />
 				<div id="lcreps_holder" />
-				<separator height="3px" />
-
+				<separator height="5px" />
 				<grid>
 					<rows>
-						<row style="background:#2B3B58" spans="1,3">
+						<row style="background:#2B3B58">
 							<label value="LC.Id" sclass="k9b" />
 							<textbox id="v_lc_id" sclass="k9" />
-						</row>
-						<row style="background:#2B3B58">
 							<label value="I.Asset" sclass="k9b" />
 							<textbox id="v_in_assettag" sclass="k9" />
 							<label value="Replace" sclass="k9b" />
 							<textbox id="v_out_assettag" sclass="k9" />
 						</row>
-						<row style="background:#2B3B58">
+						<row style="background:#2B3B58" spans="1,5">
 							<label value="A.Date" sclass="k9b" />
 							<datebox id="v_act_date" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
+						</row>
+						<row style="background:#2B3B58" spans="1,5">
 							<label value="Action" sclass="k9b" />
-							<textbox id="v_action" multiline="true" width="99%" height="70px" />
+							<textbox id="v_action" sclass="k9" multiline="true" width="99%" height="70px" />
 						</row>
 					</rows>
 				</grid>

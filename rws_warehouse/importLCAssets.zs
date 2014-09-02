@@ -2,6 +2,28 @@ import org.victor.*;
 
 // 28/10/2013: new things to import from rw_gc_transient
 
+// 02/09/2014: add/show new collect-items row
+// iatg:assettag, isn:serial no, idesc:item desc, ilc:lc_id
+void addRow_Imported_Things(String iatg, String isn, String idesc, String ilc)
+{
+	f9 = "font-size:9px";
+	nrw = new org.zkoss.zul.Row();
+	nrw.setParent(items_rows);
+	gpMakeCheckbox(nrw,"","","");
+	gpMakeTextbox(nrw,"",iatg,"","99%"); // ass-tag
+	gpMakeTextbox(nrw,"",isn,f9,"99%"); // S/N
+	kbb = gpMakeTextbox(nrw,"",idesc,f9,"99%");
+	kbb.setMultiline(true);
+	kbb.setHeight("40px");
+	ckb = gpMakeCheckbox(nrw,"","","");
+	ckb.setDisabled(true);
+	gpMakeTextbox(nrw,"",ilc,f9,"99%");
+	/*
+	if(!ilc.equals("")) // show only if LC not blank
+		gpMakeTextbox(nrw,"",ilc,"font-size:9px","99%"); // 25/06/2014: from-LC box
+	*/
+}
+
 class transimpclk implements org.zkoss.zk.ui.event.EventListener
 {
 	public void onEvent(Event event) throws UiException
@@ -32,18 +54,94 @@ Object[] imtrnhds =
 
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() == 0) return;
-	newlb.setMultiple(true);
-	newlb.setCheckmark(true);
+	newlb.setMultiple(true); newlb.setCheckmark(true);
 	//newlb.addEventListener("onSelect", new transimpclk());
 	ArrayList kabom = new ArrayList();
+	String[] fl = { "lc_id", "astc", "lc_id"};
 	for(d : rcs)
 	{
+		ngfun.popuListitems_Data(kabom,fl,d);
+		/*
 		kabom.add(kiboo.checkNullString(d.get("lc_id")));
 		kabom.add( d.get("astc").toString() );
 		kabom.add( d.get("lc_id") );
+		*/
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","font-weight:bold");
 		kabom.clear();
 	}
+}
+
+// 02/09/2014: show transient assets saved from CSV
+void showTransientItems_byCSV(String ifc6id, Div iwhere)
+{
+Object[] pimtrnhds =
+{
+	new listboxHeaderWidthObj("CSV",true,"80px"),
+	new listboxHeaderWidthObj("LC",true,"80px"),
+	new listboxHeaderWidthObj("AssetTag",true,"80px"),
+	new listboxHeaderWidthObj("origid",false,""),
+};
+	if(ifc6id.equals("")) return;
+	Listbox newlb = lbhand.makeVWListbox_Width(iwhere, pimtrnhds, "csvrepitems_lb", 15);
+
+	sqlstm = "select origid,asset_tag,csv_id,lc_id from rw_gcn_transient where " +
+	"fc6_custid=" + ifc6id + " and csv_id is not null and gcn_id is null;";
+
+	rcs = sqlhand.gpSqlGetRows(sqlstm);
+	if(rcs.size() == 0) return;
+	newlb.setMultiple(true); newlb.setCheckmark(true); newlb.setMold("paging");
+	//newlb.addEventListener("onSelect", new transimpclk());
+	ArrayList kabom = new ArrayList();
+	String[] fl = { "csv_id", "lc_id", "asset_tag", "origid" };
+	for(d : rcs)
+	{
+		ngfun.popuListitems_Data(kabom,fl,d);
+		/*
+		kabom.add( d.get("partner_pr").toString() );
+		kabom.add( (d.get("gcn_id") == null) ? "" : d.get("gcn_id").toString() );
+		*/
+		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+		kabom.clear();
+	}
+}
+
+// 02/09/2014: import transient assets for CSV
+void impFromCSV_replacements(String igco)
+{
+	if(csvrepitems_lb.getSelectedCount() == 0) return;
+	sqlstm = "";
+	HashMap csvada = new HashMap();
+
+	for( k : csvrepitems_lb.getSelectedItems() )
+	{
+		atg = lbhand.getListcellItemLabel(k,2);
+		oi = lbhand.getListcellItemLabel(k,3);
+		lc = lbhand.getListcellItemLabel(k,1);
+		csv = lbhand.getListcellItemLabel(k,0).trim();
+
+		addRow_Imported_Things( atg, "", "", lc );
+
+		if(!csvada.containsKey(csv)) csvada.put(csv,1);
+
+		sqlstm += "update rw_gcn_transient set gcn_id=" + igco + " where origid=" + oi + ";";
+		sqlstm += "update rw_lc_replacements set gco_id=" + igco +
+		" where lc_id='" + lc + "' and in_assettag='" + atg + "';";
+	}
+
+	Set set = csvada.entrySet();
+	Iterator i = set.iterator();
+	csvlist = "";
+	while(i.hasNext())
+	{
+		Map.Entry me = (Map.Entry)i.next();
+		csvlist += me.getKey() + ",";
+	}
+	try { csvlist = csvlist.substring(0,csvlist.length()-1); } catch (Exception e) {}
+	g_sv_no.setValue(csvlist);
+
+	sqlstm += "update rw_goodscollection set sv_no='" + csvlist + "' where origid=" + igco;
+	sqlhand.gpSqlExecuter(sqlstm);
+	//alert(sqlstm + " >> " + csvlist);
 }
 
 // 27/12/2013: show transient-items from partner's replacement requests
@@ -87,6 +185,8 @@ void impFromPartnersReplacements(String igco)
 
 	for(d : rcs)
 	{
+		addRow_Imported_Things( d.get("asset_tag"), kiboo.checkNullString(d.get("serial_no")), d.get("item_desc"), "" );
+		/*
 		nrw = new org.zkoss.zul.Row();
 		nrw.setParent(items_rows);
 
@@ -99,6 +199,7 @@ void impFromPartnersReplacements(String igco)
 
 		ckb = gpMakeCheckbox(nrw,"","","");
 		ckb.setDisabled(true);
+		*/
 	}
 
 	sqlstm = "update rw_gcn_transient set gcn_id=" + igco + " where partner_pr=" + preq + ";";
@@ -130,20 +231,20 @@ void impTransientAssets()
 	astgs = usql = "";
 	for(d : rcs)
 	{
+		addRow_Imported_Things( d.get("asset_tag"), d.get("serial_no"), d.get("item_desc"), d.get("lc_id") );
+		/*
 		nrw = new org.zkoss.zul.Row();
 		nrw.setParent(items_rows);
-
 		gpMakeCheckbox(nrw,"","","");
 		gpMakeTextbox(nrw,"",d.get("asset_tag"),"","99%"); // ass-tag
 		gpMakeTextbox(nrw,"",d.get("serial_no"),"font-size:9px","99%"); // S/N
 		kbb = gpMakeTextbox(nrw,"",d.get("item_desc"),"font-size:9px","99%");
 		kbb.setMultiline(true);
 		kbb.setHeight("40px");
-
 		ckb = gpMakeCheckbox(nrw,"","","");
 		ckb.setDisabled(true);
-
 		gpMakeTextbox(nrw,"",d.get("lc_id"),"font-size:9px","99%"); // 25/06/2014: from-LC box
+		*/
 
 		usql += "update rw_lc_equips set gcn_id=" + glob_sel_gco +
 		" where lc_parent=(select origid from rw_lc_records where lc_id='" + d.get("lc_id") + "')"  +
@@ -188,21 +289,21 @@ void impTransientAssets_1by1()
 	if(rcs.size() == 0) return;
 
 	astgs = "";
-
 	for(d : rcs)
 	{
+		addRow_Imported_Things( d.get("asset_tag"), d.get("serial_no"), d.get("item_desc"), "" );
+/*
 		nrw = new org.zkoss.zul.Row();
 		nrw.setParent(items_rows);
-
 		gpMakeCheckbox(nrw,"","","");
 		gpMakeTextbox(nrw,"",d.get("asset_tag"),"","99%"); // ass-tag
 		gpMakeTextbox(nrw,"",d.get("serial_no"),"font-size:9px","99%"); // S/N
 		kbb = gpMakeTextbox(nrw,"",d.get("item_desc"),"font-size:9px","99%");
 		kbb.setMultiline(true);
 		kbb.setHeight("40px");
-
 		ckb = gpMakeCheckbox(nrw,"","","");
 		ckb.setDisabled(true);
+*/
 	}
 
 	imptransient_pop.close();
@@ -221,37 +322,6 @@ void impTransientAssets_1by1()
 	saveCollectItems(glob_sel_gco); // just save collection-items after importing
 	doFunc(updategco_b); // update meta-data to save lc_id 
 }
-
-/*
-Load/Pick assets from LC/ROC funcs - can be used in other mods
-remember the needed popup--
-
-<button id="importitems_b" label="Import" style="font-size:9px" onClick="impasset_pop.open(additem_b)" />
-
-<popup id="impasset_pop">
-<div style="background:#f57900; -moz-box-shadow: 4px 5px 7px #000000; -webkit-box-shadow: 4px 5px 7px #000000;
-	box-shadow: 4px 5px 7px #000000;padding:3px;margin:3px" width="600px" >
-
-<div style="background:#2e3436;padding:2px">
-<label style="color:#ffffff" value="IMPORT Asset-tags from LC/ROC" />
-</div>
-<separator height="3px" />
-<hbox>
-<label value="LC/ROC No." />
-<textbox id="implcasset_tb" value="1209" />
-<button label="Load" style="font-size:9px" onClick="loadShowLCAssets(implcasset_tb)" />
-</hbox>
-<separator height="3px" />
-<label id="implc_meta" multiline="true" style="font-size:9px;font-weight:bold;color:#000000" />
-<separator height="3px" />
-<button label="Import" onClick="procImpAssetTags()" />
-<separator height="2px" />
-<div id="impassets_holder" />
-
-</div>
-</popup>
-
-*/
 
 Object[] asslb_hds =
 {
@@ -302,13 +372,17 @@ void loadShowLCAssets(Object itxtb)
 
 	showLCMeta(iwhat);
 	ArrayList kabom = new ArrayList();
+	String[] fl = { "asset_tag", "serial_no", "type", "brand", "model" };
 	for(dpi : asrs)
 	{
+		ngfun.popuListitems_Data(kabom,fl,dpi);
+		/*
 		kabom.add(kiboo.checkNullString(dpi.get("asset_tag")));
 		kabom.add(kiboo.checkNullString(dpi.get("serial_no")));
 		kabom.add(kiboo.checkNullString(dpi.get("type")));
 		kabom.add(kiboo.checkNullString(dpi.get("brand")));
 		kabom.add(kiboo.checkNullString(dpi.get("model")));
+		*/
 		krem = kiboo.checkNullString(dpi.get("remarks"));
 		if(krem.length() > 40) krem = krem.substring(0,40) + "..";
 		kabom.add(krem);
@@ -343,3 +417,33 @@ void procImpAssetTags()
 	impLCAssets_callback(sats,ssn,sdes);
 }
 
+/*
+Load/Pick assets from LC/ROC funcs - can be used in other mods
+remember the needed popup--
+
+<button id="importitems_b" label="Import" style="font-size:9px" onClick="impasset_pop.open(additem_b)" />
+
+<popup id="impasset_pop">
+<div style="background:#f57900; -moz-box-shadow: 4px 5px 7px #000000; -webkit-box-shadow: 4px 5px 7px #000000;
+	box-shadow: 4px 5px 7px #000000;padding:3px;margin:3px" width="600px" >
+
+<div style="background:#2e3436;padding:2px">
+<label style="color:#ffffff" value="IMPORT Asset-tags from LC/ROC" />
+</div>
+<separator height="3px" />
+<hbox>
+<label value="LC/ROC No." />
+<textbox id="implcasset_tb" value="1209" />
+<button label="Load" style="font-size:9px" onClick="loadShowLCAssets(implcasset_tb)" />
+</hbox>
+<separator height="3px" />
+<label id="implc_meta" multiline="true" style="font-size:9px;font-weight:bold;color:#000000" />
+<separator height="3px" />
+<button label="Import" onClick="procImpAssetTags()" />
+<separator height="2px" />
+<div id="impassets_holder" />
+
+</div>
+</popup>
+
+*/

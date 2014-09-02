@@ -362,6 +362,14 @@ BOXWIDTH = "800px";
 </div>
 </popup>
 
+<popup id="impcsvs_pop">
+<div sclass="shadowbox" style="background:#f57900;" width="350px" >
+	<div id="impcsvs_holder" />
+	<separator height="3px" />
+	<button label="Import from CSV" onClick="impcsvs_pop.close(); impFromCSV_replacements(glob_sel_gco)" />
+</div>
+</popup>
+
 <popup id="imppartnerreq_pop">
 <div sclass="shadowbox" style="background:#f57900;" width="350px" >
 	<div id="imppartners_holder" />
@@ -598,7 +606,7 @@ BOXWIDTH = "800px";
 			<div sclass="shadowbox" style="background:#555753" width="${BOXWIDTH}">
 			<hbox>
 				<button id="additem_b" label="Add collection item" class="k9" onClick="doFunc(self)" />
-				<button id="removeitem_b" label="Remove item" class="k9" onClick="doFunc(self)" />
+				<button id="removeitem_b" label="Remove item" class="k9" style="color:#CD1010" onClick="doFunc(self)" />
 				<!--
 				<button id="importitems_b" label="Import" style="font-size:9px" onClick="impasset_pop.open(additem_b)" />
 				-->
@@ -607,8 +615,11 @@ BOXWIDTH = "800px";
 				<button id="imppartreq_b" label="Imp. from partner" class="k9"
 				onClick="showTransientItems_bypartner(global_selected_customerid, imppartners_holder); imppartnerreq_pop.open(self)" />
 
-				<button id="saveitems_b" label="SAVE" style="font-weight:bold" onClick="doFunc(self)" />
-				<button id="updatelc_b" label="Update LC-link" style="k9mo" onClick="doFunc(self)" />
+				<button id="impfromcsv_b" label="Imp. from CSV" class="k9"
+				onClick="showTransientItems_byCSV(global_selected_customerid,impcsvs_holder); impcsvs_pop.open(self)" />
+
+				<button id="saveitems_b" label="SAVE" sclass="k9mo" onClick="doFunc(self)" />
+				<button id="updatelc_b" label="Update LC-link" sclass="k9mo" onClick="doFunc(self)" />
 			</hbox>
 			<separator height="3px" />
 			<div id="pitems_holder" />

@@ -78,25 +78,32 @@ void showLCRep_metadata(String iwhat)
 
 Object[] lcasrephds = 
 {
+	new listboxHeaderWidthObj("LC.Id",true,"90px"),
 	new listboxHeaderWidthObj("origid",false,""),
-	new listboxHeaderWidthObj("LC.Id",true,"50px"),
 	new listboxHeaderWidthObj("I.Asset",true,"60px"),
 	new listboxHeaderWidthObj("Replace",true,"60px"),
 	new listboxHeaderWidthObj("User",true,"60px"),
-	new listboxHeaderWidthObj("Stat",true,"40px"),
+	new listboxHeaderWidthObj("Stat",true,"40px"), // to be updated by BA
 	new listboxHeaderWidthObj("GCO",true,"40px"),
+	new listboxHeaderWidthObj("G.Stat",true,"50px"),
 	new listboxHeaderWidthObj("Act",true,""),
 	new listboxHeaderWidthObj("A.Date",true,"70px"),
 };
+LCIDPOS = 0;
+ORIGPOS = 1;
+INRECASSET = 2;
+GCOPOS = 6;
 
 class lcasrepClick implements org.zkoss.zk.ui.event.EventListener
 {
 	public void onEvent(Event event) throws UiException
 	{
+		try {
 		isel = event.getReference();
-		lcrp_selected = lbhand.getListcellItemLabel(isel,0);
+		lcrp_selected = lbhand.getListcellItemLabel(isel,ORIGPOS);
 		lcrp_selected_user = lbhand.getListcellItemLabel(isel,4);
 		showLCRep_metadata(lcrp_selected);
+		} catch (Exception e) {}
 	}
 }
 lcassrepcliker = new lcasrepClick();
@@ -109,17 +116,46 @@ void showLCAss_RepTrack(Object itkr, Div idiv, String lbid)
 	fc6 = itkr.get("fc6_custid");
 	if(fc6 == null) return;
 
-	sqlstm = "select * from rw_lc_replacements where fc6_custid='" + fc6 + "'";
+	sqlstm = "select *, (select status from rw_goodscollection where CONVERT(varchar(10),origid)=rlr.gco_id) as gstat from rw_lc_replacements rlr where fc6_custid='" + fc6 + "' order by origid desc";
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() == 0) return;
 	newlb.setRows(21); newlb.setMold("paging");
+	newlb.setMultiple(true); newlb.setCheckmark(true);
 	newlb.addEventListener("onSelect", lcassrepcliker);
 	ArrayList kabom = new ArrayList();
-	String[] fl = { "origid","lc_id","in_assettag","out_assettag","username","rstatus","gco_id","action","act_date" };
+	String[] fl = { "lc_id","origid","in_assettag","out_assettag","username","rstatus","gco_id","gstat", "action","act_date" };
 	for(d : rcs)
 	{
 		ngfun.popuListitems_Data(kabom,fl,d);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
 	}
+}
+
+// Save selected LC/assets transient make GCO
+void saveLCrep_GCO()
+{
+	tlb = last_lb_holder.getFellowIfAny(last_trk_lbid);
+	if(tlb == null) return;
+	if(tlb.getSelectedCount() == 0) return;
+	if(glob_selected_ticket.equals("")) return;
+	sqlstm = "";
+
+	if(global_selected_customerid.equals("")) { guihand.showMessageBox("ERR: customer ID not assigned"); return; }
+
+	for(d : tlb.getSelectedItems())
+	{
+		atg = lbhand.getListcellItemLabel(d,INRECASSET);
+		lci = lbhand.getListcellItemLabel(d,LCIDPOS);
+		if(atg.equals("")) continue;
+
+		gcni = lbhand.getListcellItemLabel(d,GCOPOS); // gcn-id must be blank to be saved in transient-table
+		if(gcni.equals("") || gcni.equals("0"))
+		{
+			sqlstm += "insert into rw_gcn_transient (lc_id,serial_no,asset_tag,item_desc,fc6_custid,csv_id) values " +
+			"('" + lci + "','','" + atg + "','','" + global_selected_customerid + "','" + glob_selected_ticket + "');";
+		}
+	}
+	sqlhand.gpSqlExecuter(sqlstm);
+	guihand.showMessageBox("Assets saved for GCO");
 }

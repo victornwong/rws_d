@@ -559,7 +559,7 @@ void adminFunc(Object iwhat)
 		if (Messagebox.show("HARD delete this JOB..", "Are you sure?", 
 			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
 
-		sqlstm =  "delete from rw_jobs where " + wherestr;
+		sqlstm =  "delete from rw_jobs " + wherestr;
 		sqlstm += ";delete from bpm_actions where assigner='" + lnkc + "'"; // remove approval-things too
 
 		workarea.setVisible(false);

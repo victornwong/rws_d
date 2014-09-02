@@ -197,7 +197,7 @@ void showEquipmentActivity(String iwhat)
 Object[] tkslb_headers =
 {
 	new listboxHeaderWidthObj("CSV#",true,"40px"),
-	new listboxHeaderWidthObj("Dated",true,""),
+	new listboxHeaderWidthObj("Dated",true,"120px"),
 	new listboxHeaderWidthObj("Customer",true,""),
 	new listboxHeaderWidthObj("Priority",true,"60px"),
 	new listboxHeaderWidthObj("Status",true,"60px"),

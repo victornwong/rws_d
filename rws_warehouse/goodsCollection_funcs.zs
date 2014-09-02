@@ -9,7 +9,7 @@ itype:
 */ 
 void disableButts(int itype, boolean iwhat)
 {
-	Object[] ibuts = { assigncust_b, updategco_b, additem_b, removeitem_b, imptransient_b, imppartreq_b };
+	Object[] ibuts = { assigncust_b, updategco_b, additem_b, removeitem_b, imptransient_b, imppartreq_b, impfromcsv_b };
 	switch(itype)
 	{
 		case 1:
@@ -182,7 +182,6 @@ void showGCOMeta(String iwhat)
 			}
 		}
 	}
-
 	workarea.setVisible(true);
 }
 
@@ -250,7 +249,11 @@ void showGoodsCollection(int itype)
 
 	if(itype == 2) scsql = "where origid=" + gcoi;
 	if(itype == 3) scsql = "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' and transporter='" + bytp + "' ";
-	if(itype == 4) scsql = "where items_code like '%" + st + "%' or items_desc like '%" + st + "%' or items_sn like '%" + st + "%' ";
+	if(itype == 4)
+	{
+		if(st.equals(""))
+		scsql = "where items_code like '%" + st + "%' or items_desc like '%" + st + "%' or items_sn like '%" + st + "%' ";
+	}
 	if(itype == 5) scsql = "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' and username='" + bunm + "' ";
 
 	sqlstm = "select gc.origid, gc.datecreated, gc.username, gc.customer_name, gc.status, gc.pickupdate, gc.completedate, gc.lc_id," +
