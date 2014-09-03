@@ -132,30 +132,65 @@ void showLCAss_RepTrack(Object itkr, Div idiv, String lbid)
 	}
 }
 
-// Save selected LC/assets transient make GCO
-void saveLCrep_GCO()
+// general purpose to check if LC-replacement LB got selections and etc..
+Component checkLCRep_LB_things()
 {
 	tlb = last_lb_holder.getFellowIfAny(last_trk_lbid);
-	if(tlb == null) return;
-	if(tlb.getSelectedCount() == 0) return;
-	if(glob_selected_ticket.equals("")) return;
-	sqlstm = "";
+	if(tlb == null) return null;
+	if(tlb.getSelectedCount() == 0) return null;
+	if(glob_selected_ticket.equals("")) return null;
+	return tlb;
+}
 
+// LC-replacements GCO-transient functions
+void lcreplaceDo(String itype)
+{
+	tlb = checkLCRep_LB_things();
+	if(tlb == null) return;
 	if(global_selected_customerid.equals("")) { guihand.showMessageBox("ERR: customer ID not assigned"); return; }
+
+	sqlstm = msgtext = "";
 
 	for(d : tlb.getSelectedItems())
 	{
 		atg = lbhand.getListcellItemLabel(d,INRECASSET);
 		lci = lbhand.getListcellItemLabel(d,LCIDPOS);
 		if(atg.equals("")) continue;
+		gcni = lbhand.getListcellItemLabel(d,GCOPOS);
+		ori = lbhand.getListcellItemLabel(d,ORIGPOS);
 
-		gcni = lbhand.getListcellItemLabel(d,GCOPOS); // gcn-id must be blank to be saved in transient-table
-		if(gcni.equals("") || gcni.equals("0"))
+		if(itype.equals("rplcsave_b")) // save LC-replace assets to transient-GCO
 		{
-			sqlstm += "insert into rw_gcn_transient (lc_id,serial_no,asset_tag,item_desc,fc6_custid,csv_id) values " +
-			"('" + lci + "','','" + atg + "','','" + global_selected_customerid + "','" + glob_selected_ticket + "');";
+			if(gcni.equals("") || gcni.equals("0")) // gcn-id must be blank to be saved in transient-table
+			{
+				sqlstm += "insert into rw_gcn_transient (lc_id,serial_no,asset_tag,item_desc,fc6_custid,csv_id) values " +
+				"('" + lci + "','','" + atg + "','','" + global_selected_customerid + "','" + glob_selected_ticket + "');";
+			}
+		}
+
+		if(itype.equals("rpclrgco_b")) // clear from transient-GCO
+		{
+			if(gcni.equals("") || gcni.equals("0")) continue;
+			else
+			{
+				if (Messagebox.show("Remove selected from GCO-transient..", "Are you sure?", 
+					Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+				sqlstm += "update rw_gcn_transient set gcn_id=null where lc_id='" + lci + "' " +
+				"and asset_tag='" + atg + "' and fc6_custid='" + global_selected_customerid + "';";
+
+				sqlstm += "update rw_lc_replacements set gco_id=null where origid=" + ori + ";";
+			}
 		}
 	}
-	sqlhand.gpSqlExecuter(sqlstm);
-	guihand.showMessageBox("Assets saved for GCO");
+
+	if(!sqlstm.equals(""))
+	{
+		sqlhand.gpSqlExecuter(sqlstm);
+		if(itype.equals("rplcsave_b")) msgtext = "Assets saved for GCO-transient";
+		if(itype.equals("rpclrgco_b")) msgtext = "Assets cleared from GCO-transient";
+		showLCAss_RepTrack(last_trk_rec,last_lb_holder,last_trk_lbid);
+	}
+	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 }
+

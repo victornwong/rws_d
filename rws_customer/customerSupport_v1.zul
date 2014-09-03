@@ -831,7 +831,8 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 				<label sclass="subhead1" value="LC Assets Replacement Track" />
 				<div style="background:#D11A54;padding:3px">
 					<hbox>
-						<button label="Save for GCO" sclass="k9mo" onClick="saveLCrep_GCO()" />
+						<button id="rplcsave_b" label="Save for GCO" sclass="k9mo" onClick="lcreplaceDo(self.getId())" />
+						<button id="rpclrgco_b" label="Clear from cache" sclass="k9mo" onClick="lcreplaceDo(self.getId())" />
 					</hbox>
 				</div>
 				<separator height="3px" />
