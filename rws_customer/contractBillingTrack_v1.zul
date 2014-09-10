@@ -17,17 +17,18 @@
 <zscript>
 <![CDATA[
 MYTITLE = "ROC/LC Management";
-MYVERSION = "v0.3.7";
+MYVERSION = "v0.3.8";
 MYPANEL = "billtrkcpan";
 /*
-Title		: ROC/LC billing tracking and so on
-Written by	: Victor Wong
-Dated		: 16/10/2013
+@Title ROC/LC billing tracking and so on
+@Author Victor Wong
+@Since 16/10/2013
 
 08/04/2014: remove gco-transient items
 20/06/2014: batch import from LC defined in i_batch_lc - req by Nurul for MISC mostly
 08/07/2014: toggler super_reminder flag for LC - hilite to remind user
 25/07/2014: nurul req import assets from other LC omit buyout and already GCN
+10/09/2014: farah req add hotswap-flag
 
 */
 import java.util.*;
@@ -40,13 +41,9 @@ myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
-gridhand = new GridHandler();
-dmshand = new DMSFuncs();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
+guihand = new GuiFuncs(); luhand = new LookupFuncs(); gridhand = new GridHandler();
+dmshand = new DMSFuncs(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 SimpleDateFormat dtf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 SimpleDateFormat dtf2 = new SimpleDateFormat("yyyy-MM-dd");
@@ -303,6 +300,57 @@ void exportAssetsList(String iwhat, int itype)
 	expasspop.open(newasset_b);
 }
 
+// List assets where hotswap flag
+void listHotswaps()
+{
+Object[] cstkhds =
+{
+	new listboxHeaderWidthObj("No.",true,"40px"),
+	new listboxHeaderWidthObj("LC",true,"50px"),
+	new listboxHeaderWidthObj("Customer",true,""),
+	new listboxHeaderWidthObj("Asset",true,"80px"),
+	new listboxHeaderWidthObj("Start",true,"60px"),
+	new listboxHeaderWidthObj("End",true,"60px"),
+};
+
+	mwin = ngfun.vMakeWindow(winsholder,"HOTSWAPS List","0","center","650px","");
+	kdiv = new Div();
+	kdiv.setParent(mwin);
+	Listbox newlb = lbhand.makeVWListbox_Width(kdiv, cstkhds, "chkstock_lb", 3);
+
+	csqlstm = "select lce.asset_tag, lcr.lc_id, lcr.customer_name, lcr.lstartdate, lcr.lenddate " +
+	"from rw_lc_equips lce left join rw_lc_records lcr on lce.lc_parent = lcr.origid " +
+	"where lce.hotswap=1 order by lcr.lenddate, lcr.lc_id, lcr.customer_name";
+
+	r = sqlhand.gpSqlGetRows(csqlstm);
+	if(r.size() == 0) return;
+	newlb.setMold("paging"); newlb.setRows(20);
+	ArrayList kabom = new ArrayList();
+	String[] fl = { "lc_id", "customer_name", "asset_tag", "lstartdate", "lenddate" };
+	lnc = 1;
+	for(d : r)
+	{
+		kabom.add(lnc.toString() + "." );
+		ngfun.popuListitems_Data(kabom,fl,d);
+		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+		kabom.clear();
+		lnc++;
+	}
+	lbhand.setDoubleClick_ListItems(newlb, hotswapdoublecliker);
+}
+
+class hswpdclik implements org.zkoss.zk.ui.event.EventListener
+{
+	public void onEvent(Event event) throws UiException
+	{
+		isel = event.getTarget();
+		lcid = lbhand.getListcellItemLabel(isel,1);
+		search_txt.setValue("'" + lcid + "'");
+		listROCLC(4); // list by LC-id (contractBillingTrack_funcs.zs)
+	}
+}
+hotswapdoublecliker = new hswpdclik();
+
 BUTT_WIDTH = "125px";
 BUTT_WIDTH2 = "190px";
 
@@ -310,23 +358,23 @@ BUTT_WIDTH2 = "190px";
 </zscript>
 
 <popup id="report_pop">
-<div sclass="shadowbox" style="background:#9db91d">
-<vbox>
-	<button label="Export EVF" sclass="k9" width="${BUTT_WIDTH2}" onClick="exportAssetsList(glob_selected_lc,1)" />
-	<button label="Export EVF(no location)" sclass="k9" width="${BUTT_WIDTH2}" onClick="exportAssetsList(glob_selected_lc,3)" />
-	<button label="Export EVF(with specs)" sclass="k9" width="${BUTT_WIDTH2}" onClick="exportAssetsList(glob_selected_lc,5)" />
-	<button label="Export equipments/rental" sclass="k9" width="${BUTT_WIDTH2}" onClick="exportAssetsList(glob_selected_lc,2)" />
-	<button label="Export equipments/rental(no location)" sclass="k9" width="${BUTT_WIDTH2}" onClick="exportAssetsList(glob_selected_lc,4)" />
-</vbox>
-</div>
+	<div sclass="shadowbox" style="background:#9db91d">
+		<vbox>
+			<button label="Export EVF" sclass="k9" width="${BUTT_WIDTH2}" onClick="exportAssetsList(glob_selected_lc,1)" />
+			<button label="Export EVF(no location)" sclass="k9" width="${BUTT_WIDTH2}" onClick="exportAssetsList(glob_selected_lc,3)" />
+			<button label="Export EVF(with specs)" sclass="k9" width="${BUTT_WIDTH2}" onClick="exportAssetsList(glob_selected_lc,5)" />
+			<button label="Export equipments/rental" sclass="k9" width="${BUTT_WIDTH2}" onClick="exportAssetsList(glob_selected_lc,2)" />
+			<button label="Export equipments/rental(no location)" sclass="k9" width="${BUTT_WIDTH2}" onClick="exportAssetsList(glob_selected_lc,4)" />
+		</vbox>
+	</div>
 </popup>
 
 <popup id="digass_pop">
-<div sclass="shadowbox" style="background:#1b528c" width="550px" >
-	<div id="dgass_holder" />
-	<separator height="2px" />
-	<button label="Drill" sclass="k9" onClick="drillFoundAssets()" />
-</div>
+	<div sclass="shadowbox" style="background:#1b528c" width="550px" >
+		<div id="dgass_holder" />
+		<separator height="2px" />
+		<button label="Drill" sclass="k9" onClick="drillFoundAssets()" />
+	</div>
 </popup>
 
 <popup id="mangcn_pop">
@@ -336,33 +384,32 @@ BUTT_WIDTH2 = "190px";
 </popup>
 
 <popup id="expasspop">
-<div id="expass_div" width="700px" />
+	<div id="expass_div" width="700px" />
 </popup>
 
 <popup id="copyasslc_pop">
-<hbox>
-	<label value="Copy assets from LC" />
-	<textbox id="copylcid" />
 	<hbox>
-		<button id="copyassflc_b" label="Copy semua" onClick="assFunc(self)" />
-		<button id="copyassflc_filt_b" label="Sedut dengan filter" onClick="assFunc(self)" />
+		<label value="Copy assets from LC" />
+		<textbox id="copylcid" />
+		<hbox>
+			<button id="copyassflc_b" label="Copy semua" onClick="assFunc(self)" />
+			<button id="copyassflc_filt_b" label="Sedut dengan filter" onClick="assFunc(self)" />
+		</hbox>
 	</hbox>
-</hbox>
 </popup>
 
 <popup id="contcarepop" >
-<div sclass="shadowbox" style="background:#204a87;" width="600px" >
-
-<hbox>
-	<label value="ContractCare LC.No" style="color:#ffffff" />
-	<textbox id="cclcno_tb" />
-	<button label="Dig" onClick="impContractcare()" />
-</hbox>
-<separator height="3px" />
-<div id="ccareqs_holder" />
-<separator height="3px" />
-<button id="sedutcontc_b" label="Sedut" onClick="assFunc(self)" />
-</div>
+	<div sclass="shadowbox" style="background:#204a87;" width="600px" >
+		<hbox>
+			<label value="ContractCare LC.No" style="color:#ffffff" />
+			<textbox id="cclcno_tb" />
+			<button label="Dig" onClick="impContractcare()" />
+		</hbox>
+		<separator height="3px" />
+		<div id="ccareqs_holder" />
+		<separator height="3px" />
+		<button id="sedutcontc_b" label="Sedut" onClick="assFunc(self)" />
+	</div>
 </popup>
 
 <popup id="showRMA_pop">
@@ -370,258 +417,251 @@ BUTT_WIDTH2 = "190px";
 </popup>
 
 <popup id="adminpop">
-<button id="dellc_b" label="DELETE" style="font-size:9px;color:#ff0000" onClick="adminFunc(self)" />
+	<button id="dellc_b" label="DELETE" style="font-size:9px;color:#ff0000" onClick="adminFunc(self)" />
 </popup>
 
 <popup id="fleximportfc6_pop">
-<div sclass="shadowbox" style="background:#5c0404;" width="600px" >
-
-<hbox>
-	<label style="color:#ffffff" value="FC6 DO" />
-	<textbox id="flexfc6do_tb" />
-	<button label="Load DO items" onClick='show_FC_DO(newasset_b,2,flexi_impdoass_holder,"flximpfc6dolb")' />
-</hbox>
-<separator height="3px" />
-<label id="flximp_lbl" />
-<div id="flexi_impdoass_holder" />
-<separator height="3px" />
-<button id="flexi_impDOass_b" label="Import them assets" onClick="assFunc(self)" />
-
-</div>
+	<div sclass="shadowbox" style="background:#5c0404;" width="600px" >
+		<hbox>
+			<label style="color:#ffffff" value="FC6 DO" />
+			<textbox id="flexfc6do_tb" />
+			<button label="Load DO items" onClick='show_FC_DO(newasset_b,2,flexi_impdoass_holder,"flximpfc6dolb")' />
+		</hbox>
+		<separator height="3px" />
+		<label id="flximp_lbl" />
+		<div id="flexi_impdoass_holder" />
+		<separator height="3px" />
+		<button id="flexi_impDOass_b" label="Import them assets" onClick="assFunc(self)" />
+	</div>
 </popup>
 
 <popup id="importdoassets_pop">
-<div sclass="shadowbox" style="background:#5c0404;" width="600px" >
-
-<label id="imp_do_lbl" sclass="subhead" />
-<separator height="3px" />
-	
-<div id="impdoass_holder" />
-<separator height="3px" />
-<button id="impDOass_b" label="Import from DO" onClick="assFunc(self)" />
-</div>
+	<div sclass="shadowbox" style="background:#5c0404;" width="600px" >
+		<label id="imp_do_lbl" sclass="subhead" />
+		<separator height="3px" />
+		<div id="impdoass_holder" />
+		<separator height="3px" />
+		<button id="impDOass_b" label="Import from DO" onClick="assFunc(self)" />
+	</div>
 </popup>
 
 <popup id="replaceasset_pop">
-<div sclass="shadowbox" style="background:#5c0404;" width="600px" >
-
-<div style="background:#2e3436;padding:4px" >
-<separator height="3px" />
-<hbox>
-	<label sclass="subhead" value="REPLACE" />
-	<separator width="10px" />
-	<label id="currasst_lbl" sclass="subhead2" />
-	<separator width="10px" />
-	<label value="TO" sclass="subhead" />
-</hbox>
-<separator height="3px" />
-</div>
-<separator height="3px" />
-
-<div id="repassetform_holder" />
-<separator height="3px" />
-<button id="repasset_b" label="REPLACE ASSET" style="font-weight:bold" onClick="assFunc(self)" />
-
-</div>
+	<div sclass="shadowbox" style="background:#5c0404;" width="600px" >
+	<div style="background:#2e3436;padding:4px" >
+		<separator height="3px" />
+		<hbox>
+			<label sclass="subhead" value="REPLACE" />
+			<separator width="10px" />
+			<label id="currasst_lbl" sclass="subhead2" />
+			<separator width="10px" />
+			<label value="TO" sclass="subhead" />
+		</hbox>
+		<separator height="3px" />
+	</div>
+	<separator height="3px" />
+	<div id="repassetform_holder" />
+	<separator height="3px" />
+	<button id="repasset_b" label="REPLACE ASSET" style="font-weight:bold" onClick="assFunc(self)" />
+	</div>
 </popup>
 
 <popup id="gcn_trans_pop">
-<div sclass="shadowbox" style="background:#babdb6;" width="400px" >
-
-<label sclass="subhead" value="GCN/O Transient Assets" />
-<separator height="5px" bar="true" />
-<label id="gcntrans_lbl" multiline="true" style="font-weight:bold" />
-<separator height="3px" />
-<button id="svgcntrans_b" label="Save.." onClick="assFunc(self)" />
-</div>
+	<div sclass="shadowbox" style="background:#babdb6;" width="400px" >
+		<label sclass="subhead" value="GCN/O Transient Assets" />
+		<separator height="5px" bar="true" />
+		<label id="gcntrans_lbl" multiline="true" style="font-weight:bold" />
+		<separator height="3px" />
+		<button id="svgcntrans_b" label="Save.." onClick="assFunc(self)" />
+	</div>
 </popup>
 
 <popup id="do_extra_pop">
-<div sclass="shadowbox" style="background:#555753;" width="600px" >
-<hbox>
-	<label sclass="subhead" value="DO No. : " />
-	<label sclass="subhead" id="dexp_do_no_lbl" />
-</hbox>
-<separator height="3px" />
-</div>
+	<div sclass="shadowbox" style="background:#555753;" width="600px" >
+		<hbox>
+			<label sclass="subhead" value="DO No. : " />
+			<label sclass="subhead" id="dexp_do_no_lbl" />
+		</hbox>
+		<separator height="3px" />
+	</div>
 </popup> <!-- ENDOF do_extra_pop -->
 
 <popup id="importbom_statpop">
-<div width="500px" >
-	<label id="importbom_stat_lbl" multiline="true" />
-	<separator height="3px" />
-	<button label="OK" onClick="bomimport_pop.close(); importbom_statpop.close()" />
-</div>
+	<div width="500px" >
+		<label id="importbom_stat_lbl" multiline="true" />
+		<separator height="3px" />
+		<button label="OK" onClick="bomimport_pop.close(); importbom_statpop.close()" />
+	</div>
 </popup> <!-- ENDOF importbom_statpop -->
 
 <popup id="bomimport_pop">
-<div sclass="shadowbox" style="background:#f9b12d;">
-
-<hbox>
-<div>
-	<label value="IMPORT BOM" style="font-weight:bold;font-size:14px" />
-	<separator height="2px" />
-	<div id="imp_boms_holder" width="600px" />
-	<separator height="2px" />
-	<!-- <button label="View job breakdown" style="font-size:9px" onClick="impBOM_viewJob()" /> -->
-</div>
-
-<div>
-	<label id="impbomselected" value="BUILDS" style="font-weight:bold;font-size:14px" />
-	<separator height="2px" />
-	<div id="bitems_holder" width="350px" />
-	<separator height="2px" />
-	<button id="assimpbom_b" label="Import builds" style="font-weight:bold" onClick="assFunc(self)" />
-</div>
-
-</hbox>
-
-</div>
+	<div sclass="shadowbox" style="background:#f9b12d;">
+		<hbox>
+			<div>
+				<label value="IMPORT BOM" style="font-weight:bold;font-size:14px" />
+				<separator height="2px" />
+				<div id="imp_boms_holder" width="600px" />
+				<separator height="2px" />
+				<!-- <button label="View job breakdown" style="font-size:9px" onClick="impBOM_viewJob()" /> -->
+			</div>
+			<div>
+				<label id="impbomselected" value="BUILDS" style="font-weight:bold;font-size:14px" />
+				<separator height="2px" />
+				<div id="bitems_holder" width="350px" />
+				<separator height="2px" />
+				<button id="assimpbom_b" label="Import builds" style="font-weight:bold" onClick="assFunc(self)" />
+			</div>
+		</hbox>
+	</div>
 </popup> <!-- ENDOF bomimport_pop -->
 
 <popup id="auditlogs_pop">
-<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
-	<label sclass="subhead" value="Audit Logs" />
-	<separator height="3px" />
-	<div id="auditlogs_holder" />
-	<separator height="3px" />
-	<button label="Ok" sclass="k9" onClick="auditlogs_pop.close()" />
-</div>
+	<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
+		<label sclass="subhead" value="Audit Logs" />
+		<separator height="3px" />
+		<div id="auditlogs_holder" />
+		<separator height="3px" />
+		<button label="Ok" sclass="k9" onClick="auditlogs_pop.close()" />
+	</div>
 </popup>
 
 <popup id="pickcustomer_popup">
-<div sclass="shadowbox" style="background:#f9b12d;">
-	<hbox>
-		<label style="font-size:9px">Customer name</label>
-		<textbox id="searchcust_tb" sclass="k9" />
-		<button label="Find" sclass="k9" onClick="findCustomers()" />
-	</hbox>
-	<separator height="2px" />
-	<hbox>
-		<div id="foundcusts_holder" width="400px" />
-		<separator width="5px" />
-		<div width="400px" id="custfound_wa" visible="false" >
-			<label id="fcustomername" style="font-size:13px;font-weight:bold;text-decoration:underline" />
-			<separator height="2px" />
-			<label id="fcustomerdetails" multiline="true" width="99%" height="100px" style="font-weight:bold" />
-			<separator height="3px" />
-			<button label="Select this customer" sclass="k9" onClick="assignCustomer()" />
-		</div>
-	</hbox>
-	<label id="selectcustid" visible="false" />
-</div>
+	<div sclass="shadowbox" style="background:#f9b12d;">
+		<hbox>
+			<label style="font-size:9px">Customer name</label>
+			<textbox id="searchcust_tb" sclass="k9" />
+			<button label="Find" sclass="k9" onClick="findCustomers()" />
+		</hbox>
+		<separator height="2px" />
+		<hbox>
+			<div id="foundcusts_holder" width="400px" />
+			<separator width="5px" />
+			<div width="400px" id="custfound_wa" visible="false" >
+				<label id="fcustomername" style="font-size:13px;font-weight:bold;text-decoration:underline" />
+				<separator height="2px" />
+				<label id="fcustomerdetails" multiline="true" width="99%" height="100px" style="font-weight:bold" />
+				<separator height="3px" />
+				<button label="Select this customer" sclass="k9" onClick="assignCustomer()" />
+			</div>
+		</hbox>
+		<label id="selectcustid" visible="false" />
+	</div>
 </popup> <!-- ENDOF pickcustomer_popup -->
 
 <!-- update file description popup -->
 <popup id="updatefiledesc_popup">
-<groupbox width="400px">
-	<caption id="updatefiledesc_label" />
-	<label value="Description" style="font-size:9px" />
-	<textbox id="update_file_description" multiline="true" height="70px" width="99%" sclass="k9" />
-	<separator height="3px" />
-	<hbox>
-		<button label="Update" style="font-size:9px" onClick="updateFileDescription(documents_holder,LC_PREFIX,glob_selected_lc)" />
-		<button label="Close" style="font-size:9px" onClick="updatefiledesc_popup.close()" />
-	</hbox>
-</groupbox>
+	<groupbox width="400px">
+		<caption id="updatefiledesc_label" />
+		<label value="Description" style="font-size:9px" />
+		<textbox id="update_file_description" multiline="true" height="70px" width="99%" sclass="k9" />
+		<separator height="3px" />
+		<hbox>
+			<button label="Update" style="font-size:9px" onClick="updateFileDescription(documents_holder,LC_PREFIX,glob_selected_lc)" />
+			<button label="Close" style="font-size:9px" onClick="updatefiledesc_popup.close()" />
+		</hbox>
+	</groupbox>
 </popup>
 
 <!-- upload a file popup -->
 <popup id="uploadfile_popup">
-<groupbox>
-<caption label="Upload a file" />
-	<grid>
-		<rows>
-			<row>
-				<label value="Filename" sclass="k9" />
-				<textbox id="fileupl_file_title" width="200px" sclass="k9" />
-			</row>
-			<row>
-				<label value="Description" sclass="k9" />
-				<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" sclass="k9" />
-			</row>
-		</rows>
-	</grid>
-</groupbox>
-<separator height="3px" />
-<hbox>
-	<button label="Select file" onClick="uploadFile(documents_holder,LC_PREFIX,glob_selected_lc)" sclass="k9" />
-	<button label="Close" onClick="uploadfile_popup.close()" sclass="k9" />
-</hbox>
+	<groupbox>
+		<caption label="Upload a file" />
+			<grid>
+				<rows>
+					<row>
+						<label value="Filename" sclass="k9" />
+						<textbox id="fileupl_file_title" width="200px" sclass="k9" />
+					</row>
+					<row>
+						<label value="Description" sclass="k9" />
+						<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" sclass="k9" />
+					</row>
+				</rows>
+			</grid>
+	</groupbox>
+	<separator height="3px" />
+	<hbox>
+		<button label="Select file" onClick="uploadFile(documents_holder,LC_PREFIX,glob_selected_lc)" sclass="k9" />
+		<button label="Close" onClick="uploadfile_popup.close()" sclass="k9" />
+	</hbox>
 </popup>
 
 <popup id="lcsetstat_pop">
-<div sclass="shadowbox" style="background:#97b83a;">
-<label id="lcsetstat_lbl" />
-<vbox>
-	<button id="stactive_b" label="ACTIVE" width="100px" onClick="doFunc(self)" />
-	<button id="stinactive_b" label="INACTIVE" width="100px" onClick="doFunc(self)" />
-	<button id="sttermin_b" label="TERMINATED" width="100px" onClick="doFunc(self)" />
-	<button id="stextens_b" label="EXTENSION" width="100px" onClick="doFunc(self)" />
-	<button id="stinerti_b" label="INERTIA" width="100px" onClick="doFunc(self)" />
-	<button id="stbuyout_b" label="BUYOUT" width="100px" onClick="doFunc(self)" />
-	<button id="stpartial_b" label="PARTIAL" width="100px" onClick="doFunc(self)" />
-	<button id="partret_b" label="PARTIAL_RET" width="100px" onClick="doFunc(self)" />
-	<button id="creditn_b" label="CN" width="100px" onClick="doFunc(self)" />
-</vbox>
-</div>
+	<div sclass="shadowbox" style="background:#97b83a;">
+		<label id="lcsetstat_lbl" />
+		<vbox>
+			<button id="stactive_b" label="ACTIVE" width="100px" onClick="doFunc(self)" />
+			<button id="stinactive_b" label="INACTIVE" width="100px" onClick="doFunc(self)" />
+			<button id="sttermin_b" label="TERMINATED" width="100px" onClick="doFunc(self)" />
+			<button id="stextens_b" label="EXTENSION" width="100px" onClick="doFunc(self)" />
+			<button id="stinerti_b" label="INERTIA" width="100px" onClick="doFunc(self)" />
+			<button id="stbuyout_b" label="BUYOUT" width="100px" onClick="doFunc(self)" />
+			<button id="stpartial_b" label="PARTIAL" width="100px" onClick="doFunc(self)" />
+			<button id="partret_b" label="PARTIAL_RET" width="100px" onClick="doFunc(self)" />
+			<button id="creditn_b" label="CN" width="100px" onClick="doFunc(self)" />
+		</vbox>
+	</div>
 </popup>
 
 <popup id="fcfuncs_pop">
-<div sclass="shadowbox" style="background:#97b83a;">
-<vbox>
-	<button label="Import FC6 DOs" sclass="k9" width="${BUTT_WIDTH}" onClick='show_FC_DO(newasset_b,1,impdoass_holder,"impfc6dolb")' />
-	<button label="FlexImport FC6 DO" sclass="k9" width="${BUTT_WIDTH}" onClick="fleximportfc6_pop.open(newasset_b)" />
-	<button label="Sedut Contractcare" sclass="k9" width="${BUTT_WIDTH}" onClick="popOp_suckContractcare(self)" />
-	<button id="getfc6assdet_b" label="TryGet FC6 asset-info" width="${BUTT_WIDTH}" sclass="k9" onClick="assFunc(self)" />
-</vbox>
-</div>
+	<div sclass="shadowbox" style="background:#97b83a;">
+		<vbox>
+			<button label="Import FC6 DOs" sclass="k9" width="${BUTT_WIDTH}" onClick='show_FC_DO(newasset_b,1,impdoass_holder,"impfc6dolb")' />
+			<button label="FlexImport FC6 DO" sclass="k9" width="${BUTT_WIDTH}" onClick="fleximportfc6_pop.open(newasset_b)" />
+			<button label="Sedut Contractcare" sclass="k9" width="${BUTT_WIDTH}" onClick="popOp_suckContractcare(self)" />
+			<button id="getfc6assdet_b" label="TryGet FC6 asset-info" width="${BUTT_WIDTH}" sclass="k9" onClick="assFunc(self)" />
+		</vbox>
+	</div>
 </popup>
 
 <popup id="modfuncs_pop">
-<div sclass="shadowbox" style="background:#97b83a;">
-<vbox>
-	<button label="Copy from LC" sclass="k9" width="${BUTT_WIDTH}" onClick="copyasslc_pop.open(self)" />
-	<button label="Check dup-assets in LC" sclass="k9" width="${BUTT_WIDTH}" onClick="checkAssetDups()" />
-	<separator height="5px" />
-	<button label="Import BOM" sclass="k9" width="${BUTT_WIDTH}" onClick="popImportBOM(self)" />
-	<button label="Source BOM details" sclass="k9" width="${BUTT_WIDTH}" onClick="bomDetailsToLC(glob_selected_ass,glob_selected_asstag)" />
-</vbox>
-</div>
+	<div sclass="shadowbox" style="background:#97b83a;">
+		<vbox>
+			<button label="Copy from LC" sclass="k9" width="${BUTT_WIDTH}" onClick="copyasslc_pop.open(self)" />
+			<button label="Check dup-assets in LC" sclass="k9" width="${BUTT_WIDTH}" onClick="checkAssetDups()" />
+			<separator height="5px" />
+			<button label="Import BOM" sclass="k9" width="${BUTT_WIDTH}" onClick="popImportBOM(self)" />
+			<button label="Source BOM details" sclass="k9" width="${BUTT_WIDTH}" onClick="bomDetailsToLC(glob_selected_ass,glob_selected_asstag)" />
+		</vbox>
+	</div>
 </popup>
 
 <popup id="gcnfuncs_pop">
-<div sclass="shadowbox" style="background:#97b83a;">
-<vbox>
-	<button id="markcollect_b" sclass="k9" label="Save for GCO" width="${BUTT_WIDTH}" onClick="assFunc(self)" />
-	<button id="cleargcntrans_b" sclass="k9" label="Clear temp GCO" width="${BUTT_WIDTH}" onClick="assFunc(self)" />
-	<button label="Update manual GCO" sclass="k9" width="${BUTT_WIDTH}" onClick="mangcn_pop.open(self)" />
-</vbox>
-</div>
+	<div sclass="shadowbox" style="background:#97b83a;">
+		<vbox>
+			<button id="markcollect_b" sclass="k9" label="Save for GCO" width="${BUTT_WIDTH}" onClick="assFunc(self)" />
+			<button id="cleargcntrans_b" sclass="k9" label="Clear temp GCO" width="${BUTT_WIDTH}" onClick="assFunc(self)" />
+			<button label="Update manual GCO" sclass="k9" width="${BUTT_WIDTH}" onClick="mangcn_pop.open(self)" />
+		</vbox>
+	</div>
 </popup>
 
 <popup id="mpf_pop">
-<div sclass="shadowbox" style="background:#97b83a;">
-<grid sclass="GridLayoutNoBorder">
-<rows>
-	<row style="background:#97b83a;">
-		<label value="Monthly rental" sclass="k9" />
-		<textbox id="mthrentmass_tb" width="70px" />
-		<button label="Mass-update rental" sclass="k9" width="${BUTT_WIDTH}" onClick="massUpdateRental(mthrentmass_tb.getValue())" />
-	</row>
-	<row style="background:#97b83a;">
-		<separator />
-		<separator />
-		<button label="Update billable flag" sclass="k9" width="${BUTT_WIDTH}" onClick="updateAssetFlags(1)" />
-	</row>
-	<row style="background:#97b83a;">
-		<separator />
-		<separator />
-		<button label="Update BUYOUT flag" sclass="k9" width="${BUTT_WIDTH}" onClick="updateAssetFlags(2)" />
-	</row>
-</rows>
-</grid>
-</div>
+	<div sclass="shadowbox" style="background:#97b83a;">
+		<grid sclass="GridLayoutNoBorder">
+			<rows>
+				<row style="background:#97b83a;">
+					<label value="Monthly rental" sclass="k9" />
+					<textbox id="mthrentmass_tb" width="70px" />
+					<button label="Mass-update rental" sclass="k9" width="${BUTT_WIDTH}" onClick="massUpdateRental(mthrentmass_tb.getValue())" />
+				</row>
+				<row style="background:#97b83a;">
+					<separator />
+					<separator />
+					<button label="Update billable flag" sclass="k9" width="${BUTT_WIDTH}" onClick="updateAssetFlags(1)" />
+				</row>
+				<row style="background:#97b83a;">
+					<separator />
+					<separator />
+					<button label="Update BUYOUT flag" sclass="k9" width="${BUTT_WIDTH}" onClick="updateAssetFlags(2)" />
+				</row>
+				<row style="background:#97b83a;">
+					<separator />
+					<separator />
+					<button label="Update HOTSWAP flag" sclass="k9" width="${BUTT_WIDTH}" onClick="updateAssetFlags(3)" />
+				</row>
+			</rows>
+		</grid>
+	</div>
 </popup>
 
 <style src="/real-world.css" />
@@ -638,34 +678,32 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 <panelchildren style="background:#2e3436">
 
 <div sclass="shadowbox" style="background:#2e3436;" >
+	<hbox>
+		<vbox>
+			<label value="Search" sclass="k9b" />
+			<label value="Ass.Tag" sclass="k9b" />
+		</vbox>
+		<vbox>
+			<textbox id="search_txt" sclass="k9" />
+			<textbox id="schasset_txt" sclass="k9" />
+		</vbox>
+		<vbox>
+			<button label="Find" sclass="k9mo" onClick="listROCLC(1)" />
+			<button label="Dig asset" sclass="k9mo" onClick="digAssets(self)" />
+		</vbox>
 
-<hbox>
-	<vbox>
-		<label value="Search" sclass="k9b" />
-		<label value="Ass.Tag" sclass="k9b" />
-	</vbox>
-	<vbox>
-		<textbox id="search_txt" sclass="k9" />
-		<textbox id="schasset_txt" sclass="k9" />
-	</vbox>
-	<vbox>
-		<button label="Find" sclass="k9mo" onClick="listROCLC(1)" />
-		<button label="Dig asset" sclass="k9mo" onClick="digAssets(self)" />
-	</vbox>
-
-	<button label="Load latest" style="font-weight:bold" onClick="listROCLC(3)" />
-	<separator width="10px" />
-	<button id="newroc_b" label="New LC/ROC entry" style="font-weight:bold" onClick="doFunc(self)" />
-	<button id="rocsetstat_b" label="Set status" style="font-weight:bold" onClick="lcsetstat_pop.open(self)" />
-	<button id="shwauditlogs_b" label="LC/ROC Logs" onClick="doFunc(self)" />
-	<separator width="50px" />
-	<button id="admin_b" label="ADMIN" style="color:#ff0000;font-weight:bold" visible="false" onClick="adminpop.open(self)" />	
-</hbox>
-
-<separator height="3px" />
-<div id="rocs_holder" />
+		<button label="Load latest" sclass="k9mo" onClick="listROCLC(3)" />
+		<separator width="10px" />
+		<button id="newroc_b" label="New LC/ROC entry" sclass="k9mo" onClick="doFunc(self)" />
+		<button id="rocsetstat_b" label="Set status" sclass="k9mo" onClick="lcsetstat_pop.open(self)" />
+		<button id="shwauditlogs_b" label="LC/ROC Logs" sclass="k9mo" onClick="doFunc(self)" />
+		<button id="listhotswap_b" label="List HOTSWAPS" sclass="k9" onClick="listHotswaps()" />
+		<separator width="50px" />
+		<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#ff0000" visible="false" onClick="adminpop.open(self)" />
+	</hbox>
+	<separator height="3px" />
+	<div id="rocs_holder" />
 </div>
-
 <separator height="2px" />
 
 <div sclass="shadowbox" style="background:#06333a" id="mainworkarea" visible="false" >
@@ -733,9 +771,9 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 	<tabpanel> <!-- ASSETS -->
 		<div style="background:#2e3436">
 			<hbox>
-				<button id="newasset_b" label="New asset" width="${BUTT_WIDTH}" style="color:#909d2a;font-weight:bold" onClick="assFunc(self)" />
-				<button id="repasspop_b" label="Replace" width="${BUTT_WIDTH}" style="color:#ff0000;font-weight:bold" onClick="assFunc(self)" />
-				<button id="remasset_b" label="Remove" width="${BUTT_WIDTH}" style="color:#ff0000;font-weight:bold" onClick="assFunc(self)" />
+				<button id="newasset_b" label="New asset" width="${BUTT_WIDTH}" sclass="k9mo" style="color:#909d2a" onClick="assFunc(self)" />
+				<button id="repasspop_b" label="Replace" width="${BUTT_WIDTH}" sclass="k9mo" style="color:#ff0000" onClick="assFunc(self)" />
+				<button id="remasset_b" label="Remove" width="${BUTT_WIDTH}" sclass="k9mo" style="color:#ff0000" onClick="assFunc(self)" />
 				<separator width="10px" />
 				<button id="chkrma_b" label="Check for RMA" width="${BUTT_WIDTH}" sclass="k9mo" onClick="checkRMA_Reps()" />
 				<button label="FC6/Contractcare related" sclass="k9mo" onClick="fcfuncs_pop.open(self)" />
@@ -777,6 +815,8 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 </tabbox>
 
 </div>
+
+<div id="winsholder" visible="false" />
 
 <zscript>
 <![CDATA[

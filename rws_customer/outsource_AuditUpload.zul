@@ -57,7 +57,7 @@ void showPartnerGCOList(Div idiv, String ilbid)
 	Listbox newlb = lbhand.makeVWListbox_Width(idiv, gcolbhds, ilbid, 3);
 
 	sqlstm = "select origid,datecreated,res_date,customer_name,fc6_custid from rw_goodscollection " +
-	"where opartner is not null order by origid desc";
+	"where opartner='EIS' order by origid desc"; // HARDCODED for 'EIS' only
 
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() == 0) return;

@@ -20,7 +20,7 @@ void showAssetMetadata(String iwhat)
 	"type","osversion","offapps","serial_no", "RM_Month"
 	};
 	
-	populateUI_Data(metflds, metfnms, rc);
+	ngfun.populateUI_Data(metflds, metfnms, rc);
 	/*
 	for(i=0; i<metflds.length; i++)
 	{
@@ -69,20 +69,18 @@ assclicko = new assClick();
 void showAssets(String iwhat)
 {
 	Listbox newlb = lbhand.makeVWListbox_Width(lcasset_holder, asslb_hds, "lcassets_lb", 20);
-	sqlstm = "select origid,asset_tag,brand,model,type,serial_no,gcn_id,billable,buyout,impfromlc from rw_lc_equips " +
+	sqlstm = "select origid,asset_tag,brand,model,type,serial_no,gcn_id,billable,buyout,impfromlc,hotswap from rw_lc_equips " +
 	"where lc_parent=" + iwhat + " order by asset_tag";
 
 	asrs = sqlhand.gpSqlGetRows(sqlstm);
 	if(asrs.size() == 0) return;
-	newlb.setMold("paging");
-	newlb.setMultiple(true);
-	newlb.setCheckmark(true);
+	newlb.setMold("paging"); newlb.setMultiple(true); newlb.setCheckmark(true);
 	newlb.addEventListener("onSelect", assclicko);
 	ArrayList kabom = new ArrayList();
 	String[] fl = { "asset_tag", "serial_no", "brand", "model", "type", "gcn_id", "billable", "buyout", "impfromlc", "origid" };
 	for(d : asrs)
 	{
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 		ks = "font-size:9px";
 		if(d.get("gcn_id") != null && d.get("gcn_id") != 0 ) ks="background:#f77272;font-size:9px";
 		
@@ -91,6 +89,10 @@ void showAssets(String iwhat)
 
 		if(d.get("billable") != null)
 			if(d.get("billable")) ks = "background:#AEF26B;font-size:9px";
+
+		if(d.get("hotswap") != null)
+			if(d.get("hotswap")) ks = "background:#D11CBE;font-size:9px";
+
 
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false",ks);
 		kabom.clear();
@@ -111,8 +113,8 @@ void assFunc(Object iwhat)
 	if(itype.equals("newasset_b"))
 	{
 		if(glob_selected_lc.equals("")) return;
-		sqlstm = "insert into rw_lc_equips (asset_tag,serial_no,lc_parent,billable,buyout) values " +
-		"('NEW ASSET','NO SERIAL'," + glob_selected_lc + ",0,0)";
+		sqlstm = "insert into rw_lc_equips (asset_tag,serial_no,lc_parent,billable,buyout,hotswap) values " +
+		"('NEW ASSET','NO SERIAL'," + glob_selected_lc + ",0,0,0)";
 		refresh_wass = true;
 	}
 
@@ -127,7 +129,7 @@ void assFunc(Object iwhat)
 		m_type, m_cust_location, m_poweradaptor, m_serial_no, m_rm_month
 		};
 
-		inpdat = getString_fromUI(inpflds);
+		inpdat = ngfun.getString_fromUI(inpflds);
 		try { k = Float.parseFloat(inpdat[27]); } catch (Exception e) { inpdat[27] = "0"; } // chk RM/month is truly numba
 
 		sqlstm = "update rw_lc_equips set asset_tag='" + inpdat[0] + "', brand='" + inpdat[1] + "', model='" + inpdat[2] +"'," +
@@ -306,12 +308,12 @@ void copyAssetsFromLC(String idest, String isrc)
 	"cust_location,qty,replacement,replacement_date,rma_qty,remarks,collected," +
 	"RM_Asset,RM_Month,latest_replacement,roc_no,do_no,cn_no,asset_status," +
 	"coa2,coa3,coa4,ram2,ram3,ram4,hdd2,hdd3,hdd4," +
-	"osversion,offapps,poweradaptor,battery,estatus,gfxcard,mouse,keyboard,monitor,billable,buyout) " +
+	"osversion,offapps,poweradaptor,battery,estatus,gfxcard,mouse,keyboard,monitor,billable,buyout,hotswap) " +
 	"select " + idest + ",asset_tag,serial_no,type,brand,model,capacity,color,coa1,ram,hdd,others," +
 	"cust_location,qty,replacement,replacement_date,rma_qty,remarks,collected," +
 	"RM_Asset,RM_Month,latest_replacement,roc_no,do_no,cn_no,asset_status," +
 	"coa2,coa3,coa4,ram2,ram3,ram4,hdd2,hdd3,hdd4," +
-	"osversion,offapps,poweradaptor,battery,estatus,gfxcard,mouse,keyboard,monitor,billable,buyout " +
+	"osversion,offapps,poweradaptor,battery,estatus,gfxcard,mouse,keyboard,monitor,billable,buyout,hotswap " +
 	"from rw_lc_equips WHERE lc_parent=" + isrc;
 
 	sqlhand.gpSqlExecuter(sqlstm);
@@ -326,12 +328,12 @@ void copyAssetsFromLC_omitgcnbuyout(String idest, String isrc)
 	"cust_location,qty,replacement,replacement_date,rma_qty,remarks,collected," +
 	"RM_Asset,RM_Month,latest_replacement,roc_no,do_no,cn_no,asset_status," +
 	"coa2,coa3,coa4,ram2,ram3,ram4,hdd2,hdd3,hdd4," +
-	"osversion,offapps,poweradaptor,battery,estatus,gfxcard,mouse,keyboard,monitor,billable,buyout) " +
+	"osversion,offapps,poweradaptor,battery,estatus,gfxcard,mouse,keyboard,monitor,billable,buyout,hotswap) " +
 	"select " + idest + ",asset_tag,serial_no,type,brand,model,capacity,color,coa1,ram,hdd,others," +
 	"cust_location,qty,replacement,replacement_date,rma_qty,remarks,collected," +
 	"RM_Asset,RM_Month,latest_replacement,roc_no,do_no,cn_no,asset_status," +
 	"coa2,coa3,coa4,ram2,ram3,ram4,hdd2,hdd3,hdd4," +
-	"osversion,offapps,poweradaptor,battery,estatus,gfxcard,mouse,keyboard,monitor,billable,buyout " +
+	"osversion,offapps,poweradaptor,battery,estatus,gfxcard,mouse,keyboard,monitor,billable,buyout,hotswap " +
 	"from rw_lc_equips WHERE (buyout is null or buyout=0) and (gcn_id is null or gcn_id=0) and lc_parent=" + isrc;
 
 	sqlhand.gpSqlExecuter(sqlstm);
@@ -494,7 +496,7 @@ void clearReplaceAssetPopup()
 	r_type,r_osversion,r_offapps, r_serial_no
 	};
 
-	clearUI_Field(metaflds);
+	ngfun.clearUI_Field(metaflds);
 }
 
 // Delete assets from LC, reset SMD.lc_id
@@ -600,7 +602,7 @@ void impRWI_Extra()
 	Object[] ob = { customername, l_fc6_custid, i_lstartdate, i_lenddate, i_rocno, i_period,
 	i_remarks, i_order_type, i_inst_type, i_rm_contract, i_invoice_date };
 
-	populateUI_Data(ob,fl,drc);
+	ngfun.populateUI_Data(ob,fl,drc);
 
 	try {
 	mrnt = drc.get("contractamt") / Integer.parseInt(drc.get("noofinstallmentyh"));
@@ -656,7 +658,7 @@ void checkRMA_Reps()
 	Pattern pattern = Pattern.compile("([NAM])([0-9][0-9][0-9][0-9][0-9][0-9]?[0-9])");
 	for(d : rcs)
 	{
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 
 		ass1 = pattern.matcher(d.get("do_item"));
 		if(ass1.find())
@@ -703,12 +705,7 @@ Object[] dahds =
 	ArrayList kabom = new ArrayList();
 	for(d : drs)
 	{
-		popuListitems_Data(kabom,fl,d);
-		/*
-		kabom.add( kiboo.checkNullString(d.get("lc_id")) );
-		kabom.add( kiboo.checkNullString(d.get("prev_lc")) );
-		kabom.add( kiboo.checkNullString(d.get("customer_name")) );
-		*/
+		ngfun.popuListitems_Data(kabom,fl,d);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
 	}
@@ -820,7 +817,7 @@ void massUpdateRental(String iwh)
 
 // 12/06/2014: req by Nurul to update if asset billable -- special for MISC Berhad
 // 16/06/2014: req by Nurul to have a BUYOUT flag
-// itype: 1=billable, 2=buyout
+// itype: 1=billable, 2=buyout, 3=hotswap(10/09/2014 req by farah)
 void updateAssetFlags(int itype)
 {
 	try { if(lcassets_lb.getSelectedCount() == 0) return; } catch (Exception e) { return; }
@@ -845,6 +842,10 @@ void updateAssetFlags(int itype)
 			case 2:
 				flagstr = "buyout=1-buyout";
 				msgtext = "Piffff... BUYOUT flag toggled.";
+				break;
+			case 3:
+				flagstr = "hotswap=1-hotswap";
+				msgtext = "Dussshhh.. HOTSWAP flag toggled.";
 				break;
 		}
 
