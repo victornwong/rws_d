@@ -11,16 +11,45 @@ Object[] dnsi_hds =
 };
 vc_pos = 1;
 
+void digCN(Object iwhat, Object iwhere, Object stdt, Object eddt)
+{
+	sdate = kiboo.getDateFromDatebox(stdt);
+	edate = kiboo.getDateFromDatebox(eddt);
+	st = kiboo.replaceSingleQuotes(searchtext_tb.getValue().trim());
+	if(st.equals("")) return;
+
+	Listbox newlb = lbhand.makeVWListbox_Width(iwhere, dnsi_hds, "dnsi_lb", 10);
+	newlb.setRows(20); newlb.setMold("paging");
+
+	sqlstm = "select d.voucherno, convert(datetime, focus5012.dbo.ConvertFocusDate(d.date_), 112) as vdate, " +
+	"a.name as customer_name, d.amount1, cnu.refnoyh, cnu.remarksyh " +
+	"from data d left join mr000 a on a.masterid = d.bookno left join u0111 cnu on cnu.extraid = d.extraoff " +
+	"where d.vouchertype=4096 " +
+	"and convert(datetime, focus5012.dbo.ConvertFocusDate(d.date_), 112) between '" + sdate +"' and '" + edate + "' " +
+	"and a.name like '%" + st + "%' " +
+	"order by d.voucherno desc;";
+
+	recs = sqlhand.rws_gpSqlGetRows(sqlstm);
+	ArrayList kabom = new ArrayList();
+	String[] fl = { "vdate", "voucherno", "customer_name", "amount1", "refnoyh", "remarksyh" }; 
+	for(d : recs)
+	{
+		ngfun.popuListitems_Data(kabom,fl,d);
+		ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+		lbhand.setListcellItemLabel(ki, vc_pos, "CN" + d.get("voucherno") );
+		kabom.clear();
+	}
+}
+
 // Dig DN and SI by remarks/narration -- spelling ain't right, no records
 // iwhat:button(id is the search txt), iwhere=holder, stdt=start-date, eddt=end-date
 void digDNSI(Object iwhat, Object iwhere, Object stdt, Object eddt)
 {
 	sdate = kiboo.getDateFromDatebox(stdt);
-    edate = kiboo.getDateFromDatebox(eddt);
+	edate = kiboo.getDateFromDatebox(eddt);
 	itype = iwhat.getId();
 	Listbox newlb = lbhand.makeVWListbox_Width(iwhere, dnsi_hds, "dnsi_lb", 10);
-	newlb.setRows(22);
-	newlb.setMold("paging");
+	newlb.setRows(22); newlb.setMold("paging");
 
 	// Dig DN
 	sqlstm = "select convert(datetime, focus5012.dbo.ConvertFocusDate(d.date_), 112) as vdate, " +
@@ -38,7 +67,7 @@ void digDNSI(Object iwhat, Object iwhere, Object stdt, Object eddt)
 		String[] fl = { "vdate", "voucherno", "customer_name", "amount1", "refnoyh", "remarksyh" }; 
 		for(d : recs)
 		{
-			popuListitems_Data(kabom,fl,d);
+			ngfun.popuListitems_Data(kabom,fl,d);
 			ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 			lbhand.setListcellItemLabel(ki, vc_pos, "DN" + d.get("voucherno") );
 			kabom.clear();
@@ -60,7 +89,7 @@ void digDNSI(Object iwhat, Object iwhere, Object stdt, Object eddt)
 	String[] fl = { "vdate", "voucherno", "customer_name", "amount1", "sonoyh", "remarksyh" }; 
 	for(d : recs)
 	{
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 		ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		//lbhand.setListcellItemLabel(ki, vc_pos, "SI" + d.get("voucherno") );
 		kabom.clear();

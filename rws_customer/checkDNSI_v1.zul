@@ -14,16 +14,16 @@
 <zscript src="./digDNSI_funcs.zs" />
 <zscript>
 <![CDATA[
-MYTITLE = "Check DN and SI";
-MYVERSION = "v0.1";
+MYTITLE = "Check DN and SI and CN";
+MYVERSION = "v0.1.1";
 MYPANEL = "chkdnsipan";
 /*
-Title		: Check DN and SI
-Written by	: Victor Wong
-Dated		: 11/04/2014
-To check DN/SI for buyout, insurance and etc..
-Revisions:
+@Title Check DN and SI
+@Author Victor Wong
+@Since 11/04/2014
+@Notes To check DN/SI for buyout, insurance and etc..
 27/06/2014: Mahes req to dig for "deposit" in DN
+11/09/2014: Shopa req to list CN also
 */
 import java.util.*;
 import java.text.*;
@@ -34,11 +34,8 @@ myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
+guihand = new GuiFuncs(); luhand = new LookupFuncs(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 ]]>
 </zscript>
@@ -59,6 +56,8 @@ luhand = new LookupFuncs();
 	<button id="project" label="Project" sclass="k9" onClick="digDNSI(self,dnsholder,startdate,enddate)" />
 	<button id="damage" label="Damages" sclass="k9" onClick="digDNSI(self,dnsholder,startdate,enddate)"/>
 	<button id="deposit" label="Deposits" sclass="k9" onClick="digDNSI(self,dnsholder,startdate,enddate)"/>
+	<textbox id="searchtext_tb" sclass="k9" />
+	<button label="CN by date and customer" sclass="k9mo" onClick="digCN(self,dnsholder,startdate,enddate)"/>
 	<button label="Export xcel" sclass="k9" onClick="exportDNSI_list(kasiexport)"/>
 </div>
 <separator height="3px" />

@@ -4,11 +4,11 @@
 // @Notes with extra checkings as functions will be used in JobSheetThing.zul, whPlayJobSheet_v1.zul
 import org.victor.*;
 
-String[] pl_colws = { "30px", "40px", ""         ,"40px" };
-String[] pl_colls = { ""    , "No." , "Pick item","Qty"  };
+String[] pl_colws = { "30px", "40px", ""         ,"40px"};
+String[] pl_colls = { ""    , "No." , "Pick item","Qty" };
 
 String[] wh_pl_colws = { "30px", "40px", ""         ,"40px", "" };
-String[] wh_pl_colls = { ""    , "No." , "Pick item","Qty",  "AssetTags" };
+String[] wh_pl_colls = { ""    , "No." , "Pick item","Qty",  "Asset tags" };
 
 String[] itm_colws = { "50px","",                "60px" ,"60px" };
 String[] itm_colls = { "No." ,"Item description","Color","Qty"  };
@@ -110,12 +110,19 @@ void drawPicklist(HashMap iplx)
 	}
 }
 
+Object getEquipLookup_rec_byname(String iwhat)
+{
+	sqlstm = "select * from rw_equiplookup where name='" + iwhat + "'";
+	return sqlhand.gpSqlFirstRow(sqlstm);
+}
+
 void pickJob_reqitems()
 {
 	if(items_holder.getFellowIfAny("items_grid") == null) return;
 	irs = items_rows.getChildren().toArray();
 	ks = "";
 	plx.clear(); // clear hashmap for new entries
+	pl_itemtypes.clear();
 	for(i=0; i<irs.length; i++)
 	{
 		ix = irs[i].getChildren().toArray();
@@ -126,16 +133,31 @@ void pickJob_reqitems()
 		try
 		{
 			addUpItemQty(plx,lpi[0],qt);
+			//ks += "[" + lpi[0] + "] [qty:" + qt.toString() +"]\n";
 
-			ks += "[" + lpi[0] + "] [qty:" + qt.toString() +"]\n";
+			eqr = getEquipLookup_rec_byname(lpi[0].trim());
+			e_type = e_ramtype = e_hddtype = "";
+			if(eqr != null)
+			{
+				e_type = eqr.get("item");
+				e_ramtype = eqr.get("ram_type");
+				e_hddtype = eqr.get("hdd_type");
+			}
 
 			sp = lpi[1].split("/"); // assuming line 1=item's specs
-			for(j=0;j<sp.length;j++)
+			for(j=0;j<sp.length;j++) // also assuming item0=RAM, item1=HDD, item2=onwards whatever
 			{
-				ks += "[" + sp[j].trim() + "]";
-				addUpItemQty(plx,sp[j],qt);
+				//ks += "[" + sp[j].trim() + "]";
+				hitm = sp[j].trim();
+				if(j == 0) hitm = e_ramtype + " " + sp[j].trim() + " " + e_type;
+				if(j == 1) hitm = e_hddtype + " " + sp[j].trim() + " " + e_type;
+
+				if(hitm.indexOf("DVD") != -1 || hitm.indexOf("CDR") != -1)
+					hitm = sp[j].trim() + " " + e_type;
+
+				addUpItemQty(plx,hitm,qt);
 			}
-			ks += "\n";
+			//ks += "\n";
 		} catch (Exception e) {}
 	}
 	drawPicklist(plx);
@@ -158,6 +180,8 @@ void showThings(String iwhat)
 	bx = (glob_sel_jstat.equals("")) ? false : ((glob_sel_jstat.equals("DRAFT")) ? false : true); // only DRAFT pick-list can do CRUD
 	toggButts(bx);
 
+	jobtitle_lb.setValue("JOB " + jrec.get("origid").toString() + " : " + jrec.get("customer_name"));
+
 	// if got jobsheet no., show 'em
 	if(!glob_sel_jobsheet.equals(""))
 	{
@@ -169,13 +193,14 @@ void showThings(String iwhat)
 			qtys = sqlhand.clobToString(r.get("pl_qty")).split("~");
 			atgs = sqlhand.clobToString(r.get("pl_asset_tags")).split("~");
 
-			p1 = pl_colws; p2 = pl_colls;
+			p1 = pl_colws; p2 = pl_colls; centerme = true;
 			if(reqitems_grid_type == 2)
 			{
 				p1 = wh_pl_colws; p2 = wh_pl_colls;
+				centerme = false;
 			}
 
-			ngfun.checkMakeGrid(p1,p2,pl_holder,"pl_grid","pl_rows","background:#97b83a","",true);
+			ngfun.checkMakeGrid(p1,p2,pl_holder,"pl_grid","pl_rows","background:#97b83a","",centerme);
 			ln = 1; ks = "font-size:9px;font-weight:bold";
 			for(i=0; i<itms.length; i++)
 			{
@@ -183,11 +208,18 @@ void showThings(String iwhat)
 				nrw.setParent(pl_rows);
 				ngfun.gpMakeCheckbox(nrw,"","","");
 				ngfun.gpMakeLabel(nrw,"",ln.toString() + ".","");
-				ngfun.gpMakeTextbox(nrw,"",itms[i],ks,"99%",textboxnulldrop);
-				ngfun.gpMakeTextbox(nrw,"",qtys[i],ks,"",textboxnulldrop);
 
-				if(reqitems_grid_type == 2)
+				if(reqitems_grid_type == 1) // prod-side
 				{
+					ngfun.gpMakeTextbox(nrw,"",itms[i],ks,"99%",textboxnulldrop);
+					ngfun.gpMakeTextbox(nrw,"",qtys[i],ks,"",textboxnulldrop);
+				}
+				else
+				if(reqitems_grid_type == 2) // wh-side
+				{
+					ngfun.gpMakeLabel(nrw,"",itms[i],ks);
+					ngfun.gpMakeLabel(nrw,"",qtys[i],ks);
+
 					u = "";
 					try { u = atgs[i]; } catch (Exception e) {}
 					n = ngfun.gpMakeTextbox(nrw,"",u,ks,"98%",textboxnulldrop); // fill-up asset-tags
@@ -287,9 +319,19 @@ void showJobs(int itype)
 	}
 }
 
-void showCheckstock_win(Div idiv, String titems)
+void showCheckstock_win(Div idiv, ArrayList titems)
 {
-Object[] cstkhds =
+Object[] cstkhds1 =
+{
+	new listboxHeaderWidthObj("No.",true,"40px"),
+	new listboxHeaderWidthObj("Items found",true,""),
+	//new listboxHeaderWidthObj("Type",true,"40px"),
+	//new listboxHeaderWidthObj("Pallet",true,"60px"),
+	new listboxHeaderWidthObj("Qty",true,"60px"),
+};
+String[] fl_t1 = { "name", "instk" }; // "item", "pallet", 
+
+Object[] cstkhds2 =
 {
 	new listboxHeaderWidthObj("No.",true,"40px"),
 	new listboxHeaderWidthObj("Items found",true,""),
@@ -297,30 +339,47 @@ Object[] cstkhds =
 	new listboxHeaderWidthObj("Pallet",true,"60px"),
 	new listboxHeaderWidthObj("Qty",true,"60px"),
 };
+String[] fl_t2 = { "name", "item", "pallet", "instk" };
 
-	mwin = ngfun.vMakeWindow(idiv,"Check stock","0","center","500px","");
+	lbhds = cstkhds1; flds = fl_t1;
+	if(reqitems_grid_type == 2)
+	{
+		lbhds = cstkhds2; flds = fl_t2;
+	}
+
+	mwin = ngfun.vMakeWindow(idiv,"Check + pick item","0","center","500px","");
 	kdiv = new Div();
 	kdiv.setParent(mwin);
-	Listbox newlb = lbhand.makeVWListbox_Width(kdiv, cstkhds, "chkstock_lb", 3);
+	Listbox newlb = lbhand.makeVWListbox_Width(kdiv, lbhds, "chkstock_lb", 3);
 
 	csqlstm = "select distinct name,item,pallet,sum(qty) as instk from partsall_0 " +
-	"where name not like '(DO NOT%' and name not like '%EIS%' and " +
-	"name in (" + titems + ") " +
-	"and pallet not like 'EIS%' and pallet<>'PROD' and pallet<>'WH PALLET' and pallet<>'OUT'" +
+	"where name not like '(DO NOT%' and name not like '%EIS%' and (";
+
+	ik = titems.toArray();
+	wops = "";
+	for(i=0;i<ik.length;i++)
+	{
+		b = ik[i].trim().replace(" ","%");
+		wops += "name like '%" + b + "%' or ";
+	}
+	try { wops = wops.substring(0,wops.length()-4); } catch (Exception e) {}
+
+	csqlstm += wops + ") and pallet not like 'EIS%' and pallet<>'PROD' and pallet<>'WH PALLET' and pallet<>'OUT'" +
 	"group by name,item,pallet " +
 	"having sum(qty) > 0 " +
 	"order by item,pallet,name";
+
+	//alert(csqlstm); return;
 
 	r = sqlhand.rws_gpSqlGetRows(csqlstm);
 	if(r.size() == 0) return;
 	newlb.setMold("paging"); newlb.setRows(20);
 	ArrayList kabom = new ArrayList();
-	String[] fl = { "name", "item", "pallet", "instk" };
 	lnc = 1;
 	for(d : r)
 	{
 		kabom.add(lnc.toString() + "." );
-		ngfun.popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,flds,d);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
 		lnc++;

@@ -31,6 +31,7 @@ guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 HashMap plx = new HashMap();
+HashMap pl_itemtypes = new HashMap();
 glob_sel_job = glob_sel_jobsheet = glob_sel_jstat = "";
 last_joblist_type = 0;
 
@@ -114,15 +115,16 @@ void pl_DoFunc(String itype) // pick-list functions dispenser
 		try
 		{
 			jk = pl_rows.getChildren().toArray();
-			itms = "";
+			ArrayList itms = new ArrayList();
 			for(i=0;i<jk.length;i++)
 			{
 				ki = jk[i].getChildren().toArray();
 				if(ki[0].isChecked())
-					itms += "'" + kiboo.replaceSingleQuotes(ki[2].getValue().trim()) + "',";
+					itms.add(kiboo.replaceSingleQuotes(ki[2].getValue().trim()));
+					//itms += "'" + kiboo.replaceSingleQuotes(ki[2].getValue().trim()) + "',";
 			}
-			try { itms = itms.substring(0,itms.length()-1); } catch (Exception e) {}
-			if(itms.equals("")) return;
+			//try { itms = itms.substring(0,itms.length()-1); } catch (Exception e) {}
+			//if(itms.equals("")) return;
 			showCheckstock_win(winsholder,itms);
 
 		} catch (Exception e) {}
@@ -163,7 +165,7 @@ void pl_DoFunc(String itype) // pick-list functions dispenser
 		<textbox id="searhtxt_tb" width="100px" sclass="k9" />
 		<button label="Load/Find" sclass="k9mo" onClick="showJobs(1)" />
 
-		<textbox id="jobid_tb" width="50px" sclass="k9" />
+		<textbox id="jobid_tb" width="50px" sclass="k9" value="1369" />
 		<button label="by job" sclass="k9mo" onClick="showJobs(2)" />
 
 		<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#D60D0D" onClick="adminPop.open(self)" visible="false" />
@@ -172,49 +174,52 @@ void pl_DoFunc(String itype) // pick-list functions dispenser
 	<div id="jobs_holder" />
 	<separator height="3px" />
 
-	<hbox id="workarea" visible="false">
-		<div sclass="shadowbox" style="background:#1D69A5">
-			<vbox>
-				<label value="Job" sclass="subhead1" />
-				<hbox>
-					<button id="pickup_b" label="Pickup + request items" sclass="k9mo" onClick="pickJob_reqitems()" />
-				</hbox>
-				<div id="items_holder" width="450px" />
-			</vbox>
-		</div>
-
-		<div sclass="shadowbox" style="background:#1D69A5">
-			<vbox>
-				<label value="Jobsheet - Items request" sclass="subhead1" />
-				<label value="WH extra notes" sclass="k9mo" style="color:#ffffff" />
-				<textbox id="j_extranotes" multiline="true" width="99%" height="60px" sclass="k9" />
-				<hbox>
-					<button id="pladd_b" label="Add item" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-					<button id="plrem_b" label="Remove" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-					<button id="plsave_b" label="SAVE" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-					<button id="plcommit_b" label="COMMIT" sclass="k9mo" style="color:#D21111" onClick="pl_DoFunc(self.getId())" />
-					<button id="chkstock_b" label="Check stock" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-				</hbox>
-				<div id="pl_holder" />
-			</vbox>
-		</div>
-
-		<vbox visible="false">
-			<hbox id="grandtotalbox" visible="false" >
+	<vbox id="workarea" visible="false">
+		<label id="jobtitle_lb" sclass="subhead1" />
+		<hbox>
+			<div sclass="shadowbox" style="background:#1D69A5">
 				<vbox>
-					<label value="Total monthly rental" style="color:#eeeeee;font-weight:bold" />
-					<separator bar="true" />
-					<label value="Job Grand Total" style="color:#eeeeee;font-weight:bold" />
-					<separator bar="true" />
+					<label value="Job" sclass="subhead1" />
+					<hbox>
+						<button id="pickup_b" label="Pickup + request items" sclass="k9mo" onClick="pickJob_reqitems()" />
+					</hbox>
+					<div id="items_holder" width="450px" />
 				</vbox>
+			</div>
+
+			<div sclass="shadowbox" style="background:#1D69A5">
 				<vbox>
-					<label id="grandmonthly" sclass="subhead2" />
-					<label id="grandtotal" sclass="subhead2" style=";text-decoration:underline" />
+					<label value="Jobsheet - Items request" sclass="subhead1" />
+					<label value="WH extra notes" sclass="k9mo" style="color:#ffffff" />
+					<textbox id="j_extranotes" multiline="true" width="99%" height="60px" sclass="k9" />
+					<hbox>
+						<button id="pladd_b" label="Add item" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+						<button id="plrem_b" label="Remove" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+						<button id="plsave_b" label="SAVE" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+						<button id="plcommit_b" label="COMMIT" sclass="k9mo" style="color:#D21111" onClick="pl_DoFunc(self.getId())" />
+						<button id="chkstock_b" label="Check + pick item" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+					</hbox>
+					<div id="pl_holder" />
 				</vbox>
-			</hbox>
-		<!-- <label value="NOTI.ME" style="font-size:80px;color:#eb531a;font-weight:bold" /> -->
-		</vbox>
-	</hbox>
+			</div>
+
+			<vbox visible="false">
+				<hbox id="grandtotalbox" visible="false" >
+					<vbox>
+						<label value="Total monthly rental" style="color:#eeeeee;font-weight:bold" />
+						<separator bar="true" />
+						<label value="Job Grand Total" style="color:#eeeeee;font-weight:bold" />
+						<separator bar="true" />
+					</vbox>
+					<vbox>
+						<label id="grandmonthly" sclass="subhead2" />
+						<label id="grandtotal" sclass="subhead2" style=";text-decoration:underline" />
+					</vbox>
+				</hbox>
+			<!-- <label value="NOTI.ME" style="font-size:80px;color:#eb531a;font-weight:bold" /> -->
+			</vbox>
+		</hbox>
+	</vbox>
 
 <label id="debug" multiline="true" style="color:#ffffff" />
 

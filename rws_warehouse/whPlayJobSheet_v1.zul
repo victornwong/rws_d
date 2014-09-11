@@ -45,26 +45,69 @@ void pl_DoFunc(String itype)
 
 	if(itype.equals("saveass_b")) // save 'em scanned asset-tags
 	{
+		try
+		{
+			jnt = kiboo.replaceSingleQuotes(j_extranotes.getValue().trim());
+			itms = qtys = atgs = "";
+			jk = pl_rows.getChildren().toArray();
+			for(i=0;i<jk.length;i++)
+			{
+				ki = jk[i].getChildren().toArray();
+				itms += kiboo.replaceSingleQuotes( ki[2].getValue().trim().replaceAll("~"," ") ) + "~";
+				qtys += kiboo.replaceSingleQuotes( ki[3].getValue().trim().replaceAll("~"," ") ) + "~";
+				atgs += kiboo.replaceSingleQuotes( ki[4].getValue().trim().replaceAll("~"," ") ) + "~";
+			}
 
+			try { itms = itms.substring(0,itms.length()-1); } catch (Exception e) {}
+			try { qtys = qtys.substring(0,qtys.length()-1); } catch (Exception e) {}
+			try { atgs = atgs.substring(0,atgs.length()-1); } catch (Exception e) {}
+
+			sqlstm = "if not exists (select 1 from rw_jobpicklist where parent_job=" + glob_sel_job + ") " +
+			"insert into rw_jobpicklist (parent_job,username,datecreated,pl_items,pl_qty,pstatus,extranotes,pl_asset_tags) values " +
+			"(" + glob_sel_job + ",'" + unm + "','" + todaydate + "','" + itms + "','" + qtys + "','DRAFT','" + jnt + "','" + atgs + "') " +
+			"else " +
+			"update rw_jobpicklist set pl_items='" + itms + "', pl_qty='" + qtys + "', pl_asset_tags='" + atgs + "', extranotes='" + jnt + "' where parent_job=" + glob_sel_job + ";";
+
+			//refresh_joblist = true;
+			msgtext = "Asset tags saved..";
+
+		} catch (Exception e) {}
 	}
 
-	if(itype.equals("chkstock_b")) // check stock ticked items
+	if(itype.equals("chkstock_b")) // check items inventory and loca
 	{
 		try
 		{
 			jk = pl_rows.getChildren().toArray();
-			itms = "";
+			ArrayList itms = new ArrayList();
 			for(i=0;i<jk.length;i++)
 			{
 				ki = jk[i].getChildren().toArray();
 				if(ki[0].isChecked())
-					itms += "'" + kiboo.replaceSingleQuotes(ki[2].getValue().trim()) + "',";
+					itms.add(kiboo.replaceSingleQuotes(ki[2].getValue().trim()));
 			}
-			try { itms = itms.substring(0,itms.length()-1); } catch (Exception e) {}
-			if(itms.equals("")) return;
-			showCheckstock_win(winsholder,itms);
+			showCheckstock_win(winsholder,itms); // jobsheet_funcs.zs
 
 		} catch (Exception e) {}
+	}
+
+	if(itype.equals("chkasses_b")) // check scanned asset-tags validity
+	{
+		try
+		{
+			jk = pl_rows.getChildren().toArray();
+			for(i=0;i<jk.length;i++)
+			{
+				ki = jk[i].getChildren().toArray();
+				if(ki[0].isChecked())
+				{
+					if(!ki[4].getValue().trim().equals(""))
+						checkScannedTags(ki[2].getValue(),ki[4].getValue());
+				}
+			}
+
+		} catch (Exception e) {}
+
 	}
 
 	if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
@@ -72,6 +115,60 @@ void pl_DoFunc(String itype)
 	if(refresh_joblist) showJobs(last_joblist_type);
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 	if(hideworkarea) workarea.setVisible(false);
+}
+
+// knock-off from wopAsschecker.zul
+void checkScannedTags(String itemname, String iatgs)
+{
+Object[] wpshd =
+{
+	new listboxHeaderWidthObj("AssetTag",true,""),
+	new listboxHeaderWidthObj("S/Num",true,""),
+	new listboxHeaderWidthObj("Desc",true,""),
+	new listboxHeaderWidthObj("Brand",true,""),
+	new listboxHeaderWidthObj("Model",true,""),
+	new listboxHeaderWidthObj("Grd",true,""),
+	new listboxHeaderWidthObj("PalletNo",true,""),
+	new listboxHeaderWidthObj("Type",true,""),
+};
+
+	mwin = ngfun.vMakeWindow(winsholder,"Check scanned tags : " + itemname.trim(),"0","center","500px","");
+	kdiv = new Div();
+	kdiv.setParent(mwin);
+	Listbox newlb = lbhand.makeVWListbox_Width(kdiv, wpshd, "fndassets_lb", 5);
+
+	tgs = iatgs.trim().split("\n");
+	asts = "";
+	for(i=0;i<tgs.length;i++)
+	{
+		asts += "'" + tgs[i].trim() + "',";
+	}
+	try { asts = asts.substring(0,asts.length()-1); } catch (Exception e) {}
+
+	kk = "where ltrim(rtrim(s.code2)) in (" + asts + ") order by s.code2 desc;";
+	if(itype == 2) kk = "where ltrim(rtrim(s.code)) in (" + asts + ") order by s.code desc;";
+
+	sqlstm = "select s.name, s.code, s.code2, si.brandyh, si.modelyh, si.gradeyh, si.itemtypeyh, w.name as palletno " +
+	"from mr001 s left join u0001 si on si.extraid = s.eoff " +
+	"left join mr003 w on w.masterid = si.palletnoyh " + kk;
+	
+	ats = sqlhand.rws_gpSqlGetRows(sqlstm);
+	if(ats.size() == 0) return;
+	newlb.setRows(20); newlb.setMold("paging");
+	//newlb.setMultiple(true); newlb.setCheckmark(true);
+	ArrayList kabom = new ArrayList();
+	String[] fl = { "code2", "code", "name", "brandyh", "modelyh", "gradeyh", "palletno", "itemtypeyh" };
+	for(d : ats)
+	{
+		ngfun.popuListitems_Data2(kabom,fl,d);
+		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+		kabom.clear();
+	}
+
+	ngfun.gpMakeLabel(kdiv,"","Scanned: " + tgs.length.toString(),"");
+	ngfun.gpMakeSeparator(2,"",kdiv);
+	ngfun.gpMakeLabel(kdiv,"","Found: " + ats.size().toString(),"");
+	
 }
 
 ]]>
@@ -110,57 +207,58 @@ void pl_DoFunc(String itype)
 	<div id="jobs_holder" />
 	<separator height="3px" />
 
-	<hbox id="workarea" visible="false">
+	<vbox id="workarea" visible="false">
+		<label id="jobtitle_lb" sclass="subhead1" />
+		<hbox>
+			<vbox>
+				<div sclass="shadowbox" style="background:#1D69A5" width="600px">
+					<vbox>
+						<label value="Job" sclass="subhead1" />
+						<hbox visible="false">
+							<button id="pickup_b" label="Pickup + request items" sclass="k9mo" onClick="pickJob_reqitems()" />
+						</hbox>
+						<div id="items_holder" />
+					</vbox>
+				</div>
+				<div sclass="shadowbox" style="background:#1D69A5">
+					<vbox>
+						<label value="Jobsheet - Request items" sclass="subhead1" />
+						<label value="WH extra notes" sclass="k9mo" style="color:#ffffff" />
+						<textbox id="j_extranotes" multiline="true" width="400px" height="60px" sclass="k9" />
 
-		<vbox>
-			<div sclass="shadowbox" style="background:#1D69A5" width="550px">
-				<vbox>
-					<label value="Job" sclass="subhead1" />
-					<hbox visible="false">
-						<button id="pickup_b" label="Pickup + request items" sclass="k9mo" onClick="pickJob_reqitems()" />
-					</hbox>
-					<div id="items_holder" />
-				</vbox>
-			</div>
+						<hbox>
+							<button id="saveass_b" label="SAVE ASSET-TAGS only" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+							<button id="chkstock_b" label="Check inventory + loca" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+							<button id="chkasses_b" label="Check asset tags" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+						</hbox>
+						<hbox visible="false">
+							<button id="pladd_b" label="Add item" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+							<button id="plrem_b" label="Remove" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+							<button id="plsave_b" label="SAVE" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+							<button id="plcommit_b" label="COMMIT" sclass="k9mo" style="color:#D21111" onClick="pl_DoFunc(self.getId())" />
+						</hbox>
+						<div id="pl_holder" width="600px" />
+					</vbox>
+				</div>
+			</vbox>
 
-			<div sclass="shadowbox" style="background:#1D69A5">
-				<vbox>
-					<label value="Jobsheet - Request items" sclass="subhead1" />
-					<label value="WH extra notes" sclass="k9mo" style="color:#ffffff" />
-					<textbox id="j_extranotes" multiline="true" width="99%" height="60px" sclass="k9" />
-
-					<hbox>
-						<button id="saveass_b" label="SAVE ASSET-TAGS only" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-						<button id="chkstock_b" label="Check stock" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-					</hbox>
-					<hbox visible="false">
-						<button id="pladd_b" label="Add item" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-						<button id="plrem_b" label="Remove" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-						<button id="plsave_b" label="SAVE" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-						<button id="plcommit_b" label="COMMIT" sclass="k9mo" style="color:#D21111" onClick="pl_DoFunc(self.getId())" />
-					</hbox>
-					<div id="pl_holder" />
-				</vbox>
-			</div>
-		</vbox>
-
-		<vbox visible="false">
-			<hbox id="grandtotalbox" visible="false" >
-				<vbox>
-					<label value="Total monthly rental" style="color:#eeeeee;font-weight:bold" />
-					<separator bar="true" />
-					<label value="Job Grand Total" style="color:#eeeeee;font-weight:bold" />
-					<separator bar="true" />
-				</vbox>
-				<vbox>
-					<label id="grandmonthly" sclass="subhead2" />
-					<label id="grandtotal" sclass="subhead2" style=";text-decoration:underline" />
-				</vbox>
-			</hbox>
-		<!-- <label value="NOTI.ME" style="font-size:80px;color:#eb531a;font-weight:bold" /> -->
-		</vbox>
-
-	</hbox>
+			<vbox visible="false">
+				<hbox id="grandtotalbox" visible="false" >
+					<vbox>
+						<label value="Total monthly rental" style="color:#eeeeee;font-weight:bold" />
+						<separator bar="true" />
+						<label value="Job Grand Total" style="color:#eeeeee;font-weight:bold" />
+						<separator bar="true" />
+					</vbox>
+					<vbox>
+						<label id="grandmonthly" sclass="subhead2" />
+						<label id="grandtotal" sclass="subhead2" style=";text-decoration:underline" />
+					</vbox>
+				</hbox>
+				<!-- <label value="NOTI.ME" style="font-size:80px;color:#eb531a;font-weight:bold" /> -->
+			</vbox>
+		</hbox>
+	</vbox>
 
 	<div id="winsholder" visible="false" />
 
