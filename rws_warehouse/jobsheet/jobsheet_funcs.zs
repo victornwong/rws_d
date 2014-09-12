@@ -384,6 +384,9 @@ String[] fl_t2 = { "name", "item", "pallet", "instk" };
 		kabom.clear();
 		lnc++;
 	}
+
+	if(checkitems_doubleclicker != null) // set double-cliker if available
+		lbhand.setDoubleClick_ListItems(newlb, checkitems_doubleclicker);
 }
 
 void js_adminDo(String itype)

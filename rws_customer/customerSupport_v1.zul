@@ -659,7 +659,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 
 	<textbox id="searhtxt_tb" sclass="k9" />
 	<button label="Search/load" sclass="k9" onClick="showTickets(1)" />
-	<textbox id="csvtxt_tb" sclass="k9" width="50px" value="1066" />
+	<textbox id="csvtxt_tb" sclass="k9" width="50px" />
 	<button label="by CSV" sclass="k9" onClick="showTickets(2)" />
 
 	<textbox id="asschk_tb" sclass="k9" />
@@ -979,6 +979,7 @@ if(useraccessobj.accesslevel == 9)
 {
 	//adminstuff.setVisible(true);
 	admin_b.setVisible(true);
+	csvtxt_tb.setValue("1066");
 }
 
 luhand.populateListbox_ByLookup(t_priority, "PRIORITY_LISTS", 2);

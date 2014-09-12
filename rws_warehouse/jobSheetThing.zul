@@ -17,8 +17,11 @@ MYPANEL = "jobsheetpanel";
 
 @Notes
 */
+
 import java.util.*;
 import java.text.*;
+import java.io.*;
+import org.apache.poi.hssf.usermodel.*;
 import org.victor.*;
 sechand = new SecurityFuncs();
 
@@ -37,6 +40,29 @@ last_joblist_type = 0;
 
 listjobs_extrasql = ""; // set by other modu used in jobsheet_funcs.showJobs()
 reqitems_grid_type = 1; // prod-side, req-items grid type - no asset-tags colm
+checkitems_doubleclicker = null;
+
+class itmdoubleclik implements org.zkoss.zk.ui.event.EventListener
+{
+	// specific check-items double-cliker event-handler to replace selected item-request
+	// modify for other modules, used in jobsheet_funcs.showCheckstock_win()
+	public void onEvent(Event event) throws UiException
+	{
+		isel = event.getTarget();
+		ifnd = lbhand.getListcellItemLabel(isel,1);
+		try
+		{
+			jk = pl_rows.getChildren().toArray();
+			for(i=0;i<jk.length;i++)
+			{
+				ki = jk[i].getChildren().toArray();
+				if(ki[0].isChecked())
+					ki[2].setValue(ifnd);
+			}
+		} catch (Exception e) {}
+	}
+}
+checkitems_doubleclicker = new itmdoubleclik();
 
 void pl_DoFunc(String itype) // pick-list functions dispenser
 {
@@ -125,6 +151,7 @@ void pl_DoFunc(String itype) // pick-list functions dispenser
 			}
 			//try { itms = itms.substring(0,itms.length()-1); } catch (Exception e) {}
 			//if(itms.equals("")) return;
+			if(itms.size() == 0) return;
 			showCheckstock_win(winsholder,itms);
 
 		} catch (Exception e) {}
@@ -165,7 +192,7 @@ void pl_DoFunc(String itype) // pick-list functions dispenser
 		<textbox id="searhtxt_tb" width="100px" sclass="k9" />
 		<button label="Load/Find" sclass="k9mo" onClick="showJobs(1)" />
 
-		<textbox id="jobid_tb" width="50px" sclass="k9" value="1369" />
+		<textbox id="jobid_tb" width="50px" sclass="k9" />
 		<button label="by job" sclass="k9mo" onClick="showJobs(2)" />
 
 		<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#D60D0D" onClick="adminPop.open(self)" visible="false" />
@@ -232,6 +259,7 @@ void pl_DoFunc(String itype) // pick-list functions dispenser
 if(useraccessobj.accesslevel == 9)
 {
 	admin_b.setVisible(true);
+	jobid_tb.setValue("1369");
 }
 
 ]]>
