@@ -17,7 +17,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "ROC/LC Management";
-MYVERSION = "v0.3.8";
+MYVERSION = "v0.3.9";
 MYPANEL = "billtrkcpan";
 /*
 @Title ROC/LC billing tracking and so on
@@ -29,6 +29,8 @@ MYPANEL = "billtrkcpan";
 08/07/2014: toggler super_reminder flag for LC - hilite to remind user
 25/07/2014: nurul req import assets from other LC omit buyout and already GCN
 10/09/2014: farah req add hotswap-flag
+17/09/2014: nurul req to show equip qty, want to update like 1 recrd MSoffice = 16 qty, this will get
+	sum-up in the EVF reports
 
 */
 import java.util.*;

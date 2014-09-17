@@ -10,14 +10,14 @@ void showAssetMetadata(String iwhat)
 	Object[] metflds = {
 	m_asset_tag,m_brand,m_model,m_battery,m_hdd,m_hdd2,m_hdd3,m_hdd4,m_ram,m_ram2,m_ram3,m_ram4,
 	m_gfxcard,m_mouse,m_keyboard,m_monitor,m_poweradaptor,coa1,coa2,coa3,coa4,m_misc,m_cust_location,
-	m_type,osversion,offapps,m_serial_no, m_rm_month
+	m_type,osversion,offapps,m_serial_no, m_rm_month, m_qty
 	};
 
 	String[] metfnms = {
 	"asset_tag","brand","model","battery","hdd","hdd2","hdd3","hdd4","ram","ram2","ram3","ram4",
 	"gfxcard","mouse","keyboard","monitor","poweradaptor","coa1","coa2","coa3","coa4",
 	"remarks","cust_location",
-	"type","osversion","offapps","serial_no", "RM_Month"
+	"type","osversion","offapps","serial_no", "RM_Month", "qty"
 	};
 	
 	ngfun.populateUI_Data(metflds, metfnms, rc);
@@ -42,16 +42,17 @@ Object[] asslb_hds =
 	new listboxHeaderWidthObj("Brand",true,""),
 	new listboxHeaderWidthObj("Model",true,""),
 	new listboxHeaderWidthObj("Type",true,""),
-	new listboxHeaderWidthObj("GCO/N",true,"50px"),
-	new listboxHeaderWidthObj("Bill",true,"50px"),
-	new listboxHeaderWidthObj("BuyO",true,"50px"),
+	new listboxHeaderWidthObj("GCO/N",true,"40px"),
+	new listboxHeaderWidthObj("Bill",true,"40px"),
+	new listboxHeaderWidthObj("BuyO",true,"40px"),
 	new listboxHeaderWidthObj("FrmLC",true,"70px"),
+	new listboxHeaderWidthObj("Qty",true,"40px"),
 	new listboxHeaderWidthObj("origid",false,""),
 };
 
 ASSLB_TYPE_IDX = 4;
 ASSLB_GCO_IDX = 5;
-ASSLB_ORIGID_IDX = 9;
+ASSLB_ORIGID_IDX = 10;
 
 class assClick implements org.zkoss.zk.ui.event.EventListener
 {
@@ -69,7 +70,7 @@ assclicko = new assClick();
 void showAssets(String iwhat)
 {
 	Listbox newlb = lbhand.makeVWListbox_Width(lcasset_holder, asslb_hds, "lcassets_lb", 20);
-	sqlstm = "select origid,asset_tag,brand,model,type,serial_no,gcn_id,billable,buyout,impfromlc,hotswap from rw_lc_equips " +
+	sqlstm = "select origid,asset_tag,brand,model,type,serial_no,gcn_id,billable,buyout,impfromlc,hotswap,qty from rw_lc_equips " +
 	"where lc_parent=" + iwhat + " order by asset_tag";
 
 	asrs = sqlhand.gpSqlGetRows(sqlstm);
@@ -77,7 +78,7 @@ void showAssets(String iwhat)
 	newlb.setMold("paging"); newlb.setMultiple(true); newlb.setCheckmark(true);
 	newlb.addEventListener("onSelect", assclicko);
 	ArrayList kabom = new ArrayList();
-	String[] fl = { "asset_tag", "serial_no", "brand", "model", "type", "gcn_id", "billable", "buyout", "impfromlc", "origid" };
+	String[] fl = { "asset_tag", "serial_no", "brand", "model", "type", "gcn_id", "billable", "buyout", "impfromlc", "qty", "origid" };
 	for(d : asrs)
 	{
 		ngfun.popuListitems_Data(kabom,fl,d);
@@ -113,8 +114,8 @@ void assFunc(Object iwhat)
 	if(itype.equals("newasset_b"))
 	{
 		if(glob_selected_lc.equals("")) return;
-		sqlstm = "insert into rw_lc_equips (asset_tag,serial_no,lc_parent,billable,buyout,hotswap) values " +
-		"('NEW ASSET','NO SERIAL'," + glob_selected_lc + ",0,0,0)";
+		sqlstm = "insert into rw_lc_equips (asset_tag,serial_no,lc_parent,billable,buyout,hotswap,qty) values " +
+		"('NEW ASSET','NO SERIAL'," + glob_selected_lc + ",0,0,0,1)";
 		refresh_wass = true;
 	}
 
@@ -126,11 +127,12 @@ void assFunc(Object iwhat)
 		m_asset_tag, m_brand, m_model, m_battery, m_hdd, m_hdd2, m_hdd3, m_hdd4,
 		m_ram, m_ram2, m_ram3, m_ram4, m_gfxcard, m_mouse, m_keyboard, m_monitor,
 		coa1, coa2, coa3, coa4, osversion, offapps, m_misc,
-		m_type, m_cust_location, m_poweradaptor, m_serial_no, m_rm_month
+		m_type, m_cust_location, m_poweradaptor, m_serial_no, m_rm_month, m_qty
 		};
 
 		inpdat = ngfun.getString_fromUI(inpflds);
 		try { k = Float.parseFloat(inpdat[27]); } catch (Exception e) { inpdat[27] = "0"; } // chk RM/month is truly numba
+		try { k = Integer.parseInt(inpdat[28]); } catch (Exception e) { inpdat[28] = "1"; } // chk got set qty else 1
 
 		sqlstm = "update rw_lc_equips set asset_tag='" + inpdat[0] + "', brand='" + inpdat[1] + "', model='" + inpdat[2] +"'," +
 		"battery='" + inpdat[3] + "', hdd='" + inpdat[4] + "', hdd2='" + inpdat[5] + "', hdd3='" + inpdat[6] + "', hdd4='" + inpdat[7] + "'," +
@@ -139,7 +141,7 @@ void assFunc(Object iwhat)
 		"coa1='" + inpdat[16] + "', coa2='" + inpdat[17] + "', coa3='" + inpdat[18] + "', coa4='" + inpdat[19] + "'," +
 		"osversion='" + inpdat[20] + "', offapps='" + inpdat[21] + "', remarks='" + inpdat[22] + "', type='" + inpdat[23] + "'," + 
 		"cust_location='" + inpdat[24] + "', poweradaptor='" + inpdat[25] + "', serial_no='" + inpdat[26] + "', rm_month=" + inpdat[27] +
-		" where origid=" + glob_selected_ass;
+		", qty=" + inpdat[28] + " where origid=" + glob_selected_ass;
 
 		refresh_wass = true;
 	}
