@@ -13,7 +13,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "Customer Support (like Techcare)";
-MYVERSION = "v0.3.1";
+MYVERSION = "v0.3.2";
 MYPANEL = "custsupp1";
 /*
 @Title Customer support / help-tickets
@@ -25,6 +25,7 @@ NOTES:
 12/08/2014: check asset-tag to see already log-in ticket. Search by CSV
 21/08/2014: update UI and show GCO-no in list
 29/08/2014: start coding the LC assets replacement controls
+18/09/2014: vanita req , add extra field to classify ticket RMA,REMARKETING,AUDIT,DEPLOYMENT
 
 */
 import java.util.*;
@@ -99,22 +100,22 @@ void doFunc(Object iwhat)
 
 		Object[] ob = { t_cust_caller, t_cust_caller_phone, t_cust_caller_des, t_cust_caller_email, t_cust_location,
 		t_asset_tag, t_serial_no, t_product_name, t_assign_to, t_priority, t_problem, t_action,
-		t_resolved_by, t_resolve_type, t_resolution, t_os_id, t_os_user
+		t_resolved_by, t_resolve_type, t_resolution, t_os_id, t_os_user, t_ticketclass
 		};
 
 		dt = ngfun.getString_fromUI(ob);
 		//t_resolved_on
 		//restyp = kiboo.replaceSingleQuotes(t_resolve_type.getValue().trim());
 		//osid = kiboo.replaceSingleQuotes(t_os_id.getValue().trim());
-		//t_os_pickup
-		//t_os_resolve
+		//t_os_pickup, t_os_resolve
 
 		sqlstm = "update rw_helptickets set fc6_custid='" + global_selected_customerid + "'," + 
 		"cust_name='" + global_selected_customername + "',cust_caller='" + dt[0] + "',cust_caller_phone='" + dt[1] + "'," + 
 		"cust_caller_des='" + dt[2] + "',cust_caller_email='" + dt[3] + "',cust_location='" + dt[4] + "'," + 
 		"asset_tag='" + dt[5] + "',serial_no='" + dt[6] + "',product_name='" + dt[7] + "',assign_to='" + dt[8] + "'," + 
 		"priority='" + dt[9] + "',problem='" + dt[10] + "',action='" + dt[11] + "',resolved_by='" + dt[12] + "'," + 
-		"resolve_type='" + dt[13] + "',resolution='" + dt[14] + "',os_id='" + dt[15] + "',os_user='" + dt[16] + "' " +
+		"resolve_type='" + dt[13] + "',resolution='" + dt[14] + "',os_id='" + dt[15] + "',os_user='" + dt[16] + "', " +
+		"ticketclass='" + dt[17] + "' " +
 		"where origid=" + glob_selected_ticket;
 
 		refreshtickets = true;
@@ -296,9 +297,9 @@ void doFunc(Object iwhat)
 
 void adminFunc(Object iwhat)
 {
+	adminpopup.close();
 	itype = iwhat.getId();
 	todaydate =  kiboo.todayISODateTimeString();
-	refreshtickets = false;
 	msgtext = sqlstm = "";
 
 	if(glob_selected_ticket.equals("")) return;
@@ -309,21 +310,29 @@ void adminFunc(Object iwhat)
 		"resolved_by=null,resolved_on=null,rma_id=null where origid=" + glob_selected_ticket + ";" ;
 		// remove this ticket from RMA if exist
 		sqlstm += "delete from rw_localrma_items where helpticket_id=" + glob_selected_ticket;
-		refreshtickets = true;
 	}
 
 	if(itype.equals("chgtkdate_b")) // chg tiket date
 	{
 		chgd = dtf.format(adm_datechg.getValue());
 		sqlstm = "update rw_helptickets set calldatetime='" + chgd + "' where origid=" + glob_selected_ticket;
-		refreshtickets = true;
 	}
 
-	if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
-	if(refreshtickets) showTickets(last_listype);
+	if(itype.equals("delticket_b")) // delete ticket
+	{
+		if (Messagebox.show("HARD delete ticket..", "Are you sure?", 
+			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+		sqlstm = "delete from rw_helptickets where origid=" + glob_selected_ticket;
+	}
+
+	if(!sqlstm.equals(""))
+	{
+		sqlhand.gpSqlExecuter(sqlstm);
+		showTickets(last_listype);
+	}
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 
-	adminpopup.close();
 }
 
 // checks before open cancel-ticket reason popup
@@ -480,97 +489,95 @@ ACTIVATY_BOXWIDTH = "500px";
 </zscript>
 
 <popup id="checkdupAssSV_pop">
-<div sclass="shadowbox" style="background:#3d82c2;" width="350px">
-<label id="chkdups_lbl" multiline="true" style="color:#ffffff;font-weight:bold" />
-</div>
+	<div sclass="shadowbox" style="background:#3d82c2;" width="350px">
+		<label id="chkdups_lbl" multiline="true" style="color:#ffffff;font-weight:bold" />
+	</div>
 </popup>
 
 <popup id="custrate_pop">
-<div sclass="shadowbox" style="background:#5c3566;">
-<vbox>
-<label style="font-weight:bold;font-size:14px;color:#ff0000">Customer Satisfaction</label>
-<separator height="3px" />
-<grid>
-	<rows>
-		<row>
-			<label value="How satisfied are you with the overall quality of on-site support engineers?" />
-			<listbox id="c_customer_rate" mold="select" />
-		</row>
-		<row>
-			<label value="How satisfied are you with the time required to resolve your problem?" />
-			<listbox id="c_customer_rate2" mold="select" />
-		</row>
-		<row>
-			<label value="How satisfied are you with the communication and follow-up on problem resolution?" />
-			<listbox id="c_customer_rate3" mold="select" />
-		</row>
-		<row spans="2">
-			<label value="Rating notes" style="font-weight:bold" />
-		</row>
-		<row spans="2">
-			<textbox id="c_customer_rate_notes" multiline="true" width="99%" height="60px" />
-		</row>
-	</rows>
-</grid>
-<button label="Close case with rating" style="font-weight:bold" onClick="doFunc(closetog_b)" />
-</vbox>
-</div>
+	<div sclass="shadowbox" style="background:#5c3566;">
+		<vbox>
+			<label style="font-weight:bold;font-size:14px;color:#ff0000">Customer Satisfaction</label>
+			<separator height="3px" />
+			<grid>
+				<rows>
+					<row>
+						<label value="How satisfied are you with the overall quality of on-site support engineers?" />
+						<listbox id="c_customer_rate" mold="select" />
+					</row>
+					<row>
+						<label value="How satisfied are you with the time required to resolve your problem?" />
+						<listbox id="c_customer_rate2" mold="select" />
+					</row>
+					<row>
+						<label value="How satisfied are you with the communication and follow-up on problem resolution?" />
+						<listbox id="c_customer_rate3" mold="select" />
+					</row>
+					<row spans="2">
+						<label value="Rating notes" style="font-weight:bold" />
+					</row>
+					<row spans="2">
+						<textbox id="c_customer_rate_notes" multiline="true" width="99%" height="60px" />
+					</row>
+				</rows>
+			</grid>
+			<button label="Close case with rating" style="font-weight:bold" onClick="doFunc(closetog_b)" />
+		</vbox>
+	</div>
 </popup> <!-- ENDOF custrate_pop -->
 
 <popup id="canceltick_pop">
-<div sclass="shadowbox" style="background:#cc0000;">
-<vbox>
-	<label value="Cancel reason" style="color:#eeeeee" />
-	<textbox id="canceltick_reason" width="250px" height="50px" multiline="true" />
-	<button label="CANCEL" onClick="doFunc(canceltick_b)" />
-</vbox>
-</div>
+	<div sclass="shadowbox" style="background:#cc0000;">
+		<vbox>
+			<label value="Cancel reason" style="color:#eeeeee" />
+			<textbox id="canceltick_reason" width="250px" height="50px" multiline="true" />
+			<button label="CANCEL" onClick="doFunc(canceltick_b)" />
+		</vbox>
+	</div>
 </popup>
 
 <popup id="emailnoti_popup">
-<grid width="450px">
-	<rows>
-		<row spans="2" style="background:#2e3436">
-			<label id="n_tickheader" style="color:#eeeeee" />
-		</row>
-		<row>
-			<label value="To" sclass="k9" />
-			<textbox id="n_towho" sclass="k9" width="99%" />
-		</row>
-		<row spans="2">
-			<label value="Extra remarks" sclass="k9" />
-		</row>
-		<row spans="2">
-			<textbox id="n_msgbody" sclass="k9" multiline="true" width="99%" height="60px" />
-		</row>
-		<row spans="2">
-			<hbox>
-				<button id="realsendnoti_b" label="Send notification" sclass="k9" onClick="doFunc(self)" />
-			</hbox>
-		</row>
-	</rows>
-</grid>
+	<grid width="450px">
+		<rows>
+			<row spans="2" style="background:#2e3436">
+				<label id="n_tickheader" style="color:#eeeeee" />
+			</row>
+			<row>
+				<label value="To" sclass="k9" />
+				<textbox id="n_towho" sclass="k9" width="99%" />
+			</row>
+			<row spans="2">
+				<label value="Extra remarks" sclass="k9" />
+			</row>
+			<row spans="2">
+				<textbox id="n_msgbody" sclass="k9" multiline="true" width="99%" height="60px" />
+			</row>
+			<row spans="2">
+				<hbox>
+					<button id="realsendnoti_b" label="Send notification" sclass="k9" onClick="doFunc(self)" />
+				</hbox>
+			</row>
+		</rows>
+	</grid>
 </popup>
 
 <popup id="adminpopup">
-	<button id="chgtkstat_b" label="Set NEW" sclass="k9" onClick="adminFunc(self)" />
-	<separator height="2px" />
-	<datebox id="adm_datechg" format="yyyy-MM-dd" sclass="k9" onCreate="self.value = new Date()" />
-	<button id="chgtkdate_b" label="Chg date" sclass="k9" onClick="adminFunc(self)" />
-	<separator height="2px" />
-	<label value="fontsz" />
-	<textbox id="pdffontsz" value="8" />
-	<separator height="2px" />
-	<label value="PDF X-Pos" />
-	<textbox id="pdfxpos" value="10" />
-	<separator height="2px" />
-	<label value="PDF Y-Pos" />
-	<textbox id="pdfypos" value="500" />
-	<separator height="2px" />
-	<label value="PutText" />
-	<textbox id="pdftoput" value="TESTING COMPANY 1234567890" />
-	<separator height="2px" />
-	<button label="admin testing " onClick="trysendmail()" />
+	<vbox sclass="shadowbox" style="background:#DC0E0E">
+		<button id="delticket_b" label="DELETE" sclass="k9" onClick="adminFunc(self)" />
+		<datebox id="adm_datechg" format="yyyy-MM-dd" style="font-size:9px" onCreate="self.value=new Date()" />
+		<button id="chgtkdate_b" label="Chg date" sclass="k9" onClick="adminFunc(self)" />
+		<div visible="false">
+			<label value="fontsz" />
+			<textbox id="pdffontsz" value="8" />
+			<label value="PDF X-Pos" />
+			<textbox id="pdfxpos" value="10" />
+			<label value="PDF Y-Pos" />
+			<textbox id="pdfypos" value="500" />
+			<label value="PutText" />
+			<textbox id="pdftoput" value="TESTING COMPANY 1234567890" />
+			<button label="admin testing " onClick="trysendmail()" />
+		</div>
+	</vbox>
 </popup>
 
 <!-- update file description popup -->
@@ -684,6 +691,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 		<button id="emailnoti_b" label="Send notification" sclass="k9" onClick="doFunc(self)" />
 		<button id="viewsof_b" label="View SOF" sclass="k9" onClick="doFunc(self)" />
 		<button id="canceltick_b" label="CANCEL ticket" sclass="k9" onClick="checkOpenCancel()" />
+		<button id="chgtkstat_b" label="Set NEW" sclass="k9" onClick="adminFunc(self)" visible="false" />
 		<button id="admin_b" label="Admin" visible="false" style="color:#cc0000" onClick="adminpopup.open(self)" />
 	</hbox>
 	<separator height="3px" />
@@ -793,11 +801,13 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 				<separator height="2px" />
 				<grid width="${ACTIVATY_BOXWIDTH}">
 				<rows>
-					<row spans="1,2,1,2">
+					<row>
 						<label value="Assign to" sclass="k9" />
 						<textbox id="t_assign_to" width="99%" sclass="k9" />
 						<label value="Priority" sclass="k9" />
 						<listbox id="t_priority" mold="select" sclass="k9" />
+						<label value="Classfication" sclass="k9" />
+						<listbox id="t_ticketclass" mold="select" sclass="k9" />
 					</row>
 					<row spans="1,5">
 						<label value="Problem" sclass="k9" />
@@ -811,7 +821,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 						<label value="Resolve by" sclass="k9" />
 						<textbox id="t_resolved_by" width="99%" sclass="k9" />
 						<label value="Resolve date" sclass="k9" />
-						<datebox id="t_resolved_on" format="yyyy-MM-dd" sclass="k9" onCreate="self.value = new Date()" />
+						<datebox id="t_resolved_on" format="yyyy-MM-dd" style="font-size:9px" onCreate="self.value=new Date()" />
 						<label value="Resolve type" sclass="k9" />
 						<!-- <textbox id="t_resolve_type" width="99%" sclass="k9" /> -->
 						<listbox id="t_resolve_type" mold="select" sclass="k9" rows="1" />
@@ -980,6 +990,12 @@ if(useraccessobj.accesslevel == 9)
 	//adminstuff.setVisible(true);
 	admin_b.setVisible(true);
 	csvtxt_tb.setValue("1066");
+	chgtkstat_b.setVisible(true);
+}
+
+if(useraccessobj.username.equals(""))
+{
+	chgtkstat_b.setVisible(true);
 }
 
 luhand.populateListbox_ByLookup(t_priority, "PRIORITY_LISTS", 2);
@@ -990,6 +1006,8 @@ luhand.populateListbox_ByLookup(t_resolve_type, "CASE_RESOLVE_TYPES", 2);
 luhand.populateListbox_ByLookup(c_customer_rate, "CUSTOMER_RATE_US", 2);
 luhand.populateListbox_ByLookup(c_customer_rate2, "CUSTOMER_RATE_US", 2);
 luhand.populateListbox_ByLookup(c_customer_rate3, "CUSTOMER_RATE_US", 2);
+
+luhand.populateListbox_ByLookup(t_ticketclass, "TICKET_CLASSIFICATION", 2);
 
 //luhand.populateListbox_ByLookup(i_collected,"YESNO_DEF",2); // LC/asset-tag check popup
 // TODO confirmquote_b <-- hide/show depending on user's ability to confirm service-items quote

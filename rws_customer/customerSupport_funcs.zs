@@ -89,11 +89,11 @@ void showTicketMetadata(String iwhat)
 
 	String[] fl = { "cust_caller", "cust_caller_phone", "cust_caller_des", "cust_caller_email", "cust_location",
 	"asset_tag", "serial_no", "product_name", "assign_to", "problem", "action", "resolved_by", "resolve_type",
-	"resolution", "os_id", "os_user", "os_pickup", "os_resolvedate", "os_resolution", "priority", "priority", "tstatus" };
+	"resolution", "os_id", "os_user", "os_pickup", "os_resolvedate", "os_resolution", "priority", "priority", "tstatus", "ticketclass" };
 
 	Object[] ob = { t_cust_caller, t_cust_caller_phone, t_cust_caller_des, t_cust_caller_email, t_cust_location,
 	t_asset_tag, t_serial_no, t_product_name, t_assign_to, t_problem, t_action, t_resolved_by, t_resolve_type,
-	t_resolution, t_os_id, t_os_user, t_os_pickup, t_os_resolve, t_os_resolution, t_priority, hd_priority, hd_tstatus };
+	t_resolution, t_os_id, t_os_user, t_os_pickup, t_os_resolve, t_os_resolution, t_priority, hd_priority, hd_tstatus, t_ticketclass };
 
 	ngfun.populateUI_Data(ob,fl,tkr);
 
