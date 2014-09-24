@@ -17,7 +17,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "ROC/LC Management";
-MYVERSION = "v0.3.9";
+MYVERSION = "v0.4.1";
 MYPANEL = "billtrkcpan";
 /*
 @Title ROC/LC billing tracking and so on
@@ -31,6 +31,8 @@ MYPANEL = "billtrkcpan";
 10/09/2014: farah req add hotswap-flag
 17/09/2014: nurul req to show equip qty, want to update like 1 recrd MSoffice = 16 qty, this will get
 	sum-up in the EVF reports
+22/09/2014: huiping req to add sales_related status .. for watever
+24/09/2014: modif contbill_Assets.replaceLCAsset() to use replaceAssetAuditLog() - terse audit-log for replacements
 
 */
 import java.util.*;
@@ -104,6 +106,7 @@ void doFunc(Object iwhat)
 	{
 		if(glob_selected_lc.equals("")) return;
 
+		// 22/09/2014: huiping req sales_related status field
 		Object[] ibx = {
 		i_lc_no, i_rocno, customername, i_remarks, i_rm_month, i_rm_contract, i_order_type, i_product_name,
 		i_qty_dt, i_qty_mt, i_qty_nb, i_qty_pt, i_qty_hs, i_qty_ms, i_prev_lc, i_prev_roc, i_charge_out, i_rwno,
@@ -112,7 +115,8 @@ void doFunc(Object iwhat)
 		i_period, i_charge_out_period, i_fina_amount, i_co_monthly_rental, i_co_instalment_count, i_co_due_date,
 		i_co_deposit, i_co_recv_ex_deposit, i_co_recv_in_deposit, i_co_pv_drawdown,
 		i_co_pv_drawdown_ex_deposit, i_co_assigned_interest,
-		i_inst_type,i_assigned, l_fc6_custid, i_cust_project_id, i_noa_no, i_invoice_date, i_batch_lc
+		i_inst_type,i_assigned, l_fc6_custid, i_cust_project_id, i_noa_no, i_invoice_date, i_batch_lc,
+		i_sales_related
 		};
 
 		String[] ity = {
@@ -123,7 +127,8 @@ void doFunc(Object iwhat)
 		"int", "int", "fl", "fl", "int", "int",
 		"fl", "fl", "fl", "fl",
 		"fl", "fl",
-		"lb", "lbyn", "str", "str", "str", "dt", "str"
+		"lb", "lbyn", "str", "str", "str", "dt", "str",
+		"str"
 		};
 
 		String[] dth = new String[ibx.length];
@@ -168,7 +173,8 @@ sqlstm = "update rw_lc_records set lc_id='" + dth[0] + "', rocno='" + dth[1] + "
 "co_deposit=" + dth[32] + ", co_recv_ex_deposit=" + dth[33] + ", co_recv_in_deposit=" + dth[34] + "," +
 "co_pv_drawdown=" + dth[35] + ", co_pv_drawdown_ex_deposit=" + dth[36] + ", co_assigned_interest=" + dth[37] + ", " +
 "inst_type='" + dth[38] + "', assigned=" + dth[39] + ", fc6_custid='" + dth[40] + "'," + 
-"cust_project_id='" + dth[41] + "', noa_no='" + dth[42] + "', invoice_date='" + dth[43] + "', batch_lc='" + dth[44] + "' where origid=" + glob_selected_lc;
+"cust_project_id='" + dth[41] + "', noa_no='" + dth[42] + "', invoice_date='" + dth[43] + "', batch_lc='" + dth[44] + "'," +
+"sales_related='" + dth[45] + "' where origid=" + glob_selected_lc;
 
 		refresh = true;
 		//glob_sel_lc_str = lcno; // save for other func
@@ -449,21 +455,25 @@ BUTT_WIDTH2 = "190px";
 
 <popup id="replaceasset_pop">
 	<div sclass="shadowbox" style="background:#5c0404;" width="600px" >
-	<div style="background:#2e3436;padding:4px" >
+		<div style="background:#2e3436;padding:4px" >
+			<separator height="3px" />
+			<grid>
+				<rows>
+					<row style="background:#2e3436;">
+						<label style="color:#ffffff" value="REPLACING" />
+						<label id="currasst_lbl" sclass="subhead2" />
+					</row>
+					<row style="background:#2e3436;">
+						<label style="color:#ffffff" value="REASON" />
+						<textbox id="repass_reason_tb" sclass="k9" width="99%" height="50px" multiline="true" />
+					</row>
+				</rows>
+			</grid>
+		</div>
 		<separator height="3px" />
-		<hbox>
-			<label sclass="subhead" value="REPLACE" />
-			<separator width="10px" />
-			<label id="currasst_lbl" sclass="subhead2" />
-			<separator width="10px" />
-			<label value="TO" sclass="subhead" />
-		</hbox>
+		<div id="repassetform_holder" />
 		<separator height="3px" />
-	</div>
-	<separator height="3px" />
-	<div id="repassetform_holder" />
-	<separator height="3px" />
-	<button id="repasset_b" label="REPLACE ASSET" style="font-weight:bold" onClick="assFunc(self)" />
+		<button id="repasset_b" label="REPLACE ASSET" style="font-weight:bold" onClick="assFunc(self)" />
 	</div>
 </popup>
 
@@ -666,6 +676,17 @@ BUTT_WIDTH2 = "190px";
 	</div>
 </popup>
 
+<popup id="digauditlog_pop">
+	<div sclass="shadowbox" style="background:#97b83a;" width="700px">
+		<hbox>
+			<label value="What" sclass="k9" />
+			<textbox id="digaudit_tb" sclass="k9" />
+			<button label="Dig" sclass="k9" onClick="digAuditLog( digaudit_tb.getValue().trim() )" /> <!-- contbill_assets.zs -->
+		</hbox>
+		<div id="diglogs_holder" />
+	</div>
+</popup>
+
 <style src="/real-world.css" />
 <style>
 .GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
@@ -699,6 +720,8 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 		<button id="newroc_b" label="New LC/ROC entry" sclass="k9mo" onClick="doFunc(self)" />
 		<button id="rocsetstat_b" label="Set status" sclass="k9mo" onClick="lcsetstat_pop.open(self)" />
 		<button id="shwauditlogs_b" label="LC/ROC Logs" sclass="k9mo" onClick="doFunc(self)" />
+		<button label="Dig LC/ROC Logs" sclass="k9mo" onClick="digauditlog_pop.open(self)" />
+
 		<button id="listhotswap_b" label="List HOTSWAPS" sclass="k9" onClick="listHotswaps()" />
 		<separator width="50px" />
 		<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#ff0000" visible="false" onClick="adminpop.open(self)" />

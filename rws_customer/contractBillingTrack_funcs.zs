@@ -119,7 +119,7 @@ void showLCMetadata(String iwhat)
 	i_cust_project_id, i_noa_no, i_lstartdate, i_lenddate, i_charge_out_date, i_period, i_inst_type, i_invoice_date, i_batch_lc
 	};
 
-	populateUI_Data(ibx, flns, lcr);
+	ngfun.populateUI_Data(ibx, flns, lcr);
 
 	iass = (lcr.get("assigned") == null) ? "NO" : ( (lcr.get("assigned")) ? "YES" : "NO" );
 	lbhand.matchListboxItems(i_assigned, iass );
@@ -128,17 +128,17 @@ void showLCMetadata(String iwhat)
 	"rm_month", "rm_contract", "qty_dt", "qty_mt", "qty_nb", "qty_pt", "qty_hs", "qty_ms",
 	"charge_out_period", "co_instalment_count", "co_due_date",
 	"fina_amount", "co_monthly_rental", "co_deposit", "co_recv_ex_deposit", "co_recv_in_deposit",
-	"co_pv_drawdown", "co_pv_drawdown_ex_deposit", "co_assigned_interest",
+	"co_pv_drawdown", "co_pv_drawdown_ex_deposit", "co_assigned_interest","sales_related"
 	};
 
 	Object[] ibx2 = {
 	i_rm_month, i_rm_contract, i_qty_dt, i_qty_mt, i_qty_nb, i_qty_pt, i_qty_hs, i_qty_ms,
 	i_charge_out_period, i_co_instalment_count, i_co_due_date,
 	i_fina_amount, i_co_monthly_rental, i_co_deposit, i_co_recv_ex_deposit, i_co_recv_in_deposit,
-	i_co_pv_drawdown, i_co_pv_drawdown_ex_deposit, i_co_assigned_interest,
+	i_co_pv_drawdown, i_co_pv_drawdown_ex_deposit, i_co_assigned_interest, i_sales_related
 	};
 
-	populateUI_Data(ibx2, fln2, lcr);
+	ngfun.populateUI_Data(ibx2, fln2, lcr);
 
 	// remove previous DO/assets/RMA/etc boxes if any
 	/*
@@ -256,15 +256,14 @@ void listROCLC(int itype)
 	
 	lcrecs = sqlhand.gpSqlGetRows(sqlstm);
 	if(lcrecs.size() == 0) return;
-	newlb.setRows(22);
-	newlb.setMold("paging");
+	newlb.setRows(20); newlb.setMold("paging");
 	newlb.addEventListener("onSelect", lclcblicker);
 	ArrayList kabom = new ArrayList();
 	String[] fl = { "origid", "lc_id", "rwno", "rocno", "customer_name", "aqty", "lstartdate", "lenddate", "period",
 	"inst_type", "lstatus", "username", "order_type" };
 	for(dpi : lcrecs)
 	{
-		popuListitems_Data(kabom,fl,dpi);
+		ngfun.popuListitems_Data(kabom,fl,dpi);
 		sty = "";
 		if(dpi.get("super_reminder")) sty = "background:#EBF531;font-weight:bold;font-size:9px";
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false",sty);
@@ -282,10 +281,11 @@ void clearLCMetaFields()
 	i_product_name, i_order_type, i_remarks, i_assigned, i_charge_out_date, i_charge_out_period,
 	i_charge_out, i_fina_ref, i_fina_amount, i_co_assigned_name, i_co_do_ref, i_co_master_lc,
 	i_co_monthly_rental, i_co_instalment_count, i_co_due_date, i_co_deposit, i_co_recv_ex_deposit, i_co_recv_in_deposit,
-	i_co_pv_drawdown, i_co_pv_drawdown_ex_deposit, i_co_assigned_interest, i_co_inv_to_financer, i_cust_project_id, i_batch_lc
+	i_co_pv_drawdown, i_co_pv_drawdown_ex_deposit, i_co_assigned_interest, i_co_inv_to_financer, i_cust_project_id, i_batch_lc,
+	i_sales_related
 	};
 
-	clearUI_Field(flds);
+	ngfun.clearUI_Field(flds);
 }
 
 

@@ -409,6 +409,7 @@ void multiSuckFCAssetDetails()
 }
 
 // Log asset-record by LC no.
+// 24/09/2014: 
 void logAssetRecord(String ilc, String iass)
 {
 	//alert("lc: " + ilc + " :: asset: " + iass);
@@ -426,6 +427,7 @@ void logAssetRecord(String ilc, String iass)
 	String[] inpdat = new String[inpflds.length];
 	lgstr = "";
 
+	// quite stupid hack here .. hahaha interpolate strings
 	for(i=0;i<inpflds.length;i++)
 	{
 		if(inpflds[i] instanceof Textbox) inpdat[i] = kiboo.replaceSingleQuotes( inpflds[i].getValue().trim() );
@@ -433,7 +435,21 @@ void logAssetRecord(String ilc, String iass)
 		lgstr += hds[i] + inpdat[i];
 	}
 
-	add_RWAuditLog(LC_PREFIX + ilc, inpdat[0], lgstr, useraccessobj.username);
+	prevass = currasst_lbl.getValue(); // get the previous asset-tag from popup
+	lgstr += " FOR " + prevass;
+
+	//alert(lgstr);
+	//add_RWAuditLog(LC_PREFIX + ilc, inpdat[0], lgstr, useraccessobj.username);
+}
+
+// 24/09/2014: Replace asset audit-log - much simpler than logAssetRecord()
+void replaceAssetAuditLog(String ilc, String iass)
+{
+	prevass = currasst_lbl.getValue(); // get the previous asset-tag from popup
+	newass = kiboo.replaceSingleQuotes( r_asset_tag.getValue().trim() );
+	repreason = kiboo.replaceSingleQuotes( repass_reason_tb.getValue().trim() );
+	lgstr = "REPLACED: " + prevass + " TO " + newass + " (" + repreason + ")";
+	add_RWAuditLog(LC_PREFIX + ilc, prevass, lgstr, useraccessobj.username);
 }
 
 // Do checks and so on to replace asset
@@ -441,7 +457,7 @@ void logAssetRecord(String ilc, String iass)
 void replaceLCAsset()
 {
 	if(glob_selected_ass.equals("")) return;
-	logAssetRecord(glob_selected_lc,glob_selected_ass); // save existing asset-rec in audit-log
+	replaceAssetAuditLog(glob_selected_lc,glob_selected_ass); // save existing asset-rec in audit-log
 
 	Object[] inpflds =
 	{ r_asset_tag, r_brand, r_model, r_battery, r_hdd, r_hdd2, r_hdd3, r_hdd4,
@@ -450,7 +466,7 @@ void replaceLCAsset()
 	r_type, r_cust_location, r_poweradaptor, r_serial_no
 	};
 
-	inpdat = getString_fromUI(inpflds);
+	inpdat = ngfun.getString_fromUI(inpflds);
 
 	sqlstm = "update rw_lc_equips set asset_tag='" + inpdat[0] + "', brand='" + inpdat[1] + "', model='" + inpdat[2] +"'," +
 	"battery='" + inpdat[3] + "', hdd='" + inpdat[4] + "', hdd2='" + inpdat[5] + "', hdd3='" + inpdat[6] + "', hdd4='" + inpdat[7] + "'," +
@@ -485,7 +501,6 @@ void replaceLCAsset()
 	// save current-asset to gcn-transient (to collect back)
 	// replace new asset's record - link to LC-id
 */
-
 }
 
 // Clear those fields in replace-asset popup
@@ -858,3 +873,37 @@ void updateAssetFlags(int itype)
 	}
 	catch (Exception e) {}
 }
+
+// 24/09/2014: dig audit-logs - req by huiping
+void digAuditLog(String iwhat)
+{
+Object[] dalhds =
+{
+	new listboxHeaderWidthObj("Customer",true,""),
+	new listboxHeaderWidthObj("LC",true,""),
+	new listboxHeaderWidthObj("Dated",true,""),
+	new listboxHeaderWidthObj("User",true,""),
+	new listboxHeaderWidthObj("Audit notes",true,""),
+};
+	kk = kiboo.replaceSingleQuotes(iwhat);
+	if(kk.equals("")) return;
+
+	sqlstm = "select lcr.customer_name, lcr.lc_id, sdt.datecreated, sdt.audit_notes, sdt.username from rw_systemaudit sdt " +
+	"left join rw_lc_records lcr on sdt.linking_code = 'LC'+ convert(varchar(20),lcr.origid) " +
+	"where audit_notes like '%" + kk + "%' " +
+	"order by sdt.datecreated desc";
+
+	rcs = sqlhand.gpSqlGetRows(sqlstm);
+	if(rcs.size() == 0) return;
+	Listbox newlb = lbhand.makeVWListbox_Width(diglogs_holder, dalhds, "diglogs_lb", 20);
+	ArrayList kabom = new ArrayList();
+	String[] fl = { "customer_name", "lc_id", "datecreated", "username", "audit_notes" };
+	for(d : rcs)
+	{
+		ngfun.popuListitems_Data(kabom,fl,d);
+		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+		kabom.clear();
+	}
+
+}
+

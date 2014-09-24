@@ -6,16 +6,17 @@
 <zscript src="../rwglobal/systemAudit.zs" />
 <zscript>
 <![CDATA[
-MYTITLE = "WhopAssets Checker/ Location Changer";
-MYVERSION = "v0.2";
+MYTITLE = "WhopAssets Checker/ Location Changer / Grade Also";
+MYVERSION = "v0.2.1";
 MY_ID = "wopassdpan";
 /*
-Written by	: Victor Wong
-Dated		: 24/01/2014
-NOTES:
+@Author Victor Wong
+@Since 24/01/2014
+@NOTES
 Make it to check stock-tick scanned asset against what're inside FC6 inventory table
 
 21/08/2014: able to change parts/assets location from here
+24/09/2014: able to change asset grade too -- req by Vimalan
 
 */
 
@@ -120,48 +121,70 @@ void massUpdatePalletLoca(String ipallet)
 	add_RWAuditLog("WOPASSLOCA", "", "Updt pallet to " + ipallet + " for " + wo, useraccessobj.username);
 }
 
+void massUpdateAssetGrade()
+{
+	if(!lbhand.check_ListboxExist_SelectItem(fndass_holder,"fndassets_lb")) return;
+	tg = assgrade_lb.getSelectedItem().getLabel();
+	//if(tg.equals("")) return;
+
+	ags = "";
+	si = fndassets_lb.getSelectedItems().toArray();
+	for(i=0; i<si.length; i++)
+	{
+		ags += "'" + lbhand.getListcellItemLabel(si[i],0).trim() + "',";
+	}
+	try { ags = ags.substring(0,ags.length()-1); } catch (Exception e) {}
+
+	sqlstm = "update u0001 set gradeyh='" + tg + "' " +
+	"where extraid in (select eoff from mr001 where ltrim(rtrim(code2)) in (" + ags + "));";
+
+	sqlhand.rws_gpSqlExecuter(sqlstm);
+	checkEmAssets(last_type);
+}
+
 ]]>
 </zscript>
 
 <style src="/real-world.css" />
 
-<window id="${MY_ID}" width="900px" title="${MYTITLE} ${MYVERSION}" 
-position="center" mode="overlapped" border="normal" sizable="true" closable="true">
-<div>
+<window id="${MY_ID}" width="900px" title="${MYTITLE} ${MYVERSION}" position="center" mode="overlapped" border="normal" sizable="true" closable="true">
+	<div>
+		<hbox>
+			<div width="100px">
+				<separator height="25px" />
+				<label value="Scanned assets / serial-number" sclass="k9" />
+				<textbox id="wopass_tb" multiline="true" width="99%" height="250px" sclass="k9" />
+				<separator height="2px" />
+				<vbox>
+					<button label="Check asset-tag" sclass="k9" onClick="checkEmAssets(1)" />
+					<button label="Check serial-num" sclass="k9" onClick="checkEmAssets(2)" />
+					<button label="Clear" sclass="k9" onClick='wopass_tb.setValue("")' />
+				</vbox>
+				<separator height="2px" />
+				<label id="scnass_lb" sclass="k9" />
+			</div>
+			<div>
+				<hbox>
+					<label sclass="k9" value="Pallet/Loca" />
+					<textbox id="palletloca_tb" width="60px" sclass="k9" />
+					<button sclass="k9mo" label="Change pallet" onClick="massUpdatePalletLoca(palletloca_tb.getValue())" />
+					<listbox id="assgrade_lb" mold="select" sclass="k9" />
+					<button sclass="k9mo" label="Change grade" onClick="massUpdateAssetGrade()" />
+				</hbox>
+				<separator height="5px" />
+				<div id="fndass_holder" />
+				<separator height="2px" />
+				<label id="fndrecs_lb" sclass="k9" />
+			</div>
+		</hbox>
+	</div>
 
-<hbox>
-<div width="100px">
-	<separator height="25px" />
-	<label value="Scanned assets / serial-number" sclass="k9" />
-	<textbox id="wopass_tb" multiline="true" width="99%" height="250px" sclass="k9" />
-	<separator height="2px" />
-	<vbox>
-		<button label="Check asset-tag" sclass="k9" onClick="checkEmAssets(1)" />
-		<button label="Check serial-num" sclass="k9" onClick="checkEmAssets(2)" />
-		<button label="Clear" sclass="k9" onClick='wopass_tb.setValue("")' />
-	</vbox>
-	<separator height="2px" />
-	<label id="scnass_lb" sclass="k9" />
-	
-</div>
+<zscript>
+<![CDATA[
+	rws_fillListbox_uniqField("partsall_0","grade",assgrade_lb);
+]]>
+</zscript>
 
-<div>
-	<hbox>
-	<label value="FC6 Asset Records |" />
-		<label value="Pallet/Loca" />
-		<textbox id="palletloca_tb" width="60px" />
-		<button label="Change" onClick="massUpdatePalletLoca(palletloca_tb.getValue())" />
-	</hbox>
-
-	<separator height="5px" />
-	<div id="fndass_holder" />
-	<separator height="2px" />
-	<label id="fndrecs_lb" sclass="k9" />
-</div>
-
-</hbox>
-
-</div>
 </window>
 </zk>
 
