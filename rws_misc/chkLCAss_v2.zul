@@ -4,16 +4,18 @@
 <zscript src="../rwglobal/rwglobaldefs.zs" />
 <zscript src="../rwglobal/systemAudit.zs" />
 <zscript src="../rwglobal/rwsqlfuncs.zs" />
+<zscript src="../rwglobal/formMaker_v1.zs" />
 <zscript>
 <![CDATA[
 MYTITLE = "Check LC / Assets";
-MYVERSION = "v0.2";
+MYVERSION = "v0.2.1";
 MY_ID = "chkjasspan";
 /*
-Written by	: Victor Wong
-Dated		: 04/03/2014
-NOTES: refer to new LC/ass tables
+@Author Victor Wong
+@Since 04/03/2014
+@NOTES: refer to new LC/ass tables
 16/06/2014: add GCO, buyout and billable flag in assets list
+26/09/2014: show asset BOM - req by Vijay helpdesk
 */
 
 import org.victor.*;
@@ -21,14 +23,11 @@ sechand = new SecurityFuncs();
 myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
+guihand = new GuiFuncs(); luhand = new LookupFuncs();
+ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 param_lc = Executions.getCurrent().getParameter("kc");
-
 glob_sel_lcid = glob_selected_lc = glob_sel_customer = glob_order_type = glob_sel_lc_str = "";
 
 String JN_linkcode()
@@ -36,6 +35,37 @@ String JN_linkcode()
 	if(glob_sel_lcid.equals("")) return "";
 	return LC_PREFIX + glob_sel_lcid;
 }
+
+void showAssetMetadata(String iwhat)
+{
+	rc = rwsqlfun.getLCEquips_rec(iwhat);
+
+	Object[] metflds = {
+	m_asset_tag,m_brand,m_model,m_battery,m_hdd,m_hdd2,m_hdd3,m_hdd4,m_ram,m_ram2,m_ram3,m_ram4,
+	m_gfxcard,m_mouse,m_keyboard,m_monitor,m_poweradaptor,coa1,coa2,coa3,coa4,m_misc,m_cust_location,
+	m_type,osversion,offapps,m_serial_no, m_rm_month, m_qty
+	};
+
+	String[] metfnms = {
+	"asset_tag","brand","model","battery","hdd","hdd2","hdd3","hdd4","ram","ram2","ram3","ram4",
+	"gfxcard","mouse","keyboard","monitor","poweradaptor","coa1","coa2","coa3","coa4",
+	"remarks","cust_location",
+	"type","osversion","offapps","serial_no", "RM_Month", "qty"
+	};
+	
+	ngfun.populateUI_Data(metflds, metfnms, rc);
+	assbom_formholder.setVisible(true);
+}
+
+class lcasscliker implements org.zkoss.zk.ui.event.EventListener
+{
+	public void onEvent(Event event) throws UiException
+	{
+		selitem = event.getReference();
+		showAssetMetadata( lbhand.getListcellItemLabel(selitem,0) );
+	}
+}
+lcassetclik = new lcasscliker();
 
 Object[] lasshds =
 {
@@ -57,14 +87,13 @@ void listLCassets(String iwhat)
 	"where lc_parent=" + iwhat + " order by asset_tag";
 	r = sqlhand.gpSqlGetRows(sqlstm);
 	if(r.size() == 0) return;
-	//newlb.addEventListener("onSelect", lcsclicker);
-	newlb.setMold("paging");
-	newlb.setRows(22);
+	newlb.addEventListener("onSelect", lcassetclik);
+	newlb.setMold("paging"); newlb.setRows(20);
 	ArrayList kabom = new ArrayList();
 	String[] fl = { "origid", "asset_tag", "serial_no", "origid", "type", "gcn_id", "buyout" , "billable" };
 	for(d : r)
 	{
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 		ks = "font-size:9px";
 		if(d.get("gcn_id") != null && d.get("gcn_id") != 0 ) ks="background:#f77272;font-size:9px";
 		if(d.get("buyout")) ks = "background:#23B3DB;font-size:9px";
@@ -138,14 +167,13 @@ void searchLCass(int itype)
 	r = sqlhand.gpSqlGetRows(sqlstm);
 	if(r.size() == 0) return;
 	newlb.addEventListener("onSelect", lcsclicker);
-	newlb.setMold("paging");
-	newlb.setRows(22);
+	newlb.setMold("paging"); newlb.setRows(20);
 	ArrayList kabom = new ArrayList();
 	String[] fl = { "origid", "lc_id", "rocno", "customer_name", "lstartdate", "lenddate", "lstatus",
 	"remarks", "product_name", "order_type" };
 	for(d : r)
 	{
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
 	}
@@ -203,50 +231,56 @@ void exportAssetsList(String iwhat, int itype)
 </zscript>
 
 <popup id="expasspop">
-<div id="expass_div" width="700px" />
+	<div id="expass_div" width="700px" />
 </popup>
 
 <popup id="auditlogs_pop">
-<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
-<label sclass="subhead1" style=";color:#ffffff">Audit Logs</label>
-<separator height="3px" />
-<div id="auditlogs_holder" />
-<separator height="3px" />
-<button label="Ok" sclass="k9" onClick="auditlogs_pop.close()" />
-</div>
+	<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
+		<label sclass="subhead1" style=";color:#ffffff">Audit Logs</label>
+		<separator height="3px" />
+		<div id="auditlogs_holder" />
+		<separator height="3px" />
+		<button label="Ok" sclass="k9" onClick="auditlogs_pop.close()" />
+	</div>
 </popup>
 
 <style src="/real-world.css" />
 
-<window id="${MY_ID}" width="800px" title="${MYTITLE} ${MYVERSION}" position="top,center" mode="overlapped"
-border="normal" closable="true" sizable="true" >
+<window id="${MY_ID}" width="800px" title="${MYTITLE} ${MYVERSION}" position="top,center" mode="overlapped" border="normal" closable="true" sizable="true" >
 <div>
-
-<hbox>
-	<label value="LC/Asset/Serial/etc" style="font-size:9px" />
-	<textbox id="search_tb" width="99%" />
-	<button label="Dig" sclass="k9mo" onClick="searchLCass(0)" />
-</hbox>
-<separator height="2px" />
-<div id="things_holder" />
-<separator height="2px" />
-<hbox>
-	<button label="View LC logs" sclass="k9mo" onClick="showLClogs(self)" />
-	<button id="newasset_b" label="Export EVF(specs)" sclass="k9mo" onClick="exportAssetsList(glob_sel_lcid,6)" />
-</hbox>
-<separator height="2px" />
-<label id="thelctitle_lbl" style="font-weight:bold" />
-<separator height="2px" />
-<div id="lcass_holder" />
-
+	<hbox>
+		<label value="LC/Asset/Serial/etc" style="font-size:9px" />
+		<textbox id="search_tb" width="99%" />
+		<button label="Dig" sclass="k9mo" onClick="searchLCass(0)" />
+	</hbox>
+	<separator height="2px" />
+	<div id="things_holder" />
+	<separator height="2px" />
+	<hbox>
+		<button label="View LC logs" sclass="k9mo" onClick="showLClogs(self)" />
+		<button id="newasset_b" label="Export EVF(specs)" sclass="k9mo" onClick="exportAssetsList(glob_sel_lcid,6)" />
+	</hbox>
+	<separator height="2px" />
+	<label id="thelctitle_lbl" style="font-weight:bold" />
+	<separator height="2px" />
+	<div id="lcass_holder" />
+	<separator height="2px" />
+	<div id="assbom_formholder" visible="false" />
 </div>
 
 <zscript>
 <![CDATA[
 
+assbform = dynamicForm(assbom_formholder, "assbom_metgrid", "20");
+
 if(param_lc != null)
 {
 	searchLCass(1);
+}
+
+if(useraccessobj.accesslevel == 9)
+{
+	search_tb.setValue("a0046914");
 }
 
 ]]>

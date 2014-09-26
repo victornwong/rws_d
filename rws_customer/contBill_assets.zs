@@ -4,7 +4,7 @@ import org.victor.*;
 
 void showAssetMetadata(String iwhat)
 {
-	rc = getLCEquips_rec(iwhat);
+	rc = rwsqlfun.getLCEquips_rec(iwhat);
 	glob_sel_assetrec = rc;
 
 	Object[] metflds = {
@@ -21,17 +21,6 @@ void showAssetMetadata(String iwhat)
 	};
 	
 	ngfun.populateUI_Data(metflds, metfnms, rc);
-	/*
-	for(i=0; i<metflds.length; i++)
-	{
-		if(metflds[i] instanceof Textbox)
-		{
-			k = (rc.get(metfnms[i]) instanceof Double) ? nf2.format(rc.get(metfnms[i])) : kiboo.checkNullString(rc.get(metfnms[i]));
-			metflds[i].setValue(k);
-		}
-		if(metflds[i] instanceof Listbox) lbhand.matchListboxItems(metflds[i], kiboo.checkNullString(rc.get(metfnms[i])) );
-	}
-	*/
 	assbom_holder.setVisible(true);
 }
 

@@ -18,7 +18,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "Job Maker (ROC/SO/etc)";
-MYVERSION = "v0.3.4";
+MYVERSION = "v0.3.5";
 MYPANEL = "jobmakeapanr";
 /*
 Title		: Job maker - to manage ROC,SO,RMA or anything else
@@ -31,6 +31,7 @@ Dated		: 22/08/2013
 19/03/2014: mod job-listing to use grid instead of listbox
 16/04/2014: Lai req to see MRN which linked to T.GRN
 24/06/2014: import meta and items from ROC and SO FC6
+26/09/2014: chg rw_jobs.items to NTEXT to store unlimited items
 
 */
 import java.util.*;

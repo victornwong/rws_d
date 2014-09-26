@@ -73,11 +73,8 @@ myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
+guihand = new GuiFuncs(); luhand = new LookupFuncs();
 
 void testMysql()
 {
@@ -197,6 +194,16 @@ void doregex()
 	}
 }
 
+int calcFocusDate(String dstr)
+{
+	java.util.Calendar thedate = Calendar.getInstance();
+	thedate.setTime(GlobalDefs.dtf2.parse(dstr));
+	// ((2014-1950)*416) + ((9*32)+1) + (18 - 1);
+	retval = ((thedate.get(Calendar.YEAR)-1950)*416) + ((thedate.get(Calendar.MONTH)*32)+1) + (thedate.get(Calendar.DAY_OF_MONTH)-1);
+	alert(thedate);
+	return retval;
+}
+
 ]]>
 </zscript>
 
@@ -205,13 +212,18 @@ void doregex()
 <div width="1200px">
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" height="600px" >
 <panelchildren>
+
+<textbox id="inputdate" />
+<button label="Parse date" onClick="calcFocusDate(inputdate.getValue())" />
  
+ <!--
 <timeline height="300px" width="100%">
     <bandinfo width="70%" id="b1" intervalUnit="month" intervalPixels="100" eventSourceUrl="data/newXMLDocument.xml">
     </bandinfo>
     <bandinfo width="30%" intervalUnit="year" intervalPixels="200" syncWith="b1" eventSourceUrl="data/newXMLDocument.xml">
     </bandinfo>
 </timeline>
+-->
 
 <!--
 <iframe style="width:99%;height:700px" src="http://localhost:8080/rws_d/adminmodules/helloprocessing.html" />

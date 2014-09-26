@@ -36,7 +36,7 @@ gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 GRN_PREFIX = "GRN";
 
-last_showgrn_type = 0;
+last_showgrn_type = 1;
 glob_sel_grn = "";
 
 String[] scanitems_colws = { "30px", "",          "100px",      "100px",   "40px" };
@@ -51,6 +51,32 @@ Object getGRN_rec(String iwhat)
 class tbnulldrop implements org.zkoss.zk.ui.event.EventListener
 {	public void onEvent(Event event) throws UiException	{} }
 textboxnulldrop = new tbnulldrop();
+
+void searchProductName_FC(String sct)
+{
+	Object[] pnhds =
+	{
+		new listboxHeaderWidthObj("Product name",true,""),
+	};
+
+	sct = sct.trim();
+	if(sct.equals("")) return;
+	Listbox newlb = lbhand.makeVWListbox_Width(selprods_holder, pnhds, "prodname_lb", 3);
+	sct = sct.replace(" ","%");
+	sqlstm = "select top 50 name from mr008 where name like '%" + sct + "%' order by masterid desc";
+	r = sqlhand.rws_gpSqlGetRows(sqlstm);
+	if(r.size() == 0) return;
+	newlb.setMold("paging"); newlb.setRows(20);
+	ArrayList kabom = new ArrayList();
+	String[] lbi = new String[1];
+	for(d : r)
+	{
+		lbi[0] = d.get("name");
+		//ngfun.popuListitems_Data(kabom,flds,d);
+		lbhand.insertListItems(newlb,lbi,"false","");
+	}
+	lbhand.setDoubleClick_ListItems(newlb, prodsearch_dclick);
+}
 
 void fillUp_scanned_assets()
 {
@@ -80,7 +106,8 @@ void makeItemRow(Component irows, String iname, String iatg, String isn, String 
 	nrw = new org.zkoss.zul.Row();
 	nrw.setParent(irows);
 	ngfun.gpMakeCheckbox(nrw,"","","");
-	ngfun.gpMakeTextbox(nrw,"",iname,k9,"98%",textboxnulldrop); // item-name
+	//ngfun.gpMakeTextbox(nrw,"",iname,k9,"98%",textboxnulldrop); // item-name
+	ngfun.gpMakeLabel(nrw,"",iname,k9); // item-name using label
 	ngfun.gpMakeTextbox(nrw,"",iatg,k9,"95%",textboxnulldrop); // asset-tag
 	ngfun.gpMakeTextbox(nrw,"",isn,k9,"95%",textboxnulldrop); // serial
 	ngfun.gpMakeTextbox(nrw,"",iqty,k9,"95%",textboxnulldrop); // qty
@@ -88,12 +115,25 @@ void makeItemRow(Component irows, String iname, String iatg, String isn, String 
 
 void itemFunc(String itype)
 {
+	if(itype.equals("clrticks_b")) // clear 'em checkboxes
+	{
+		try
+		{
+			jk = grn_rows.getChildren().toArray();
+			for(i=0;i<jk.length;i++)
+			{
+				ki = jk[i].getChildren().toArray();
+				ki[0].setChecked(false);
+			}
+		} catch (Exception e) {}
+	}
+
 	if(itype.equals("additem_b"))
 	{
 		makeItemRow(grn_rows,"","","","1");
 	}
 
-	if(itype.equals("remitem_b"))
+	if(itype.equals("remitem_b")) // remove only ticked
 	{
 		try
 		{
@@ -109,32 +149,65 @@ void itemFunc(String itype)
 		} catch (Exception e) {}
 	}
 
+	if(itype.equals("remall_b")) // remove all
+	{
+		if (Messagebox.show("Remove ALL items..", "Are you sure?",
+			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+		try
+		{
+			jk = grn_rows.getChildren().toArray();
+			for(i=0;i<jk.length;i++)
+			{
+				jk[i].setParent(null);
+			}
+		} catch (Exception e) {}
+	}
+
+	if(itype.equals("saveitems_b")) // save scanned-items to grn
+	{
+		if(glob_sel_grn.equals("")) return;
+		saveGRN_items(glob_sel_grn);
+	}
+
 }
 
-void searchProductName_FC(String sct)
+void saveGRN_items(String igrn)
 {
-	Object[] pnhds =
+	try
 	{
-		new listboxHeaderWidthObj("Product name",true,""),
-	};
+		itms = atgs = srls = qtys = "";
 
-	sct = sct.trim();
-	if(sct.equals("")) return;
-	Listbox newlb = lbhand.makeVWListbox_Width(selprods_holder, pnhds, "prodname_lb", 3);
-	sct = sct.replace(" ","%");
-	sqlstm = "select top 50 name from mr008 where name like '%" + sct + "%' order by masterid desc";
-	r = sqlhand.rws_gpSqlGetRows(sqlstm);
-	if(r.size() == 0) return;
-	newlb.setMold("paging"); newlb.setRows(20);
-	ArrayList kabom = new ArrayList();
-	String[] lbi = new String[1];
-	for(d : r)
-	{
-		lbi[0] = d.get("name");
-		//ngfun.popuListitems_Data(kabom,flds,d);
-		lbhand.insertListItems(newlb,lbi,"false","");
-	}
-	lbhand.setDoubleClick_ListItems(newlb, prodsearch_dclick);
+		jk = grn_rows.getChildren().toArray();
+		for(i=0;i<jk.length;i++)
+		{
+			ki = jk[i].getChildren().toArray();
+
+			ii = kiboo.replaceSingleQuotes( ki[1].getValue().trim().replaceAll("~"," ") );
+			itms += ((ii.equals("")) ? "NONAME" : ii) + "~";
+
+			ii = kiboo.replaceSingleQuotes( ki[2].getValue().trim().replaceAll("~"," ") );
+			atgs += ((ii.equals("")) ? "NOTAG" : ii) + "~";
+
+			ii = kiboo.replaceSingleQuotes( ki[3].getValue().trim().replaceAll("~"," ") );
+			srls += ((ii.equals("")) ? "NOSN" : ii) + "~";
+
+			ii = kiboo.replaceSingleQuotes( ki[4].getValue().trim().replaceAll("~"," ") );
+			qtys += ((ii.equals("")) ? "NOQTY" : ii) + "~";
+		}
+
+/*
+		try { itms = itms.substring(0,itms.length()-1); } catch (Exception e) {}
+		try { atgs = atgs.substring(0,atgs.length()-1); } catch (Exception e) {}
+		try { srls = srls.substring(0,srls.length()-1); } catch (Exception e) {}
+		try { qtys = qtys.substring(0,qtys.length()-1); } catch (Exception e) {}
+*/
+
+		sqlstm = "update rw_grn set item_names='" + itms + "',asset_tags='" + atgs + "',serials='" + srls + "',qtys='" + qtys + "' where origid=" + igrn;
+		sqlhand.gpSqlExecuter(sqlstm);
+		guihand.showMessageBox("OK: GRN items saved..");
+
+	} catch (Exception e) { guihand.showMessageBox("ERR: cannot save the GRN items.."); }
 }
 
 class prdnsdblick implements org.zkoss.zk.ui.event.EventListener
@@ -153,6 +226,7 @@ class prdnsdblick implements org.zkoss.zk.ui.event.EventListener
 				if(ki[0].isChecked())
 					ki[1].setValue(ifnd);
 			}
+		itemFunc("clrticks_b");
 		} catch (Exception e) {}
 	}
 }
@@ -165,10 +239,23 @@ void showGRN_meta(String iwhat)
 
 	String[] fl = { "ourpo", "vendor", "vendor_do", "vendor_inv" };
 	Object[] jkl = { g_ourpo, g_vendor, g_vendor_do, g_vendor_inv };
-
 	ngfun.populateUI_Data(jkl,fl,r);
 
 	fillDocumentsList(documents_holder,GRN_PREFIX,iwhat);
+
+	// show 'em grn items
+	itms = sqlhand.clobToString(r.get("item_names")).split("~");
+	atgs = sqlhand.clobToString(r.get("asset_tags")).split("~");
+	srls = sqlhand.clobToString(r.get("serials")).split("~");
+	qtys = sqlhand.clobToString(r.get("qtys")).split("~");
+
+	for(i=0;i<itms.length; i++)
+	{
+		try {
+		makeItemRow(grn_rows,itms[i],atgs[i],srls[i],qtys[i]);
+		} catch (Exception e) {}
+	}
+
 
 }
 
@@ -269,7 +356,6 @@ void grnFunc(String itype)
 		showGRN(last_showgrn_type);
 	}
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
-
 }
 
 ]]>
@@ -430,9 +516,12 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 
 		<div sclass="shadowbox" style="background:#36427F">
 			<hbox>
+				<button id="clrticks_b" label="Ticks" sclass="k9mo" onClick="itemFunc(self.getId())" />
 				<button id="additem_b" label="Add item" sclass="k9mo" onClick="itemFunc(self.getId())" />
 				<button id="remitem_b" label="Remove" sclass="k9mo" onClick="itemFunc(self.getId())" />
+				<button id="remall_b" label="Remove ALL" sclass="k9mo" onClick="itemFunc(self.getId())" />
 				<button id="selprod_b" label="Select product name" sclass="k9mo" onClick="selecProduct_pop.open(self)" />
+				<button id="saveitems_b" label="SAVE" sclass="k9mo" onClick="itemFunc(self.getId())" />
 			</hbox>
 		</div>
 

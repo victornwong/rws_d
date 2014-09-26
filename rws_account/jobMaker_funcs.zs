@@ -359,7 +359,7 @@ void showJobItems(Object tjrc)
 	if(tjrc.get("items") == null) return; // nothing to show
 
 	checkMakeItemsGrid();
-	items = tjrc.get("items").split("::");
+	items = sqlhand.clobToString(tjrc.get("items")).split("::");
 	qtys = tjrc.get("qtys").split("::");
 	colors = tjrc.get("colors").split("::");
 	rental_periods = tjrc.get("rental_periods").split("::");
