@@ -2,6 +2,7 @@
 <?page id="goodsrecv2mod"?>
 <zk>
 <zscript src="../rwglobal/rwglobaldefs.zs" />
+<zscript src="../rwglobal/rwsqlfuncs.zs" />
 <zscript src="../rwglobal/formMaker_v1.zs" />
 <zscript src="../rwglobal/systemAudit.zs" />
 <zscript src="../rwglobal/uploadDocu_v1.zs" />
@@ -9,6 +10,8 @@
 <zscript src="../rwglobal/jobNotes_funcs.zs" />
 <zscript src="../rwglobal/uploadedWorksheet_v1.zs" />
 <zscript src="../rwglobal/emailfuncs.zs" />
+<zscript src="./goodsreceive/goodsrecv_funcs.zs" />
+<zscript src="./goodsreceive/injtest.zs" />
 <zscript>
 <![CDATA[
 MYTITLE = "Goods Receival";
@@ -37,84 +40,18 @@ gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 GRN_PREFIX = "GRN";
 
 last_showgrn_type = 1;
-glob_sel_grn = "";
+glob_sel_grn = glob_sel_stat = "";
 
-String[] scanitems_colws = { "30px", "",          "100px",      "100px",   "40px" };
-String[] scanitems_collb = { "",     "Item name", "Asset tag", "Serial", "Qty" };
-
-Object getGRN_rec(String iwhat)
+String JN_linkcode()
 {
-	sqlstm = "select * from rw_grn where origid=" + iwhat;
-	return sqlhand.gpSqlFirstRow(sqlstm);
-}
-
-class tbnulldrop implements org.zkoss.zk.ui.event.EventListener
-{	public void onEvent(Event event) throws UiException	{} }
-textboxnulldrop = new tbnulldrop();
-
-void searchProductName_FC(String sct)
-{
-	Object[] pnhds =
-	{
-		new listboxHeaderWidthObj("Product name",true,""),
-	};
-
-	sct = sct.trim();
-	if(sct.equals("")) return;
-	Listbox newlb = lbhand.makeVWListbox_Width(selprods_holder, pnhds, "prodname_lb", 3);
-	sct = sct.replace(" ","%");
-	sqlstm = "select top 50 name from mr008 where name like '%" + sct + "%' order by masterid desc";
-	r = sqlhand.rws_gpSqlGetRows(sqlstm);
-	if(r.size() == 0) return;
-	newlb.setMold("paging"); newlb.setRows(20);
-	ArrayList kabom = new ArrayList();
-	String[] lbi = new String[1];
-	for(d : r)
-	{
-		lbi[0] = d.get("name");
-		//ngfun.popuListitems_Data(kabom,flds,d);
-		lbhand.insertListItems(newlb,lbi,"false","");
-	}
-	lbhand.setDoubleClick_ListItems(newlb, prodsearch_dclick);
-}
-
-void fillUp_scanned_assets()
-{
-	kk = main_scan_atgs.getValue().trim();
-	if(kk.equals("")) return;
-	atgs = kk.split("\n");
-
-	kk2 = main_scan_serials.getValue().trim();
-	snm = kk2.split("\n");
-
-	if(atgs.length != snm.length) // imbalance asset-tags and serials
-	{
-		guihand.showMessageBox("Take note.. imbalance asset-tags and serials scanned.. but still insert");
-	}
-
-	for(i=0; i<atgs.length; i++)
-	{
-		tt = "";
-		try { tt = snm[i]; } catch (Exception e) {}
-		makeItemRow(grn_rows,"",atgs[i],tt,"1");
-	}
-}
-
-void makeItemRow(Component irows, String iname, String iatg, String isn, String iqty)
-{
-	k9 = "font-size:9px";
-	nrw = new org.zkoss.zul.Row();
-	nrw.setParent(irows);
-	ngfun.gpMakeCheckbox(nrw,"","","");
-	//ngfun.gpMakeTextbox(nrw,"",iname,k9,"98%",textboxnulldrop); // item-name
-	ngfun.gpMakeLabel(nrw,"",iname,k9); // item-name using label
-	ngfun.gpMakeTextbox(nrw,"",iatg,k9,"95%",textboxnulldrop); // asset-tag
-	ngfun.gpMakeTextbox(nrw,"",isn,k9,"95%",textboxnulldrop); // serial
-	ngfun.gpMakeTextbox(nrw,"",iqty,k9,"95%",textboxnulldrop); // qty
+	if(glob_sel_grn.equals("")) return "";
+	return GRN_PREFIX + glob_sel_grn;
 }
 
 void itemFunc(String itype)
 {
+	msgtext = "";
+
 	if(itype.equals("clrticks_b")) // clear 'em checkboxes
 	{
 		try
@@ -123,200 +60,50 @@ void itemFunc(String itype)
 			for(i=0;i<jk.length;i++)
 			{
 				ki = jk[i].getChildren().toArray();
-				ki[0].setChecked(false);
+				ki[0].setChecked( (ki[0].isChecked()) ? false : true );
 			}
 		} catch (Exception e) {}
 	}
 
 	if(itype.equals("additem_b"))
 	{
-		makeItemRow(grn_rows,"","","","1");
+		if(glob_sel_stat.equals("DRAFT"))
+			makeItemRow(grn_rows,"","","","1","DRAFT");
+	}
+
+	if(itype.equals("fillupitems_b")) // fill-up items from textboxes
+	{
+		if(glob_sel_stat.equals("DRAFT"))
+			fillUp_scanned_assets();
+		else
+			msgtext = "ERR: GRN already commit or Stock-in";
 	}
 
 	if(itype.equals("remitem_b")) // remove only ticked
 	{
-		try
-		{
-			jk = grn_rows.getChildren().toArray();
-			for(i=0;i<jk.length;i++)
-			{
-				ki = jk[i].getChildren().toArray();
-				if(ki[0].isChecked())
-				{
-					jk[i].setParent(null);
-				}
-			}
-		} catch (Exception e) {}
+		if(!glob_sel_stat.equals("DRAFT")) return;
+		itemsRemovalfunc(1); // goodsrecv_funcs.zs
 	}
 
 	if(itype.equals("remall_b")) // remove all
 	{
-		if (Messagebox.show("Remove ALL items..", "Are you sure?",
+		if(!glob_sel_stat.equals("DRAFT")) return;
+
+		if(Messagebox.show("Remove ALL items..", "Are you sure?",
 			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
 
-		try
-		{
-			jk = grn_rows.getChildren().toArray();
-			for(i=0;i<jk.length;i++)
-			{
-				jk[i].setParent(null);
-			}
-		} catch (Exception e) {}
+		itemsRemovalfunc(2);
 	}
 
 	if(itype.equals("saveitems_b")) // save scanned-items to grn
 	{
 		if(glob_sel_grn.equals("")) return;
-		saveGRN_items(glob_sel_grn);
+		if(glob_sel_stat.equals("DRAFT"))
+			saveGRN_items(glob_sel_grn);
 	}
 
-}
+	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 
-void saveGRN_items(String igrn)
-{
-	try
-	{
-		itms = atgs = srls = qtys = "";
-
-		jk = grn_rows.getChildren().toArray();
-		for(i=0;i<jk.length;i++)
-		{
-			ki = jk[i].getChildren().toArray();
-
-			ii = kiboo.replaceSingleQuotes( ki[1].getValue().trim().replaceAll("~"," ") );
-			itms += ((ii.equals("")) ? "NONAME" : ii) + "~";
-
-			ii = kiboo.replaceSingleQuotes( ki[2].getValue().trim().replaceAll("~"," ") );
-			atgs += ((ii.equals("")) ? "NOTAG" : ii) + "~";
-
-			ii = kiboo.replaceSingleQuotes( ki[3].getValue().trim().replaceAll("~"," ") );
-			srls += ((ii.equals("")) ? "NOSN" : ii) + "~";
-
-			ii = kiboo.replaceSingleQuotes( ki[4].getValue().trim().replaceAll("~"," ") );
-			qtys += ((ii.equals("")) ? "NOQTY" : ii) + "~";
-		}
-
-/*
-		try { itms = itms.substring(0,itms.length()-1); } catch (Exception e) {}
-		try { atgs = atgs.substring(0,atgs.length()-1); } catch (Exception e) {}
-		try { srls = srls.substring(0,srls.length()-1); } catch (Exception e) {}
-		try { qtys = qtys.substring(0,qtys.length()-1); } catch (Exception e) {}
-*/
-
-		sqlstm = "update rw_grn set item_names='" + itms + "',asset_tags='" + atgs + "',serials='" + srls + "',qtys='" + qtys + "' where origid=" + igrn;
-		sqlhand.gpSqlExecuter(sqlstm);
-		guihand.showMessageBox("OK: GRN items saved..");
-
-	} catch (Exception e) { guihand.showMessageBox("ERR: cannot save the GRN items.."); }
-}
-
-class prdnsdblick implements org.zkoss.zk.ui.event.EventListener
-{
-	public void onEvent(Event event) throws UiException
-	{
-		selecProduct_pop.close();
-		isel = event.getTarget();
-		ifnd = lbhand.getListcellItemLabel(isel,0);
-		try
-		{
-			jk = grn_rows.getChildren().toArray();
-			for(i=0;i<jk.length;i++)
-			{
-				ki = jk[i].getChildren().toArray();
-				if(ki[0].isChecked())
-					ki[1].setValue(ifnd);
-			}
-		itemFunc("clrticks_b");
-		} catch (Exception e) {}
-	}
-}
-prodsearch_dclick = new prdnsdblick();
-
-void showGRN_meta(String iwhat)
-{
-	r = getGRN_rec(iwhat);
-	if(r == null) return;
-
-	String[] fl = { "ourpo", "vendor", "vendor_do", "vendor_inv" };
-	Object[] jkl = { g_ourpo, g_vendor, g_vendor_do, g_vendor_inv };
-	ngfun.populateUI_Data(jkl,fl,r);
-
-	fillDocumentsList(documents_holder,GRN_PREFIX,iwhat);
-
-	// show 'em grn items
-	itms = sqlhand.clobToString(r.get("item_names")).split("~");
-	atgs = sqlhand.clobToString(r.get("asset_tags")).split("~");
-	srls = sqlhand.clobToString(r.get("serials")).split("~");
-	qtys = sqlhand.clobToString(r.get("qtys")).split("~");
-
-	for(i=0;i<itms.length; i++)
-	{
-		try {
-		makeItemRow(grn_rows,itms[i],atgs[i],srls[i],qtys[i]);
-		} catch (Exception e) {}
-	}
-
-
-}
-
-Object[] grnhds =
-{
-	new listboxHeaderWidthObj("GRN",true,"40px"),
-	new listboxHeaderWidthObj("PO",true,"50px"),
-	new listboxHeaderWidthObj("Stat",true,"60px"),
-	new listboxHeaderWidthObj("User",true,"70px"),
-	new listboxHeaderWidthObj("Commit",true,"70px"),
-	new listboxHeaderWidthObj("Vendor",true,""),
-	new listboxHeaderWidthObj("V.DO",true,"60px"),
-	new listboxHeaderWidthObj("V.Inv",true,"60px"),
-};
-
-class grnclicker implements org.zkoss.zk.ui.event.EventListener
-{
-	public void onEvent(Event event) throws UiException
-	{
-		isel = event.getReference();
-		glob_sel_grn = lbhand.getListcellItemLabel(isel,0);
-		showGRN_meta(glob_sel_grn);
-	}
-}
-grnclik = new grnclicker();
-
-void showGRN(int itype)
-{
-	last_showgrn_type = itype;
-	sct = kiboo.replaceSingleQuotes(searhtxt_tb.getValue().trim());
-	sdate = kiboo.getDateFromDatebox(startdate);
-	edate = kiboo.getDateFromDatebox(enddate);
-	jid = kiboo.replaceSingleQuotes(grnid_tb.getValue().trim());
-
-	Listbox newlb = lbhand.makeVWListbox_Width(grnheaders_holder, grnhds, "grnheader_lb", 3);
-	sqlstm = "select origid,ourpo,status,vendor,vendor_do,vendor_inv,username,commitdate from rw_grn ";
-	switch(itype)
-	{
-		case 1 :
-			sqlstm += "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' ";
-			if(!sct.equals(""))
-				sqlstm += " and (vendor like '%" + sct + "%' or vendor_do like '%" + sct + "%' or vendor_inv like '%" + sct + "% or ourpo like '%" + sct + "%') ";
-			break;
-		case 2 :
-			sqlstm += "where origid=" + jid;
-			break;
-	}
-	sqlstm += " order by origid desc";
-
-	rcs = sqlhand.gpSqlGetRows(sqlstm);
-	if(rcs.size() == 0) return;
-	newlb.setRows(20); newlb.setMold("paging");
-	newlb.addEventListener("onSelect", grnclik);
-	ArrayList kabom = new ArrayList();
-	String[] fl = { "origid","ourpo","status","username","commitdate","vendor","vendor_do","vendor_inv"};
-	for(d : rcs)
-	{
-		ngfun.popuListitems_Data(kabom,fl,d);
-		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
-		kabom.clear();
-	}
 }
 
 void grnFunc(String itype)
@@ -334,20 +121,67 @@ void grnFunc(String itype)
 	if(itype.equals("updgrn_b"))
 	{
 		if(glob_sel_grn.equals("")) return;
-		Object[] jkl = { g_ourpo, g_vendor, g_vendor_do, g_vendor_inv };
+		Object[] jkl = { g_ourpo, g_vendor, g_vendor_do, g_vendor_inv, g_shipmentcode, g_grn_remarks };
 		dt = ngfun.getString_fromUI(jkl);
 		sqlstm = "update rw_grn set ourpo='" + dt[0] + "', vendor='" + dt[1] + "'," +
-		"vendor_do='" + dt[2] + "', vendor_inv='" + dt[3] + "' where origid=" + glob_sel_grn;
+		"vendor_do='" + dt[2] + "', vendor_inv='" + dt[3] + "', shipmentcode='" + dt[4] + "', grn_remarks='" + dt[5] + "' where origid=" + glob_sel_grn;
 	}
 
 	if(itype.equals("remgrn_b"))
 	{
+		if(glob_sel_grn.equals("")) return;
+		if(glob_sel_stat.equals("DRAFT"))
+		{
+			if(Messagebox.show("Totally remove GRN and all scanned asset-tags/serials..", "Are you sure?", 
+				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
 
+			sqlstm = "delete from rw_grn where origid=" + glob_sel_grn;
+			hidereset_workarea();
+		}
+		else
+		{
+			msgtext = "ERR: Can only remove DRAFT GRN !!";
+		}
 	}
 
-	if(itype.equals("commgrn_b"))
+	if(itype.equals("commgrn_b")) // commit GRN - lock it
 	{
+		if(glob_sel_grn.equals("")) return;
 
+		if(!glob_sel_stat.equals("COMMIT") && !glob_sel_stat.equals("STKIN"))
+		{
+			sqlstm = "update rw_grn set status='COMMIT' where origid=" + glob_sel_grn;
+			hidereset_workarea();
+		}
+		else
+		{
+			msgtext = "ERR: GRN already committed or stock-in..";
+		}
+	}
+
+	if(itype.equals("uptstock_b")) // update inventory FC6
+	{
+		if(glob_sel_grn.equals("")) return;
+		if(glob_sel_stat.equals("COMMIT"))
+		{
+			if(Messagebox.show("This will stock-in the GRN items.. POINT OF NO RETURN!!", "Are you sure?",
+				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+			updateInventory_GRNItems();
+			sqlstm = "update rw_grn set status='STKIN' where origid=" + glob_sel_grn;
+			msgtext = "OK: Inventory stock-in..";
+			hidereset_workarea();
+		}
+		else
+		{
+			msgtext = "ERR: Commit the GRN first before stock-in or GRN already stock-in";
+		}
+	}
+
+	if(itype.equals("shwauditlogs_b"))
+	{
+		showSystemAudit(auditlogs_holder,JN_linkcode(),"");
+		auditlogs_pop.open(shwauditlogs_b);
 	}
 
 	if(!sqlstm.equals(""))
@@ -356,6 +190,159 @@ void grnFunc(String itype)
 		showGRN(last_showgrn_type);
 	}
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
+}
+
+void adminFunc(String itype)
+{
+	adminpop.close();
+	todaydate =  kiboo.todayISODateTimeString();
+	sqlstm = msgtext = "";
+	unm = useraccessobj.username;
+
+	if(glob_sel_grn.equals("")) return;
+
+	if(itype.equals("delgrn_b")) // totally delete
+	{
+		if(Messagebox.show("HARD delete GRN..", "Are you sure?",
+			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+		sqlstm = "delete from rw_grn where origid=" + glob_sel_grn;
+		hidereset_workarea();
+	}
+
+	if(itype.equals("settodate_b")) // set GRN to today's date
+	{
+		sqlstm = "update rw_grn set datecreated='" + todaydate + "' where origid=" + glob_sel_grn;
+	}
+
+	if(itype.equals("setdraftgrn_b"))
+	{
+		sqlstm = "update rw_grn set status='DRAFT' where origid=" + glob_sel_grn;
+		hidereset_workarea();
+	}
+
+	if(itype.equals("minustock_b") || itype.equals("addstock_b"))
+	{
+		kk = kiboo.replaceSingleQuotes( a_minus_stock.getValue().trim() );
+		ki = 1;
+		try { ki = Integer.parseInt(kk); } catch (Exception e) { return; }
+		if(Messagebox.show("Will " + ((itype.equals("minustock_b")) ? "minus" : "add") + " those ticked items qty..", "Are you sure?",
+			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+		mt = (itype.equals("minustock_b")) ? 1 : 2;
+		minusAddFocus_Stock(mt,ki);
+	}
+
+	if(!sqlstm.equals(""))
+	{
+		sqlhand.gpSqlExecuter(sqlstm);
+		showGRN(last_showgrn_type);
+	}
+	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
+}
+
+// Inject stock items and qtys, only item with pre-def product-name will work
+// use palletid 4=UNKNOWN
+void updateInventory_GRNItems()
+{
+		try
+		{
+			log_assettags = "";
+			shpc = kiboo.replaceSingleQuotes( g_shipmentcode.getValue().trim() );
+			tdate = calcFocusDate( kiboo.todayISODateTimeString() ).toString();
+			sqlstm = "declare @maxid int; declare @maxseq int; declare @prodid varchar(200); declare @_masterid int; ";
+
+			jk = grn_rows.getChildren().toArray();
+			for(i=0;i<jk.length;i++) // check if items scanned
+			{
+				ki = jk[i].getChildren().toArray();
+				itm = ki[1].getValue();
+				atg = kiboo.replaceSingleQuotes( ki[2].getValue().trim() );
+				snm = kiboo.replaceSingleQuotes( ki[3].getValue().trim() );
+				qty = kiboo.replaceSingleQuotes( ki[4].getValue().trim() );
+				try { kx = Integer.parseInt(qty); } catch (Exception e) { qty = "1"; } // just have to make sure got qty
+
+				if(!itm.equals("")) // only entry with item-name
+				{
+					log_assettags += atg + "(" + snm + " / " + qty + "), ";
+
+					sqlstm += "if not exists(select 1 from mr001 where code2='" + atg + "')" +
+					"begin " +
+					"set @maxid = (select max(masterid)+1 from mr001);" +
+					"set @maxseq = (select max(sequence)+1 from mr001);" +
+					"set @prodid = (select top 1 masterid from mr008 where name='" + itm + "'); " +
+
+					"insert into mr001 (masterid,sequence,name,code,code2,limit,l2,type,attribute,eoff,doff,creditdays,date_,time_,limit2) " +
+					"values (@maxid,@maxseq, " +
+					"'" + itm + " - " + atg + "','" + snm + "','" + atg + "', " +
+					"0,-1,131,0,@maxid,0,0," + tdate + ",0xe332e,0); " +
+
+					"insert into u0001 (extraid,productnameyh,palletnoyh,shipmentcodeyh) values (@maxid,@prodid,4,'" + shpc + "'); " +
+
+					"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) " +
+					"values (@maxid," + tdate + ",0,0," + qty + ",0,0); " +
+
+					"end else begin " +
+					"set @_masterid = (select masterid from mr001 where code2='" + atg + "'); " +
+
+					"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) " +
+					"values (@_masterid," + tdate + ",0,0," + qty + ",0,0); " +
+
+					//"update mr001 set name='" + itm + "',code='" + snm + "' where code2='" + atg + "';" +
+					"end;";
+				}
+			}
+			f30_gpSqlExecuter(sqlstm);
+			lgstr = "Update inventory : " + log_assettags;
+			add_RWAuditLog(JN_linkcode(),"", lgstr, useraccessobj.username);
+
+		} catch (Exception e) {}
+}
+
+// used by admin for now .. later put into another module to FAST add/minus stock
+// itype: 1=minus stock, 2=add stock
+void minusAddFocus_Stock(int itype, int qty)
+{
+	try
+	{
+		if(itype == 1) qty *= -1;
+
+		tdate = calcFocusDate( kiboo.todayISODateTimeString() ).toString();
+
+		sqlstm = "declare @_masterid int; ";
+		jk = grn_rows.getChildren().toArray();
+		for(i=0;i<jk.length;i++)
+		{
+			ki = jk[i].getChildren().toArray();
+			atg = kiboo.replaceSingleQuotes( ki[2].getValue().trim() );
+
+			if(ki[0].isChecked() && !atg.equals(""))
+			{
+				sqlstm += "if exists(select 1 from mr001 where code2='" + atg + "')" +
+				"begin " +
+				"set @_masterid = (select masterid from mr001 where code2='" + atg + "'); " +
+				"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) ";
+
+				switch(itype)
+				{
+					case 1: // do QISS
+						sqlstm +=
+						"values (@_masterid," + tdate + ",0," + qty.toString() + ",0,0,0); " +
+						"end; ";
+						break;
+
+					case 2: // do QREC
+					sqlstm +=
+						"values (@_masterid," + tdate + ",0,0," + qty.toString() + ",0,0); " +
+						"end; ";
+						break;
+				}
+			}
+		}
+
+		f30_gpSqlExecuter(sqlstm);
+
+	} catch (Exception e) {}	
 }
 
 ]]>
@@ -411,6 +398,19 @@ void grnFunc(String itype)
 	</div>
 </popup>
 
+<popup id="adminpop">
+	<div sclass="shadowbox" style="background:#E2241C" width="300px">
+		<button id="setdraftgrn_b" label="Set DRAFT" sclass="k9mo" onClick="adminFunc(self.getId())" />
+		<button id="settodate_b" label="Set todate" sclass="k9mo" onClick="adminFunc(self.getId())" />
+		<button id="delgrn_b" label="DELETE GRN" sclass="k9mo" onClick="adminFunc(self.getId())" />
+		<hbox>
+			<textbox id="a_minus_stock" sclass="k9" value="1" />
+			<button id="minustock_b" label="-stock" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			<button id="addstock_b" label="+stock" sclass="k9mo" onClick="adminFunc(self.getId())" />
+		</hbox>
+	</div>
+</popup>
+
 <style src="/real-world.css" />
 <style>
 .GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
@@ -420,11 +420,21 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 } 
 </style>
 
+<popup id="auditlogs_pop">
+	<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
+		<label sclass="subhead" value="Audit Logs" />
+		<separator height="3px" />
+		<div id="auditlogs_holder" />
+		<separator height="3px" />
+		<button label="Ok" sclass="k9" onClick="auditlogs_pop.close()" />
+	</div>
+</popup>
+
 <div width="1200px">
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true">
 <panelchildren style="background:#322B29">
 
-	<div sclass="shadowbox" style="background:#36427F">
+	<div sclass="shadowbox" style="background:#7F0850">
 		<hbox style="padding:3px">
 			<label value="Start date" sclass="k9b" />
 			<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
@@ -434,104 +444,135 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 			<textbox id="searhtxt_tb" width="150px" sclass="k9" />
 			<button label="Load/Find" sclass="k9mo" onClick="showGRN(1)" />
 
+			<textbox id="assettag_by" width="60px" sclass="k9" />
+			<button label="by asset-tag" sclass="k9mo" onClick="showGRN(3)" />
+
 			<textbox id="grnid_tb" width="50px" sclass="k9" />
 			<button label="by GRN" sclass="k9mo" onClick="showGRN(2)" />
 
-			<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#D60D0D" visible="false" />
+			<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#D60D0D" visible="false" onClick="adminpop.open(self)" />
 		</hbox>
 	</div>
 
+	<div sclass="shadowbox" style="background:#36427F">
+		<hbox>
+			<button id="newgrn_b" label="New GRN" sclass="k9mo" onClick="grnFunc(self.getId())" />
+			<button id="remgrn_b" label="Remove" sclass="k9mo" onClick="grnFunc(self.getId())" />
+			<button id="commgrn_b" label="Commit" sclass="k9mo" onClick="grnFunc(self.getId())" />
+			<button id="uptstock_b" label="UPDATE INVENTORY" sclass="k9mo" style="color:#D41212" onClick="grnFunc(self.getId())" visible="false" />
+			<separator width="10px" />
+			<button id="shwauditlogs_b" label="AuditLog" sclass="k9mo" onClick="grnFunc(self.getId())" />
+		</hbox>
+		<separator height="3px" />
+		<div id="grnheaders_holder" />
+	</div>
+
 	<hbox>
-		<div sclass="shadowbox" style="background:#36427F" width="650px">
-			<hbox>
-				<button id="newgrn_b" label="New GRN" sclass="k9mo" onClick="grnFunc(self.getId())" />
-				<button id="remgrn_b" label="Remove" sclass="k9mo" onClick="grnFunc(self.getId())" />
-				<button id="commgrn_b" label="Commit" sclass="k9mo" onClick="grnFunc(self.getId())" />
-			</hbox>
-			<separator height="3px" />
-			<div id="grnheaders_holder" />
-		</div>
 
-		<div id="grnmeta_holder" sclass="shadowbox" style="background:#36427F">
-			<hbox>
-				<button id="updgrn_b" label="Update" sclass="k9mo" onClick="grnFunc(self.getId())" />
-			</hbox>
-			<separator height="3px" />
-			<grid>
-				<rows>
-					<row spans="1,3">
-						<label value="Our PO" sclass="k9" />
-						<textbox id="g_ourpo" sclass="k9" />
-					</row>
-					<row spans="1,3">
-						<label value="Vendor" sclass="k9" />
-						<textbox id="g_vendor" sclass="k9" width="99%" />
-					</row>
-					<row>
-						<label value="Vendor Invoice" sclass="k9" />
-						<textbox id="g_vendor_inv" sclass="k9" width="99%" />
-						<label value="Vendor DO" sclass="k9" />
-						<textbox id="g_vendor_do" sclass="k9" width="99%" />
-					</row>
-				</rows>
-			</grid>
-			<separator height="3px" />
-
-			<div sclass="shadowbox" style="background:#555753" id="docholder" width="${BOXWIDTH}">
-				<label sclass="subhead1">ATTACHMENT / DOCUMENTS</label>
+		<vbox>
+			<div id="grnmeta_holder" sclass="shadowbox" style="background:#36427F" visible="false" width="450px">
+				<grid>
+					<rows>
+						<row spans="1,3" style="background:#61A2E3">
+							<label value="GRN No." style="font-weight:bold" />
+							<label id="g_origid" style="font-weight:bold" />
+						</row>
+						<row>
+							<label value="Our PO" sclass="k9" />
+							<textbox id="g_ourpo" sclass="k9" />
+							<label value="Shipment Code" sclass="k9" />
+							<textbox id="g_shipmentcode" sclass="k9" />
+						</row>
+						<row spans="1,3">
+							<label value="Vendor" sclass="k9" />
+							<textbox id="g_vendor" sclass="k9" width="99%" />
+						</row>
+						<row>
+							<label value="Vendor Invoice" sclass="k9" />
+							<textbox id="g_vendor_inv" sclass="k9" width="99%" />
+							<label value="Vendor DO" sclass="k9" />
+							<textbox id="g_vendor_do" sclass="k9" width="99%" />
+						</row>
+						<row spans="1,3">
+							<label value="Remarks" sclass="k9" />
+							<textbox id="g_grn_remarks" sclass="k9" width="99%" height="70px" multiline="true" />
+						</row>
+					</rows>
+				</grid>
 				<separator height="3px" />
 				<hbox>
-					<button id="uploaddoc_btn" label="Upload file" class="k9" onClick="showUploadPopup(GRN_PREFIX,glob_sel_grn)" />
-					<button id="viewdoc_btn" label="View file" class="k9" onClick="viewFile()" />
-					<button id="editdoc_btn" label="Update" class="k9" onClick="updatefiledesc_popup.open(self)" />
-					<button id="deletedoc_btn" label="Delete" class="k9" onClick="deleteFile(documents_holder,GRN_PREFIX,glob_sel_grn)" />
+					<button id="updgrn_b" label="Update GRN metadata" sclass="k9mo" onClick="grnFunc(self.getId())" />
 				</hbox>
+
 				<separator height="3px" />
-				<div id="documents_holder" />
+
+				<div sclass="shadowbox" style="background:#555753" id="docholder" width="${BOXWIDTH}">
+					<label sclass="subhead1">ATTACHMENT / DOCUMENTS</label>
+					<separator height="3px" />
+					<hbox>
+						<button id="uploaddoc_btn" label="Upload file" class="k9" onClick="showUploadPopup(GRN_PREFIX,glob_sel_grn)" />
+						<button id="viewdoc_btn" label="View file" class="k9" onClick="viewFile()" />
+						<button id="editdoc_btn" label="Update" class="k9" onClick="updatefiledesc_popup.open(self)" />
+						<button id="deletedoc_btn" label="Delete" class="k9" onClick="deleteFile(documents_holder,GRN_PREFIX,glob_sel_grn)" />
+					</hbox>
+					<separator height="3px" />
+					<div id="documents_holder" />
+				</div>
 			</div>
-		</div>
+		</vbox>
+
+		<vbox id="grnitems_workarea" visible="false">
+			<div sclass="shadowbox" style="background:#36427F">
+				<grid sclass="GridLayoutNoBorder">
+					<rows>
+						<row style="background:#36427F">
+							<label value="Scan asset-tags" style="color:#ffffff;font-weight:bold" />
+							<label value="Scan serial-numbers" style="color:#ffffff;font-weight:bold" />
+						</row>
+						<row style="background:#36427F">
+							<textbox id="main_scan_atgs" width="99%" height="200px" multiline="true" />
+							<textbox id="main_scan_serials" width="99%" height="200px" multiline="true" />
+						</row>
+					</rows>
+				</grid>
+				<hbox>
+					<button id="fillupitems_b" label="Insert" sclass="k9mo" onClick="itemFunc(self.getId())" />
+					<button label="Clear assets-tags" sclass="k9mo" onClick='main_scan_atgs.setValue("")' />
+					<button label="Clear serial-numbers" sclass="k9mo" onClick='main_scan_serials.setValue("")' />
+				</hbox>
+			</div>
+
+			<vbox>
+				<div sclass="shadowbox" style="background:#36427F">
+					<hbox>
+						<button id="clrticks_b" label="Ticks" sclass="k9mo" onClick="itemFunc(self.getId())" />
+						<button id="additem_b" label="Add item" sclass="k9mo" onClick="itemFunc(self.getId())" />
+						<button id="remitem_b" label="Remove" sclass="k9mo" onClick="itemFunc(self.getId())" />
+						<button id="remall_b" label="Remove ALL" sclass="k9mo" onClick="itemFunc(self.getId())" />
+						<button id="selprod_b" label="Select product name" sclass="k9mo" onClick="selecProduct_pop.open(self)" />
+						<button id="saveitems_b" label="SAVE" sclass="k9mo" onClick="itemFunc(self.getId())" />
+					</hbox>
+					<label sclass="k9mo" style="color:#ffffff">
+					(For items without asset-tags, fill-up asset-tag field with item-name)
+					</label>
+				</div>
+				<div id="scanitems_holder" width="600px" />
+			</vbox>
+		</vbox>
 
 	</hbox>
-
-	<vbox>
-		<div sclass="shadowbox" style="background:#36427F">
-			<grid sclass="GridLayoutNoBorder">
-				<rows>
-					<row style="background:#36427F">
-						<label value="Scan asset-tags" style="color:#ffffff;font-weight:bold" />
-						<label value="Scan serial-numbers" style="color:#ffffff;font-weight:bold" />
-					</row>
-					<row style="background:#36427F">
-						<textbox id="main_scan_atgs" width="99%" height="200px" multiline="true" />
-						<textbox id="main_scan_serials" width="99%" height="200px" multiline="true" />
-					</row>
-				</rows>
-			</grid>
-			<hbox>
-				<button label="Insert" sclass="k9mo" onClick="fillUp_scanned_assets()" />
-				<button label="Clear assets" sclass="k9mo" onClick='main_scan_atgs.setValue("")' />
-				<button label="Clear serials" sclass="k9mo" onClick='main_scan_serials.setValue("")' />
-			</hbox>
-		</div>
-
-		<div sclass="shadowbox" style="background:#36427F">
-			<hbox>
-				<button id="clrticks_b" label="Ticks" sclass="k9mo" onClick="itemFunc(self.getId())" />
-				<button id="additem_b" label="Add item" sclass="k9mo" onClick="itemFunc(self.getId())" />
-				<button id="remitem_b" label="Remove" sclass="k9mo" onClick="itemFunc(self.getId())" />
-				<button id="remall_b" label="Remove ALL" sclass="k9mo" onClick="itemFunc(self.getId())" />
-				<button id="selprod_b" label="Select product name" sclass="k9mo" onClick="selecProduct_pop.open(self)" />
-				<button id="saveitems_b" label="SAVE" sclass="k9mo" onClick="itemFunc(self.getId())" />
-			</hbox>
-		</div>
-
-		<div id="scanitems_holder" width="500px" />
-	</vbox>
 
 <zscript>
 <![CDATA[
 
 ngfun.checkMakeGrid(scanitems_colws, scanitems_collb, scanitems_holder, "grn_grid", "grn_rows", "", "", false);
+
+unm = useraccessobj.username;
+// only these users can see the update inventory butt
+if(unm.equals("padmin"))
+{
+	uptstock_b.setVisible(true);
+}
 
 if(useraccessobj.accesslevel == 9)
 {
