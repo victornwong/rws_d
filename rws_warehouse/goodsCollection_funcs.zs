@@ -251,8 +251,8 @@ void showGoodsCollection(int itype)
 	if(itype == 3) scsql = "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' and transporter='" + bytp + "' ";
 	if(itype == 4)
 	{
-		if(st.equals(""))
-		scsql = "where items_code like '%" + st + "%' or items_desc like '%" + st + "%' or items_sn like '%" + st + "%' ";
+		if(!st.equals(""))
+		scsql = "where convert(nvarchar(max),items_code) like '%" + st + "%' or convert(nvarchar(max),items_desc) like '%" + st + "%' or convert(nvarchar(max),items_sn) like '%" + st + "%' ";
 	}
 	if(itype == 5) scsql = "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' and username='" + bunm + "' ";
 

@@ -5,11 +5,21 @@ import org.victor.*;
 String[] scanitems_colws = { "30px", "",          "180px",     "100px", "40px" };
 String[] scanitems_collb = { "",     "Item name", "Asset tag", "Serial","Qty" };
 
-
-Object getGRN_rec(String iwhat)
+// TODO Focus5012 got more fields - bluetooth etc
+Object getExisting_inventoryRec(String iatg)
 {
-	sqlstm = "select * from rw_grn where origid=" + iwhat;
-	return sqlhand.gpSqlFirstRow(sqlstm);
+	sqlstm = "SELECT top 1 m.masterid, p.Name, m.Code2 AS AssetTag, m.Code AS serial, b.QtyBal AS Qty, u.ShipmentCodeYH AS ShipmentCode, u.GradeYH AS grade, pl.Name AS pallet, " +
+	"pl.MasterId AS plmasterid, u.BrandYH AS Brand, u.ItemTypeYH AS Item, u.ModelYH AS Model, u.ProcessorYH AS Processor, u.MonitorSizeYH AS MonitorSize, " +
+	"u.MonitorTypeYH AS MonitorType, u.ColourYH AS colour, u.CasingYH AS casing, u.COA1YH AS COA, u.COA2YH AS COA2, u.RAMSizeYH AS RAM, " +
+	"u.HDDSizeYH AS HDD, u.CD1YH AS Cdrom1, u.CD2YH AS CDrom2, u.CommentsYH AS Comment " +
+	"FROM dbo.mr001 AS m INNER JOIN " +
+	"dbo.u0001 AS u ON m.Eoff = u.ExtraId INNER JOIN " +
+	"dbo.mr008 AS p ON u.ProductNameYH = p.MasterId INNER JOIN " +
+	"dbo.itembal AS b ON m.MasterId = b.code INNER JOIN " +
+	"dbo.mr003 AS pl ON u.PalletNoYH = pl.MasterId " +
+	"where m.Code2='" + iatg + "';";
+
+	return f30_gpSqlFirstRow(sqlstm);
 }
 
 void hidereset_workarea()
@@ -65,7 +75,7 @@ void itemsRemovalfunc(int itype)
 
 				if(toremove) jk[i].setParent(null);
 			}
-		} catch (Exception e) {}	
+		} catch (Exception e) {}
 }
 
 class prdnsdblick implements org.zkoss.zk.ui.event.EventListener
@@ -180,8 +190,8 @@ void saveGRN_items(String igrn)
 
 void showGRN_meta(String iwhat)
 {
-	r = getGRN_rec(iwhat);
-	if(r == null) return;
+	r = getGRN_rec_NEW(iwhat);
+	if(r == null) { alert("www"); return; }
 
 	String[] fl = { "ourpo", "vendor", "vendor_do", "vendor_inv", "shipmentcode", "grn_remarks","origid" };
 	Object[] jkl = { g_ourpo, g_vendor, g_vendor_do, g_vendor_inv, g_shipmentcode, g_grn_remarks, g_origid };
@@ -222,6 +232,11 @@ Object[] grnhds =
 	new listboxHeaderWidthObj("Vendor",true,""),
 	new listboxHeaderWidthObj("V.DO",true,"60px"),
 	new listboxHeaderWidthObj("V.Inv",true,"60px"),
+	new listboxHeaderWidthObj("GCO",true,"60px"),
+
+	new listboxHeaderWidthObj("A.Date",true,"70px"),
+	new listboxHeaderWidthObj("A.Stat",true,"60px"),
+	new listboxHeaderWidthObj("A.User",true,"70px"),
 };
 GRNSTAT_POS = 3;
 
@@ -232,7 +247,10 @@ class grnclicker implements org.zkoss.zk.ui.event.EventListener
 		isel = event.getReference();
 		glob_sel_grn = lbhand.getListcellItemLabel(isel,0);
 		glob_sel_stat = lbhand.getListcellItemLabel(isel,GRNSTAT_POS);
-		showGRN_meta(glob_sel_grn);
+
+		if(grn_show_meta) showGRN_meta(glob_sel_grn);
+
+		grn_Selected_Callback();
 	}
 }
 grnclik = new grnclicker();
@@ -248,7 +266,7 @@ void showGRN(int itype)
 	batg = kiboo.replaceSingleQuotes( assettag_by.getValue().trim() );
 
 	Listbox newlb = lbhand.makeVWListbox_Width(grnheaders_holder, grnhds, "grnheader_lb", 3);
-	sqlstm = "select origid,datecreated,ourpo,status,vendor,vendor_do,vendor_inv,username,commitdate from rw_grn ";
+	sqlstm = "select origid,datecreated,ourpo,status,vendor,vendor_do,vendor_inv,username,commitdate,audit_date,audit_user,audit_stat,gcn_id from rw_grn ";
 	switch(itype)
 	{
 		case 1 :
@@ -264,14 +282,21 @@ void showGRN(int itype)
 			sqlstm += "where convert(nvarchar(max),asset_tags) like '%" + batg + "%' ";
 			break;
 	}
+
+	try
+	{
+		if(!showgrn_extra_sql.equals("")) sqlstm += showgrn_extra_sql;
+	} catch (Exception e) {}
+
 	sqlstm += " order by origid desc";
 
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() == 0) return;
-	newlb.setRows(20); newlb.setMold("paging");
+	newlb.setRows(10); newlb.setMold("paging");
 	newlb.addEventListener("onSelect", grnclik);
 	ArrayList kabom = new ArrayList();
-	String[] fl = { "origid","datecreated","ourpo","status","username","commitdate","vendor","vendor_do","vendor_inv"};
+	String[] fl = { "origid","datecreated","ourpo","status","username","commitdate",
+	"vendor","vendor_do","vendor_inv","gcn_id","audit_date","audit_stat","audit_user"};
 	for(d : rcs)
 	{
 		ngfun.popuListitems_Data(kabom,fl,d);
@@ -280,6 +305,52 @@ void showGRN(int itype)
 	}
 }
 
+// Import from GCO table the asset-tags ONLY
+void import_FromGCO(String igcn)
+{
+	sqlstm = "select customer_name, collection_notes, items_code, items_desc from rw_goodscollection where origid=" + igcn;
+	r = sqlhand.gpSqlFirstRow(sqlstm);
 
+	if(r == null)
+	{
+		guihand.showMessageBox("ERR: cannot find GCO");
+		return;
+	}
+
+	g_vendor.setValue(r.get("customer_name"));
+	g_grn_remarks.setValue(r.get("collection_notes"));
+	atgs = sqlhand.clobToString(r.get("items_code")).split("~");
+	itms = sqlhand.clobToString(r.get("items_desc")).split("~");
+
+	for(i=0; i<atgs.length; i++)
+	{
+		a1 = ""; try { a1 = itms[i]; } catch (Exception e) {}
+		a2 = ""; try { a2 = atgs[i]; } catch (Exception e) {}
+		makeItemRow(grn_rows,a1,a2,"","1",glob_sel_stat);
+	}
+
+	sqlstm = "update rw_grn set gcn_id=" + igcn + " where origid=" + glob_sel_grn;
+	sqlhand.gpSqlExecuter(sqlstm); // update rw_grn.gcn_id
+	grnFunc("updgrn_b"); // update GRN metadata too
+}
+
+// Try to source previous product-name and serials from mr001
+void sourcePrevious_NameSerials()
+{
+	try
+	{
+		jk = grn_rows.getChildren().toArray();
+		for(i=0;i<jk.length;i++)
+		{
+			ki = jk[i].getChildren().toArray();
+			py = getExisting_inventoryRec(ki[2].getValue());
+			if(py != null)
+			{
+				ki[1].setValue(py.get("Name"));
+				ki[3].setValue(py.get("serial"));
+			}
+		}
+	} catch (Exception e) {}	
+}
 
 

@@ -22,7 +22,7 @@ MYPANEL = "goodsrecv2pan";
 @Authoer Victor Wong
 @Since 18/09/2014
 @Notes
-Total redesign from last year's module - to replace tempGRN, MRN and audit specs update
+Total redesign from last year's module - to replace tempGRN, MRN and audit specs update. Import from GCO also.
 
 */
 import java.util.*;
@@ -42,11 +42,17 @@ GRN_PREFIX = "GRN";
 last_showgrn_type = 1;
 glob_sel_grn = glob_sel_stat = "";
 
+grn_show_meta = true; // used in goodsrecv_funcs.grnclicker
+showgrn_extra_sql = "";
+
 String JN_linkcode()
 {
 	if(glob_sel_grn.equals("")) return "";
 	return GRN_PREFIX + glob_sel_grn;
 }
+
+void grn_Selected_Callback() // call-back in goodsrecv_funcs.grnclicker
+{}
 
 void itemFunc(String itype)
 {
@@ -98,12 +104,26 @@ void itemFunc(String itype)
 	if(itype.equals("saveitems_b")) // save scanned-items to grn
 	{
 		if(glob_sel_grn.equals("")) return;
-		if(glob_sel_stat.equals("DRAFT"))
-			saveGRN_items(glob_sel_grn);
+		if(glob_sel_stat.equals("DRAFT")) saveGRN_items(glob_sel_grn);
+	}
+
+	if(itype.equals("sourcedets_b")) // try to source product-name and serials for existing asset-tags
+	{
+		if(glob_sel_grn.equals("")) return;
+		if(glob_sel_stat.equals("DRAFT")) sourcePrevious_NameSerials();
+	}
+
+	if(itype.equals("impgco_b")) // import from GCO -- have to redesign abit GCO module as it's pointing to Focus T.GRN data instead
+	{
+		impGCO_pop.close();
+		if(!glob_sel_stat.equals("DRAFT")) return;
+
+		gn = kiboo.replaceSingleQuotes( imp_gco_tb.getValue().trim() );
+		if(gn.equals("")) return;
+		import_FromGCO(gn);
 	}
 
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
-
 }
 
 void grnFunc(String itype)
@@ -150,8 +170,9 @@ void grnFunc(String itype)
 
 		if(!glob_sel_stat.equals("COMMIT") && !glob_sel_stat.equals("STKIN"))
 		{
-			sqlstm = "update rw_grn set status='COMMIT' where origid=" + glob_sel_grn;
+			sqlstm = "update rw_grn set status='COMMIT',commitdate='" + todaydate + "' where origid=" + glob_sel_grn;
 			hidereset_workarea();
+			// TODO send notif email to procurement
 		}
 		else
 		{
@@ -217,7 +238,7 @@ void adminFunc(String itype)
 
 	if(itype.equals("setdraftgrn_b"))
 	{
-		sqlstm = "update rw_grn set status='DRAFT' where origid=" + glob_sel_grn;
+		sqlstm = "update rw_grn set status='DRAFT',commitdate=null where origid=" + glob_sel_grn;
 		hidereset_workarea();
 	}
 
@@ -348,6 +369,16 @@ void minusAddFocus_Stock(int itype, int qty)
 ]]>
 </zscript>
 
+<popup id="auditlogs_pop">
+	<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
+		<label sclass="subhead" value="Audit Logs" />
+		<separator height="3px" />
+		<div id="auditlogs_holder" />
+		<separator height="3px" />
+		<button label="Ok" sclass="k9" onClick="auditlogs_pop.close()" />
+	</div>
+</popup>
+
 <!-- update file description popup -->
 <popup id="updatefiledesc_popup">
 	<groupbox width="400px">
@@ -398,6 +429,14 @@ void minusAddFocus_Stock(int itype, int qty)
 	</div>
 </popup>
 
+<popup id="impGCO_pop">
+	<div sclass="shadowbox" style="background:#818D16" width="400px">
+		<label value="GCO" sclass="k9" />
+		<textbox id="imp_gco_tb" sclass="k9" />
+		<button id="impgco_b" label="Import" sclass="k9mo" onClick="itemFunc(self.getId())" />
+	</div>
+</popup>
+
 <popup id="adminpop">
 	<div sclass="shadowbox" style="background:#E2241C" width="300px">
 		<button id="setdraftgrn_b" label="Set DRAFT" sclass="k9mo" onClick="adminFunc(self.getId())" />
@@ -420,15 +459,6 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 } 
 </style>
 
-<popup id="auditlogs_pop">
-	<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
-		<label sclass="subhead" value="Audit Logs" />
-		<separator height="3px" />
-		<div id="auditlogs_holder" />
-		<separator height="3px" />
-		<button label="Ok" sclass="k9" onClick="auditlogs_pop.close()" />
-	</div>
-</popup>
 
 <div width="1200px">
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true">
@@ -549,14 +579,16 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 						<button id="additem_b" label="Add item" sclass="k9mo" onClick="itemFunc(self.getId())" />
 						<button id="remitem_b" label="Remove" sclass="k9mo" onClick="itemFunc(self.getId())" />
 						<button id="remall_b" label="Remove ALL" sclass="k9mo" onClick="itemFunc(self.getId())" />
+						<button id="sourcedets_b" label="Source details" sclass="k9mo" onClick="itemFunc(self.getId())" />
 						<button id="selprod_b" label="Select product name" sclass="k9mo" onClick="selecProduct_pop.open(self)" />
+						<button label="Import GCO" sclass="k9mo" onClick="impGCO_pop.open(self)" />
 						<button id="saveitems_b" label="SAVE" sclass="k9mo" onClick="itemFunc(self.getId())" />
 					</hbox>
 					<label sclass="k9mo" style="color:#ffffff">
 					(For items without asset-tags, fill-up asset-tag field with item-name)
 					</label>
 				</div>
-				<div id="scanitems_holder" width="600px" />
+				<div id="scanitems_holder" />
 			</vbox>
 		</vbox>
 

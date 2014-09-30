@@ -7,6 +7,12 @@ import org.zkoss.util.media.AMedia;
 
 // 10/07/2013: moved 'em funcs here TODO byte-compile later
 
+Object getGRN_rec_NEW(String iwhat)
+{
+	sqlstm = "select * from rw_grn where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
+}
+
 void fillListbox_uniqField(String itbn, String ifl, Listbox ilb)
 {
 	sqlstm = "select distinct " + ifl + " from " + itbn;

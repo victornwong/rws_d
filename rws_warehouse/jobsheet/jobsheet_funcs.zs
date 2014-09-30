@@ -55,7 +55,7 @@ void showJobItems_chopped(Object tjrc)
 
 	ngfun.checkMakeGrid(itm_colws,itm_colls,items_holder,"items_grid","items_rows","background:#97b83a","",false);
 
-	items = tjrc.get("items").split("::");
+	items = sqlhand.clobToString( tjrc.get("items") ).split("::");
 	qtys = tjrc.get("qtys").split("::");
 	colors = tjrc.get("colors").split("::");
 	kk = "font-weight:bold;";
