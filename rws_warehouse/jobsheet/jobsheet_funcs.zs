@@ -13,6 +13,12 @@ String[] wh_pl_colls = { ""    , "No." , "Pick item","Qty",  "Asset tags" };
 String[] itm_colws = { "50px","",                "60px" ,"60px" };
 String[] itm_colls = { "No." ,"Item description","Color","Qty"  };
 
+Object getEquipLookup_rec_byname(String iwhat)
+{
+	sqlstm = "select * from rw_equiplookup where name='" + iwhat + "'";
+	return sqlhand.gpSqlFirstRow(sqlstm);
+}
+
 class tbnulldrop implements org.zkoss.zk.ui.event.EventListener
 {
 	public void onEvent(Event event) throws UiException
@@ -108,12 +114,6 @@ void drawPicklist(HashMap iplx)
 		ngfun.gpMakeTextbox(nrw,"",value,ks,"",textboxnulldrop);
 		ln++;
 	}
-}
-
-Object getEquipLookup_rec_byname(String iwhat)
-{
-	sqlstm = "select * from rw_equiplookup where name='" + iwhat + "'";
-	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
 void pickJob_reqitems()

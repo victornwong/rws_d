@@ -40,7 +40,7 @@ gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 GRN_PREFIX = "GRN";
 
 last_showgrn_type = 1;
-glob_sel_grn = glob_sel_stat = "";
+glob_sel_grn = glob_sel_stat = glob_sel_auditstat = "";
 
 grn_show_meta = true; // used in goodsrecv_funcs.grnclicker
 showgrn_extra_sql = "";
@@ -141,8 +141,11 @@ void grnFunc(String itype)
 	if(itype.equals("updgrn_b"))
 	{
 		if(glob_sel_grn.equals("")) return;
+		if(!glob_sel_stat.equals("DRAFT")) return;
+
 		Object[] jkl = { g_ourpo, g_vendor, g_vendor_do, g_vendor_inv, g_shipmentcode, g_grn_remarks };
 		dt = ngfun.getString_fromUI(jkl);
+
 		sqlstm = "update rw_grn set ourpo='" + dt[0] + "', vendor='" + dt[1] + "'," +
 		"vendor_do='" + dt[2] + "', vendor_inv='" + dt[3] + "', shipmentcode='" + dt[4] + "', grn_remarks='" + dt[5] + "' where origid=" + glob_sel_grn;
 	}
@@ -188,9 +191,9 @@ void grnFunc(String itype)
 			if(Messagebox.show("This will stock-in the GRN items.. POINT OF NO RETURN!!", "Are you sure?",
 				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
 
-			updateInventory_GRNItems();
+			//updateInventory_GRNItems();
 			sqlstm = "update rw_grn set status='STKIN' where origid=" + glob_sel_grn;
-			msgtext = "OK: Inventory stock-in..";
+			msgtext = "OK: Inventory stock-in.. (not really...)";
 			hidereset_workarea();
 		}
 		else
@@ -459,7 +462,6 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 } 
 </style>
 
-
 <div width="1200px">
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true">
 <panelchildren style="background:#322B29">
@@ -508,7 +510,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 							<label id="g_origid" style="font-weight:bold" />
 						</row>
 						<row>
-							<label value="Our PO" sclass="k9" />
+							<label value="OurRef(PO/GCO/ etc)" sclass="k9" />
 							<textbox id="g_ourpo" sclass="k9" />
 							<label value="Shipment Code" sclass="k9" />
 							<textbox id="g_shipmentcode" sclass="k9" />
@@ -537,16 +539,17 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 				<separator height="3px" />
 
 				<div sclass="shadowbox" style="background:#555753" id="docholder" width="${BOXWIDTH}">
-					<label sclass="subhead1">ATTACHMENT / DOCUMENTS</label>
-					<separator height="3px" />
-					<hbox>
-						<button id="uploaddoc_btn" label="Upload file" class="k9" onClick="showUploadPopup(GRN_PREFIX,glob_sel_grn)" />
-						<button id="viewdoc_btn" label="View file" class="k9" onClick="viewFile()" />
-						<button id="editdoc_btn" label="Update" class="k9" onClick="updatefiledesc_popup.open(self)" />
-						<button id="deletedoc_btn" label="Delete" class="k9" onClick="deleteFile(documents_holder,GRN_PREFIX,glob_sel_grn)" />
-					</hbox>
-					<separator height="3px" />
-					<div id="documents_holder" />
+					<vbox>
+						<label sclass="subhead1">ATTACHMENT / DOCUMENTS</label>
+						<label sclass="k9b" value="(Attached vendor scan-copy of DO/Invoice/Anything here)" />
+						<hbox>
+							<button id="uploaddoc_btn" label="Upload file" class="k9" onClick="showUploadPopup(GRN_PREFIX,glob_sel_grn)" />
+							<button id="viewdoc_btn" label="View file" class="k9" onClick="viewFile()" />
+							<button id="editdoc_btn" label="Update" class="k9" onClick="updatefiledesc_popup.open(self)" />
+							<button id="deletedoc_btn" label="Delete" class="k9" onClick="deleteFile(documents_holder,GRN_PREFIX,glob_sel_grn)" />
+						</hbox>
+						<div id="documents_holder" />
+					</vbox>
 				</div>
 			</div>
 		</vbox>

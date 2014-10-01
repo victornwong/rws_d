@@ -3,9 +3,16 @@
 <zk>
 <zscript src="../rwglobal/rwglobaldefs.zs" />
 <zscript src="../rwglobal/rwsqlfuncs.zs" />
-<zscript src="../rwglobal/uploadedWorksheet_v1.zs" />
+<zscript src="../rwglobal/formMaker_v1.zs" />
+<zscript src="../rwglobal/systemAudit.zs" />
 <zscript src="../rwglobal/uploadDocu_v1.zs" />
+<zscript src="../rwglobal/fc6_CustomerSelector.zs" />
+<zscript src="../rwglobal/jobNotes_funcs.zs" />
+<zscript src="../rwglobal/uploadedWorksheet_v1.zs" />
+<zscript src="../rwglobal/emailfuncs.zs" />
 <zscript src="./jobsheet/jobsheet_funcs.zs" />
+<zscript src="./jobsheet/jobsheet_PL_funcs.zs" />
+<zscript src="./goodsreceive/injtest.zs" />
 <zscript>
 <![CDATA[
 MYTITLE = "WH Jobsheet - Items Request";
@@ -53,65 +60,42 @@ void pl_DoFunc(String itype)
 
 	if(itype.equals("saveass_b")) // save 'em scanned asset-tags
 	{
-		try
+		if(saveScannedTags())
 		{
-			jnt = kiboo.replaceSingleQuotes(j_extranotes.getValue().trim());
-			itms = qtys = atgs = "";
-			jk = pl_rows.getChildren().toArray();
-			for(i=0;i<jk.length;i++)
-			{
-				ki = jk[i].getChildren().toArray();
-				itms += kiboo.replaceSingleQuotes( ki[2].getValue().trim().replaceAll("~"," ") ) + "~";
-				qtys += kiboo.replaceSingleQuotes( ki[3].getValue().trim().replaceAll("~"," ") ) + "~";
-				atgs += kiboo.replaceSingleQuotes( ki[4].getValue().trim().replaceAll("~"," ") ) + "~";
-			}
-
-			try { itms = itms.substring(0,itms.length()-1); } catch (Exception e) {}
-			try { qtys = qtys.substring(0,qtys.length()-1); } catch (Exception e) {}
-			try { atgs = atgs.substring(0,atgs.length()-1); } catch (Exception e) {}
-
-			sqlstm = "if not exists (select 1 from rw_jobpicklist where parent_job=" + glob_sel_job + ") " +
-			"insert into rw_jobpicklist (parent_job,username,datecreated,pl_items,pl_qty,pstatus,extranotes,pl_asset_tags) values " +
-			"(" + glob_sel_job + ",'" + unm + "','" + todaydate + "','" + itms + "','" + qtys + "','DRAFT','" + jnt + "','" + atgs + "') " +
-			"else " +
-			"update rw_jobpicklist set pl_items='" + itms + "', pl_qty='" + qtys + "', pl_asset_tags='" + atgs + "', extranotes='" + jnt + "' where parent_job=" + glob_sel_job + ";";
-
 			//refresh_joblist = true;
-			msgtext = "Asset tags saved..";
-
-		} catch (Exception e) {}
+			msgtext = "OK: Asset tags saved..";
+		}
 	}
 
-	if(itype.equals("chkstock_b")) // check items inventory and loca
+	// check items inventory and loca and check scanned asset-tags validity (lumped up)
+	if(itype.equals("chkstock_b") || itype.equals("chkasses_b"))
 	{
 		try
 		{
 			jk = pl_rows.getChildren().toArray();
 			ArrayList itms = new ArrayList();
-			for(i=0;i<jk.length;i++)
-			{
-				ki = jk[i].getChildren().toArray();
-				if(ki[0].isChecked())
-					itms.add(kiboo.replaceSingleQuotes(ki[2].getValue().trim()));
-			}
-			showCheckstock_win(winsholder,itms); // jobsheet_funcs.zs
 
-		} catch (Exception e) {}
-	}
-
-	if(itype.equals("chkasses_b")) // check scanned asset-tags validity
-	{
-		try
-		{
-			jk = pl_rows.getChildren().toArray();
 			for(i=0;i<jk.length;i++)
 			{
 				ki = jk[i].getChildren().toArray();
 				if(ki[0].isChecked())
 				{
-					if(!ki[4].getValue().trim().equals(""))
-						checkScannedTags(ki[2].getValue(),ki[4].getValue());
+					if(itype.equals("chkstock_b"))
+					{
+						itms.add(kiboo.replaceSingleQuotes(ki[2].getValue().trim()));
+					}
+
+					if(itype.equals("chkasses_b"))
+					{
+						if(!ki[4].getValue().trim().equals(""))
+							checkScannedTags(ki[2].getValue(),ki[4].getValue());
+					}
 				}
+			}
+
+			if(itype.equals("chkstock_b"))
+			{
+				showCheckstock_win(winsholder,itms); // jobsheet_funcs.zs
 			}
 
 		} catch (Exception e) {}
@@ -123,6 +107,13 @@ void pl_DoFunc(String itype)
 		genWH_picklist(glob_sel_job);
 	}
 
+	if(itype.equals("tfxprod_b")) // transfer the scan asset-tags to pallet PROD
+	{
+		if(glob_sel_jobsheet.equals("")) return;
+		saveScannedTags(); // save last time before tfx
+		transfer_ScannedTags_toProd(glob_sel_jobsheet);
+	}
+
 	if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
 	if(refresh) drawPicklist(plx);
 	if(refresh_joblist) showJobs(last_joblist_type);
@@ -130,159 +121,121 @@ void pl_DoFunc(String itype)
 	if(hideworkarea) workarea.setVisible(false);
 }
 
-// knock-off from wopAsschecker.zul
-void checkScannedTags(String itemname, String iatgs)
+void transfer_ScannedTags_toProd(String ijs)
 {
-Object[] wpshd =
-{
-	new listboxHeaderWidthObj("AssetTag",true,""),
-	new listboxHeaderWidthObj("S/Num",true,""),
-	new listboxHeaderWidthObj("Desc",true,""),
-	new listboxHeaderWidthObj("Brand",true,""),
-	new listboxHeaderWidthObj("Model",true,""),
-	new listboxHeaderWidthObj("Grd",true,""),
-	new listboxHeaderWidthObj("PalletNo",true,""),
-	new listboxHeaderWidthObj("Type",true,""),
-};
-
-	mwin = ngfun.vMakeWindow(winsholder,"Check scanned tags : " + itemname.trim(),"0","center","500px","");
-	kdiv = new Div();
-	kdiv.setParent(mwin);
-	Listbox newlb = lbhand.makeVWListbox_Width(kdiv, wpshd, "fndassets_lb", 5);
-
-	tgs = iatgs.trim().split("\n");
-	asts = "";
-	for(i=0;i<tgs.length;i++)
+	Object[] tfxhds =
 	{
-		asts += "'" + tgs[i].trim() + "',";
-	}
-	try { asts = asts.substring(0,asts.length()-1); } catch (Exception e) {}
+		new listboxHeaderWidthObj("AssetTag",true,"70px"),
+		new listboxHeaderWidthObj("Item",true,""),
+		new listboxHeaderWidthObj("Pallet",true,"50px"),
+	};
 
-	kk = "where ltrim(rtrim(s.code2)) in (" + asts + ") order by s.code2 desc;";
-	if(itype == 2) kk = "where ltrim(rtrim(s.code)) in (" + asts + ") order by s.code desc;";
+	// check the asset-tags if already OUT/PROD/EIS
+	ArrayList checktags = new ArrayList();
 
-	sqlstm = "select s.name, s.code, s.code2, si.brandyh, si.modelyh, si.gradeyh, si.itemtypeyh, w.name as palletno " +
-	"from mr001 s left join u0001 si on si.extraid = s.eoff " +
-	"left join mr003 w on w.masterid = si.palletnoyh " + kk;
-	
-	ats = sqlhand.rws_gpSqlGetRows(sqlstm);
-	if(ats.size() == 0) return;
-	newlb.setRows(20); newlb.setMold("paging");
-	//newlb.setMultiple(true); newlb.setCheckmark(true);
-	ArrayList kabom = new ArrayList();
-	String[] fl = { "code2", "code", "name", "brandyh", "modelyh", "gradeyh", "palletno", "itemtypeyh" };
-	for(d : ats)
+	r = rwsqlfun.getJobPicklist_rec(ijs);
+	atgs = sqlhand.clobToString(r.get("pl_asset_tags")).split("~");
+
+	for(i=0; i<atgs.length; i++)
 	{
-		ngfun.popuListitems_Data2(kabom,fl,d);
-		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
-		kabom.clear();
+		kx = atgs[i].split("\n");
+		for(j=0; j<kx.length; j++)
+		{
+			ts = kx[j].trim();
+			if(!ts.equals(""))
+			{
+				checktags.add(ts);
+			}
+		}
 	}
 
-	ngfun.gpMakeLabel(kdiv,"","Scanned: " + tgs.length.toString(),"");
-	ngfun.gpMakeSeparator(2,"",kdiv);
-	ngfun.gpMakeLabel(kdiv,"","Found: " + ats.size().toString(),"");
+	kql = FC5030_Sql();
+	tgs = checktags.toArray();
+
+	errcnt = 0;
+
+	Listbox newlb = lbhand.makeVWListbox_Width(tfxlist_holder, tfxhds, "atgspall_lb", 15);
+	newlb.setMultiple(true);
+	String[] kbm = new String[3];
+	//errstyle = "background:#D40606;font-size:9px;font-weight:bold;color:#ffffff;text-decoration:underline;";
+	errstyle = "font-weight:bold;text-decoration:underline;font-size:9px";
+	for(i=0; i<tgs.length; i++)
+	{
+		tk = tgs[i].trim();
+		plt = itm = sty = "";
+
+		sqlstm = "select pl.name as pallet, p.name FROM dbo.mr001 AS m INNER JOIN dbo.u0001 AS u ON m.Eoff = u.ExtraId INNER JOIN " +
+		"dbo.mr008 AS p ON u.ProductNameYH = p.MasterId INNER JOIN dbo.itembal AS b ON m.MasterId = b.code INNER JOIN " +
+		"dbo.mr003 AS pl ON u.PalletNoYH = pl.MasterId where m.code2='" + tk + "';";
+
+		wr = kql.firstRow(sqlstm);
+		if(wr != null) { plt = wr.get("pallet"); itm = wr.get("name"); }
+
+		if(plt.equals("")) errcnt++;
+		if(plt.indexOf("PUCHONG") != -1) { errcnt++; sty = errstyle; } // for PROD
+		if(plt.indexOf("PT1") != -1) { errcnt++; sty = errstyle; } // for EIS
+		if(plt.indexOf("OUT") != -1) { errcnt++; sty = errstyle; }
+
+		kbm[0] = tk;
+		kbm[1] = itm;
+		kbm[2] = plt;
+
+		lbhand.insertListItems(newlb,kbm,"false",sty);	
+	}
+	kql.close();
+
+	tfxerr_lbl.setVisible( (errcnt == 0) ? false : true ); // if found some error, show ERR
+	if(useraccessobj.accesslevel != 9) // admin can do pallet-transfer even err
+		realtransfer_b.setDisabled( (errcnt == 0) ? false : true );
+
+	transf_Prod_pop.open(tfxprod_b);
 }
 
-Object getJobpicklist_rec_byjob(String iwhat)
+void reallyTransferItemsToProd()
 {
-	sqlstm = "select * from rw_jobpicklist where parent_job=" + iwhat;
-	return sqlhand.gpSqlFirstRow(sqlstm);
-}
+	allthe = null;
+	if( useraccessobj.accesslevel == 9) allthe = atgspall_lb.getSelectedItems();
+	else allthe = atgspall_lb.getItems();
 
-// Get loca/pallets by item name. HARDCODED some conditions
-String locaPallet_byItem(String itm)
-{
-	retval = "";
+	kpal = kiboo.replaceSingleQuotes( admpalletinp_tb.getValue().trim() );
 
-	sqlstm = "select distinct pallet, sum(qty) as instk from partsall_0 where " +
-	"name='" + itm + "' " +
-	"and name not like '(DO NOT%' and name not like '%EIS%' " +
-	"and pallet not like 'EIS%' and pallet<>'PROD' and pallet<>'WH PALLET' and pallet<>'OUT' " +
-	"group by pallet having sum(qty) > 0";
-
-	r = sqlhand.rws_gpSqlGetRows(sqlstm);
-	if(r.size() == 0) return "";
-	for(d : r)
+	sqlstm = "select top 1 masterid from mr003 where name='" + kpal + "';";
+	r = f30_gpSqlFirstRow(sqlstm);
+	if(r == null)
 	{
-		retval += d.get("pallet") + "(" + GlobalDefs.nf0.format(d.get("instk")) + "), ";
+		guihand.showMessageBox("ERR: Cannot find pallet record!!");
+		return;
 	}
-	try { retval = retval.substring(0,retval.length() - 2); } catch (Exception e) {}
-	return retval;
-}
+	palnum = r.get("masterid");
 
-// iwhat: job id
-void genWH_picklist(String iwhat)
-{
-	jrec = rwsqlfun.getRWJob_rec(iwhat);
-	if(jrec == null) return;
-	jnum = jrec.get("origid").toString();
-	jpl = getJobpicklist_rec_byjob(jnum);
+	sqlstm = "";
 
-	startadder = 1;
-	rowcount = 1 + startadder;
-
-	templatefn = "rwimg/jobpicklist_temp_1.xls";
-	inpfn = session.getWebApp().getRealPath(templatefn);
-	InputStream inp = new FileInputStream(inpfn);
-	HSSFWorkbook excelWB = new HSSFWorkbook(inp);
-	evaluator = excelWB.getCreationHelper().createFormulaEvaluator();
-	HSSFSheet sheet = excelWB.getSheetAt(0);
-	//HSSFSheet sheet = excelWB.createSheet("THINGS");
-
-	Font wfont = excelWB.createFont();
-	wfont.setFontHeightInPoints((short)8);
-	wfont.setFontName("Arial");
-
-	excelInsertString(sheet,0,1, "RWMS Job ID: " + jnum );
-	excelInsertString(sheet,1,1, "Customer: " + jrec.get("customer_name") );
-	excelInsertString(sheet,3,1, kiboo.checkNullString(jpl.get("extranotes")) );
-
-	excelInsertString(sheet,0,3, "Date: " + GlobalDefs.dtf2.format(jrec.get("datecreated")) );
-	excelInsertString(sheet,1,3, "ETD: " + GlobalDefs.dtf2.format(jrec.get("etd")) );
-	excelInsertString(sheet,2,3, "JobType: " + kiboo.checkNullString(jrec.get("jobtype")) );
-	excelInsertString(sheet,3,3, "OrderType: " + kiboo.checkNullString(jrec.get("order_type")) );
-
-	CellStyle st3 =  excelWB.createCellStyle();
-	st3.setFillForegroundColor(HSSFColor.GREY_40_PERCENT.index);
-	st3.setFillPattern(HSSFCellStyle.SOLID_FOREGROUND);
-	st3.setWrapText(true);
-	//st3.setAlignment(CellStyle.ALIGN_CENTER);
-	st3.setBorderLeft(CellStyle.BORDER_THIN);
-	st3.setBorderRight(CellStyle.BORDER_THIN);
-	st3.setBorderBottom(CellStyle.BORDER_THIN);
-	st3.setFont(wfont);
-
-	CellStyle st4 =  excelWB.createCellStyle();
-	st4.cloneStyleFrom(st3);
-	st4.setFillPattern(HSSFCellStyle.NO_FILL);
-
-	// loop print the req items
-	lnc = 1;
-	itms = sqlhand.clobToString(jpl.get("pl_items")).split("~");
-	qtys = sqlhand.clobToString(jpl.get("pl_qty")).split("~");
-
-	for(i=0; i<itms.length; i++)
+	ddt = allthe.toArray();
+	for(i=0; i<ddt.length; i++)
 	{
-		excelInsertString(sheet,5+i,0, lnc.toString() + ".");
-		excelInsertString(sheet,5+i,1, itms[i]);
-		excelInsertString(sheet,5+i,2, qtys[i]);
-		excelInsertString(sheet,5+i,3, locaPallet_byItem(itms[i]) );
-		lnc++;
-		POI_SetCellStyleRange(sheet,st4,5+i,0,4);
+		atg = lbhand.getListcellItemLabel(ddt[i],0); // get the asset-tag from LB
+		sqlstm += "update u0001 set PalletNoYH='" + palnum.toString() + "' where extraid=(select eoff from mr001 where code2='" + atg + "');";
 	}
 
-	tfname = iwhat + "_whpl.xls";
-	outfn = session.getWebApp().getRealPath("tmp/" + tfname );
-	FileOutputStream fileOut = new FileOutputStream(outfn);
-	excelWB.write(fileOut);
-	fileOut.close();
-
-	downloadFile(kasiexport,tfname,outfn);
-
+	alert(sqlstm);
 }
 
 ]]>
 </zscript>
+
+<popup id="transf_Prod_pop">
+	<div style="background:#496FB2;padding:3px" width="400px">
+		<label id="tfxerr_lbl" sclass="blink" style=";color:#ffffff;font-size:12px;font-weight:bold;" visible="false">
+		ERR!! Asset-tags in PROD / OUT / EIS / UNFOUND
+		</label>
+		<separator height="3px" />
+		<div id="tfxlist_holder" />
+		<separator height="3px" />
+		<button id="realtransfer_b" label="Really transfer to PROD" style="font-weight:bold" onClick="reallyTransferItemsToProd()" />
+		<textbox id="admpalletinp_tb" sclass="k9" value="PROD" visible="false" />
+	</div>
+
+</popup>
 
 <popup id="adminPop">
 	<div style="background:#EE1010;padding:3px" width="350px">
@@ -318,58 +271,60 @@ void genWH_picklist(String iwhat)
 	<separator height="3px" />
 
 	<vbox id="workarea" visible="false">
-		<label id="jobtitle_lb" sclass="subhead1" />
+		<div sclass="shadowbox"	style="background:#7AA041">
+			<label id="jobtitle_lb" sclass="subhead1" />
+		</div>
 		<hbox>
-			<vbox>
-				<div sclass="shadowbox" style="background:#1D69A5" width="600px">
-					<vbox>
-						<label value="Job" sclass="subhead1" />
-						<hbox visible="false">
-							<button id="pickup_b" label="Pickup + request items" sclass="k9mo" onClick="pickJob_reqitems()" />
-						</hbox>
-						<div id="items_holder" />
-					</vbox>
-				</div>
-				<div sclass="shadowbox" style="background:#1D69A5">
-					<vbox>
+			<div sclass="shadowbox" style="background:#1D69A5" width="400px">
+				<vbox>
+					<label value="Job" sclass="subhead1" />
+					<hbox visible="false">
+						<button id="pickup_b" label="Pickup + request items" sclass="k9mo" onClick="pickJob_reqitems()" />
+					</hbox>
+					<div id="items_holder" />
+				</vbox>
+			</div>
+
+			<div sclass="shadowbox" style="background:#1D69A5">
+				<vbox>
+					<hbox>
 						<label value="Jobsheet - Request items" sclass="subhead1" />
-						<label value="WH extra notes" sclass="k9mo" style="color:#ffffff" />
-						<textbox id="j_extranotes" multiline="true" width="400px" height="60px" sclass="k9" />
+						<button id="tfxprod_b" label="Transfer items to PROD" style="font-weight:bold;color:#F01B1B" onClick="pl_DoFunc(self.getId())" />
+					</hbox>
+					<label value="WH extra notes" sclass="k9mo" style="color:#ffffff" />
+					<textbox id="j_extranotes" multiline="true" width="400px" height="60px" sclass="k9" />
+					<hbox>
+						<button id="saveass_b" label="SAVE ASSET-TAGS only" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+						<button id="chkstock_b" label="Check inventory + loca" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+						<button id="chkasses_b" label="Check asset tags" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+						<button id="printpl_b" label="Print pick-list" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+					</hbox>
+					<hbox visible="false">
+						<button id="pladd_b" label="Add item" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+						<button id="plrem_b" label="Remove" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+						<button id="plsave_b" label="SAVE" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+						<button id="plcommit_b" label="COMMIT" sclass="k9mo" style="color:#D21111" onClick="pl_DoFunc(self.getId())" />
+					</hbox>
+					<div id="pl_holder" width="600px" />
+				</vbox>
+			</div>
+		</hbox>
+	</vbox>
 
-						<hbox>
-							<button id="saveass_b" label="SAVE ASSET-TAGS only" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-							<button id="chkstock_b" label="Check inventory + loca" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-							<button id="chkasses_b" label="Check asset tags" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-							<button id="printpl_b" label="Print pick-list" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-							
-						</hbox>
-						<hbox visible="false">
-							<button id="pladd_b" label="Add item" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-							<button id="plrem_b" label="Remove" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-							<button id="plsave_b" label="SAVE" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
-							<button id="plcommit_b" label="COMMIT" sclass="k9mo" style="color:#D21111" onClick="pl_DoFunc(self.getId())" />
-						</hbox>
-						<div id="pl_holder" width="600px" />
-					</vbox>
-				</div>
+	<vbox visible="false">
+		<hbox id="grandtotalbox" visible="false" >
+			<vbox>
+				<label value="Total monthly rental" style="color:#eeeeee;font-weight:bold" />
+				<separator bar="true" />
+				<label value="Job Grand Total" style="color:#eeeeee;font-weight:bold" />
+				<separator bar="true" />
 			</vbox>
-
-			<vbox visible="false">
-				<hbox id="grandtotalbox" visible="false" >
-					<vbox>
-						<label value="Total monthly rental" style="color:#eeeeee;font-weight:bold" />
-						<separator bar="true" />
-						<label value="Job Grand Total" style="color:#eeeeee;font-weight:bold" />
-						<separator bar="true" />
-					</vbox>
-					<vbox>
-						<label id="grandmonthly" sclass="subhead2" />
-						<label id="grandtotal" sclass="subhead2" style=";text-decoration:underline" />
-					</vbox>
-				</hbox>
-				<!-- <label value="NOTI.ME" style="font-size:80px;color:#eb531a;font-weight:bold" /> -->
+			<vbox>
+				<label id="grandmonthly" sclass="subhead2" />
+				<label id="grandtotal" sclass="subhead2" style=";text-decoration:underline" />
 			</vbox>
 		</hbox>
+		<!-- <label value="NOTI.ME" style="font-size:80px;color:#eb531a;font-weight:bold" /> -->
 	</vbox>
 
 	<div id="winsholder" visible="false" />
@@ -382,6 +337,7 @@ if(useraccessobj.accesslevel == 9)
 {
 	admin_b.setVisible(true);
 	jobid_tb.setValue("1369");
+	admpalletinp_tb.setVisible(true); // let admin change to pallet.. shortcut
 }
 
 ]]>

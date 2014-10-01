@@ -225,8 +225,8 @@ Object[] grnhds =
 {
 	new listboxHeaderWidthObj("GRN",true,"40px"),
 	new listboxHeaderWidthObj("Date",true,"70px"),
-	new listboxHeaderWidthObj("PO",true,"50px"),
-	new listboxHeaderWidthObj("Stat",true,"60px"),
+	new listboxHeaderWidthObj("OurRef",true,"50px"),
+	new listboxHeaderWidthObj("Stat",true,"60px"), // 3
 	new listboxHeaderWidthObj("User",true,"70px"),
 	new listboxHeaderWidthObj("Commit",true,"70px"),
 	new listboxHeaderWidthObj("Vendor",true,""),
@@ -235,10 +235,11 @@ Object[] grnhds =
 	new listboxHeaderWidthObj("GCO",true,"60px"),
 
 	new listboxHeaderWidthObj("A.Date",true,"70px"),
-	new listboxHeaderWidthObj("A.Stat",true,"60px"),
+	new listboxHeaderWidthObj("A.Stat",true,"60px"), // 11
 	new listboxHeaderWidthObj("A.User",true,"70px"),
 };
 GRNSTAT_POS = 3;
+AUDITSTAT_POS = 11;
 
 class grnclicker implements org.zkoss.zk.ui.event.EventListener
 {
@@ -247,6 +248,7 @@ class grnclicker implements org.zkoss.zk.ui.event.EventListener
 		isel = event.getReference();
 		glob_sel_grn = lbhand.getListcellItemLabel(isel,0);
 		glob_sel_stat = lbhand.getListcellItemLabel(isel,GRNSTAT_POS);
+		glob_sel_auditstat = lbhand.getListcellItemLabel(isel,AUDITSTAT_POS);
 
 		if(grn_show_meta) showGRN_meta(glob_sel_grn);
 
@@ -266,13 +268,15 @@ void showGRN(int itype)
 	batg = kiboo.replaceSingleQuotes( assettag_by.getValue().trim() );
 
 	Listbox newlb = lbhand.makeVWListbox_Width(grnheaders_holder, grnhds, "grnheader_lb", 3);
-	sqlstm = "select origid,datecreated,ourpo,status,vendor,vendor_do,vendor_inv,username,commitdate,audit_date,audit_user,audit_stat,gcn_id from rw_grn ";
+	sqlstm = "select origid,datecreated,ourpo,status,vendor,vendor_do,vendor_inv,username," +
+	"commitdate,audit_date,audit_user,audit_stat,gcn_id from rw_grn ";
 	switch(itype)
 	{
 		case 1 :
 			sqlstm += "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' ";
 			if(!sct.equals(""))
-				sqlstm += " and (vendor like '%" + sct + "%' or vendor_do like '%" + sct + "%' or vendor_inv like '%" + sct + "% or ourpo like '%" + sct + "%' " +
+				sqlstm += " and (vendor like '%" + sct + "%' or vendor_do like '%" + sct + "%' or " +
+				"vendor_inv like '%" + sct + "% or ourpo like '%" + sct + "%' " +
 				"or grn_remarks like '%" + sct + "%' or shipmentcode like '%" + sct + "%') ";
 			break;
 		case 2 : // by grn-id
@@ -305,7 +309,8 @@ void showGRN(int itype)
 	}
 }
 
-// Import from GCO table the asset-tags ONLY
+// Import from GCO table. Item description got [DT],[NB],etc.. 
+// use can source prev FC6 specs(from assettags) or set a new one
 void import_FromGCO(String igcn)
 {
 	sqlstm = "select customer_name, collection_notes, items_code, items_desc from rw_goodscollection where origid=" + igcn;

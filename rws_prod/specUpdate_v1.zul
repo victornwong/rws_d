@@ -12,6 +12,7 @@
 <zscript src="../rwglobal/emailfuncs.zs" />
 <zscript src="../rws_warehouse/goodsreceive/goodsrecv_funcs.zs" />
 <zscript src="../rws_warehouse/goodsreceive/injtest.zs" />
+<zscript src="./specUpdate_funcs.zs" />
 <zscript>
 <![CDATA[
 MYTITLE = "Items Spec Update";
@@ -84,106 +85,31 @@ String[] specs_fields = {
 String[] specs_sql_fields = {
 "GradeYH","BrandYH","ItemTypeYH","ModelYH","ProcessorYH","MonitorSizeYH","MonitorTypeYH","ColourYH","CasingYH","COA1YH","COA2YH","RAMSizeYH","HDDSizeYH","CD1YH","CommentsYH" };
 
+String[] specs_mpf_names = {
+	"m_grd", "m_brand", "m_type", "m_model", "m_processor", "m_msize", "m_mtype",
+	"m_color", "m_case", "m_coa", "m_coa2", "m_ram", "m_hdd", "m_cdrom1", "m_comment"
+};
+// m_webcam, m_btooth, m_fprint, m_creader
+
 GRN_PREFIX = "GRN";
 
 last_showgrn_type = 1;
-glob_sel_grn = glob_sel_stat = "";
+glob_sel_grn = glob_sel_stat = glob_sel_auditstat = "";
 
-//showgrn_extra_sql = " and status='STKIN' ";
-showgrn_extra_sql = "";
+showgrn_extra_sql = " and status='STKIN' ";
+//showgrn_extra_sql = "";
 grn_show_meta = false; // used in goodsrecv_funcs.grnclicker to show grn-metadata or not
 
 void grn_Selected_Callback() // call-back in goodsrecv_funcs.grnclicker
 {
 	showGRN_things(glob_sel_grn);
+	toggButts( (glob_sel_auditstat.equals("POST")) ? true : false );
 }
 
 String JN_linkcode()
 {
 	if(glob_sel_grn.equals("")) return "";
 	return GRN_PREFIX + glob_sel_grn;
-}
-
-
-
-// GRN items insert new row - won't save into DB
-// knockoff for spec-update with additional fields
-org.zkoss.zul.Row makeItemRow(Component irows, String iname, String iatg, String isn, String iqty, String istat)
-{
-	k9 = "font-size:9px";
-	nrw = new org.zkoss.zul.Row();
-	nrw.setParent(irows);
-	ngfun.gpMakeCheckbox(nrw,"","","");
-	//ngfun.gpMakeTextbox(nrw,"",iname,k9,"98%",textboxnulldrop); // item-name
-	ngfun.gpMakeLabel(nrw,"",iname,k9); // item-name using label
-
-	if(istat.equals("DRAFT")) // draft GRN, insert textboxes
-	{
-		//ngfun.gpMakeTextbox(nrw,"",iatg,k9,"95%",textboxnulldrop); // asset-tag
-		//ngfun.gpMakeTextbox(nrw,"",isn,k9,"95%",textboxnulldrop); // serial
-		//ngfun.gpMakeTextbox(nrw,"",iqty,k9,"95%",textboxnulldrop); // qty
-		ngfun.gpMakeLabel(nrw,"",iatg,k9);
-		ngfun.gpMakeLabel(nrw,"",isn,k9);
-	}
-	else // else only labels
-	{
-		ngfun.gpMakeLabel(nrw,"",iatg,k9);
-		ngfun.gpMakeLabel(nrw,"",isn,k9);
-		//ngfun.gpMakeLabel(nrw,"",iqty,k9);
-	}
-
-	for(k=0;k<specs_fields.length;k++)
-	{
-		ngfun.gpMakeTextbox(nrw,"","","font-size:9px","95%",textboxnulldrop);
-	}
-
-	return nrw;
-}
-
-void showGRN_things(String iwhat) // knockoff from goodsrecv_funcs.showGRN_meta()
-{
-	r = getGRN_rec_NEW(iwhat);
-	if(r == null) return;
-/*
-	String[] fl = { "ourpo", "vendor", "vendor_do", "vendor_inv", "shipmentcode", "grn_remarks","origid" };
-	Object[] jkl = { g_ourpo, g_vendor, g_vendor_do, g_vendor_inv, g_shipmentcode, g_grn_remarks, g_origid };
-	ngfun.populateUI_Data(jkl,fl,r);
-
-	fillDocumentsList(documents_holder,GRN_PREFIX,iwhat);
-*/
-	// show 'em grn items
-	itms = sqlhand.clobToString(r.get("item_names")).split("~");
-	atgs = sqlhand.clobToString(r.get("asset_tags")).split("~");
-	srls = sqlhand.clobToString(r.get("serials")).split("~");
-	qtys = sqlhand.clobToString(r.get("qtys")).split("~");
-	specs = sqlhand.clobToString( r.get("specs") ).split("::");
-
-	if(scanitems_holder.getFellowIfAny("grn_grid") != null) grn_grid.setParent(null);
-	ngfun.checkMakeGrid(scanitems_colws, scanitems_collb, scanitems_holder, "grn_grid", "grn_rows", "", "", false);
-
-	for(i=0;i<itms.length; i++)
-	{
-		p1 = ""; try { p1 = itms[i]; } catch (Exception e) {}
-		p2 = ""; try { p2 = atgs[i]; } catch (Exception e) {}
-		p3 = ""; try { p3 = srls[i]; } catch (Exception e) {}
-		p4 = ""; try { p4 = qtys[i]; } catch (Exception e) {}
-		nrw = makeItemRow(grn_rows,p1,p2,p3,p4,r.get("status"));
-
-		js = null;
-		try { js = specs[i].split("\n"); } catch (Exception e) { js = null; }
-
-		ki = nrw.getChildren().toArray();
-
-		for(k=0;k<specs_fields.length;k++)
-		{
-			try
-			{
-				if(js != null) ki[k+4].setValue(js[k]);
-			} catch (java.lang.ArrayIndexOutOfBoundsException e) {}
-		}
-	}
-	//grnmeta_holder.setVisible(true);
-	//grnitems_workarea.setVisible(true);
 }
 
 void grnFunc(String itype)
@@ -208,7 +134,9 @@ void grnFunc(String itype)
 
 void itemFunc(String itype)
 {
-	msgtext = "";
+	todaydate =  kiboo.todayISODateTimeString();
+	sqlstm = msgtext = "";
+	unm = useraccessobj.username;
 
 	if(itype.equals("sourcepecs_b")) // Source specs from Focus
 	{
@@ -218,10 +146,13 @@ void itemFunc(String itype)
 		sourcePrevious_NameSerials();
 	}
 
-	if(itype.equals("savespecs_b")) // save the specs
+	if(itype.equals("savespecs_b")) // save the specs into rw_grn ONLY
 	{
 		if(glob_sel_grn.equals("")) return;
-		saveSpecs();
+		if(saveSpecs())
+		{
+			msgtext = "OK: Specs saved..";
+		}
 	}
 
 	if(itype.equals("postspecs_b")) // post SPECS into u0001
@@ -231,96 +162,47 @@ void itemFunc(String itype)
 		if(Messagebox.show("Posting specs into database, you cannot change anything after this..", "Are you sure?",
 			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
 
-		postSpecs();
+		saveSpecs(); // do save to rw_grn before posting into u0001
 
-		// update the rw_grn.audit* fields accordingly
-		// audit-log
- 
-		msgtext = "Specs posted..";
+		if(postSpecs()) // post-specs and if ok, update other things
+		{
+			msgtext = "OK: Specs posted..";
+			// update the rw_grn.audit* fields accordingly
+			sqlstm = "update rw_grn set audit_date='" + todaydate + "', audit_stat='POST', audit_user='" + unm + "' where origid=" + glob_sel_grn;
+			toggButts(true); // disable 'em butts
+			add_RWAuditLog(JN_linkcode(),"", "Posted specs-update", useraccessobj.username);
+		}
 	}
 
+	if(!sqlstm.equals(""))
+	{
+		sqlhand.gpSqlExecuter(sqlstm);
+		showGRN(last_showgrn_type);
+	}
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 }
 
-void postSpecs()
+void adminFunc(String itype)
 {
-	try
+	adminpop.close();
+	todaydate =  kiboo.todayISODateTimeString();
+	sqlstm = msgtext = "";
+	unm = useraccessobj.username;
+
+	if(glob_sel_grn.equals("")) return;
+
+	if(itype.equals("clearaudit_b"))
 	{
-		jk = grn_rows.getChildren().toArray();
-		sqlstm = "";
-		for(i=0;i<jk.length;i++)
-		{
-			ki = jk[i].getChildren().toArray();
-			atg = ki[2].getValue();
+		sqlstm = "update rw_grn set audit_date=null, audit_stat=null, audit_user=null where origid=" + glob_sel_grn;
+	}
 
-			if(!atg.equals("NOTAG") && !atg.equals("")) // ignore NOTAG or blank asset-tags -- inserted by RWMS
-			{
-				sqlstm += "update u0001 set ";
-				fql = "";
-				for(k=0; k<specs_fields.length;k++)
-				{
-					ct = kiboo.replaceSingleQuotes( ki[k+4].getValue().trim() );
-					fql += specs_sql_fields[k] + "='" + ct + "',";
-				}
-				try { fql = fql.substring(0,fql.length()-1); } catch (Exception e) {}
-				sqlstm += fql + " where extraid=(select eoff from mr001 where code2='" + atg + "');";
-			}
-		}
-
-		f30_gpSqlExecuter(sqlstm);
-		//alert(sqlstm);
-
-	} catch (Exception e) {}
-}
-
-// Save the specs into rw_grn ONLY -- not posting to Focus
-void saveSpecs()
-{
-	try
+	if(!sqlstm.equals(""))
 	{
-		jk = grn_rows.getChildren().toArray();
-		spc = "";
-		for(i=0;i<jk.length;i++)
-		{
-			ki = jk[i].getChildren().toArray();
-			for(k=0; k<specs_fields.length;k++)
-			{
-				ct = kiboo.replaceSingleQuotes( ki[k+4].getValue().trim() );
-				if(ct.equals("")) ct = "---";
-				spc += ct + "\n";
-			}
-			spc += "::";
-		}
-
-		sqlstm = "update rw_grn set specs='" + spc + "' where origid=" + glob_sel_grn;
 		sqlhand.gpSqlExecuter(sqlstm);
-		guihand.showMessageBox("OK: Specs saved..");
-
-	} catch (Exception e) {}
+		showGRN(last_showgrn_type);
+	}
+	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 }
-
-// Source previous specs from u0001
-void sourcePrevious_NameSerials()
-{
-	try
-	{
-		jk = grn_rows.getChildren().toArray();
-		for(i=0;i<jk.length;i++)
-		{
-			ki = jk[i].getChildren().toArray();
-			py = getExisting_inventoryRec(ki[2].getValue());
-			if(py != null)
-			{
-				for(k=0; k<specs_fields.length;k++)
-				{
-					ct = kiboo.checkNullString( py.get(specs_fields[k]) );
-					ki[k+4].setValue(ct);
-				}
-			}
-		}
-	} catch (Exception e) {}
-}
-
 
 ]]>
 </zscript>
@@ -337,6 +219,104 @@ void sourcePrevious_NameSerials()
 
 <popup id="adminpop">
 	<div sclass="shadowbox" style="background:#E2241C" width="300px">
+		<button id="clearaudit_b" label="Clear specs-post" sclass="k9mo" onClick="adminFunc(self.getId())" />
+	</div>
+</popup>
+
+<popup id="mpf_pop">
+	<div sclass="shadowbox" style="background:#ABC11B" width="500px">
+		<label value="(Mass update ticked items)" />
+		<button label="Clear boxes" sclass="k9" onClick="mpf_clearBoxes()" />
+		<grid sclass="GridLayoutNoBorder">
+			<rows>
+				<row style="background:#ABC11B">
+					<label value="Grd" sclass="k9" />
+					<textbox id="m_grd" sclass="k9" />
+					<button id="bm_grd" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+
+					<label value="Brand" sclass="k9" />
+					<textbox id="m_brand" sclass="k9" />
+					<button id="bm_brand" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+				</row>
+				<row style="background:#ABC11B">
+					<label value="Type" sclass="k9" />
+					<textbox id="m_type" sclass="k9" />
+					<button id="bm_type" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+
+					<label value="Model" sclass="k9" />
+					<textbox id="m_model" sclass="k9" />
+					<button id="bm_model" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+				</row>
+				<row style="background:#ABC11B">
+					<label value="Processor" sclass="k9" />
+					<textbox id="m_processor" sclass="k9" />
+					<button id="bm_processor" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+
+					<label value="M.Size" sclass="k9" />
+					<textbox id="m_msize" sclass="k9" />
+					<button id="bm_msize" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+				</row>
+				<row style="background:#ABC11B">
+					<label value="M.Type" sclass="k9" />
+					<textbox id="m_mtype" sclass="k9" />
+					<button id="bm_mtype" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+
+					<label value="Color" sclass="k9" />
+					<textbox id="m_color" sclass="k9" />
+					<button id="bm_color" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+				</row>
+				<row style="background:#ABC11B">
+					<label value="Case" sclass="k9" />
+					<textbox id="m_case" sclass="k9" />
+					<button id="bm_case" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+
+					<label value="COA" sclass="k9" />
+					<textbox id="m_coa" sclass="k9" />
+					<button id="bm_coa" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+				</row>
+				<row style="background:#ABC11B">
+					<label value="COA2" sclass="k9" />
+					<textbox id="m_coa2" sclass="k9" />
+					<button id="bm_coa2" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+
+					<label value="RAM" sclass="k9" />
+					<textbox id="m_ram" sclass="k9" />
+					<button id="bm_ram" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+				</row>
+				<row style="background:#ABC11B">
+					<label value="HDD" sclass="k9" />
+					<textbox id="m_hdd" sclass="k9" />
+					<button id="bm_hdd" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+
+					<label value="CDROM1" sclass="k9" />
+					<textbox id="m_cdrom1" sclass="k9" />
+					<button id="bm_cdrom1" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+				</row>
+				<row style="background:#ABC11B">
+					<label value="Comment" sclass="k9" />
+					<textbox id="m_comment" sclass="k9" />
+					<button id="bm_comment" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+
+					<label value="Webcam" sclass="k9" />
+					<textbox id="m_webcam" sclass="k9" />
+					<button id="bm_webcam" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+				</row>
+				<row style="background:#ABC11B">
+					<label value="B.Tooth" sclass="k9" />
+					<textbox id="m_btooth" sclass="k9" />
+					<button id="bm_btooth" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+
+					<label value="F.Print" sclass="k9" />
+					<textbox id="m_fprint" sclass="k9" />
+					<button id="bm_fprint" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+				</row>
+				<row style="background:#ABC11B" spans="1,1,4">
+					<label value="C.Reader" sclass="k9" />
+					<textbox id="m_creader" sclass="k9" />
+					<button id="bm_creader" label="Updt" sclass="k9" onClick="mpfUpdate_specs(self)" />
+				</row>
+			</rows>
+		</grid>
 	</div>
 </popup>
 
@@ -350,7 +330,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 </style>
 
 <div width="1200px">
-<panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
+<panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" onClose="panel_Close()">
 <panelchildren style="background:#356AAC">
 
 	<div sclass="shadowbox" style="background:#7F0850">
@@ -389,16 +369,18 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 
 	<separator height="3px" />
 
-	<div sclass="shadowbox" style="background:#7F0850">
+	<div sclass="shadowbox" style="background:#4B7F08">
 		<hbox>
 			<button id="savespecs_b" label="SAVE specs" sclass="k9mo" onClick="itemFunc(self.getId())" />
 			<button id="sourcepecs_b" label="Source previous" sclass="k9mo" onClick="itemFunc(self.getId())" />
+			<button id="mpfbutt" label="MPF" sclass="k9mo" onClick="mpf_pop.open(self)" />
+			<separator width="10px" />
 			<button id="postspecs_b" label="POST specs" sclass="k9mo" style="color:#CD3A3A" onClick="itemFunc(self.getId())" />
 		</hbox>
 	</div>
 	<separator height="3px" />
 
-	<div sclass="shadowbox" style="background:#7FAE42;overflow:auto;overflow-y:hidden" >
+	<div sclass="shadowbox" style="background:#36427F;overflow:auto;overflow-y:hidden" >
 		<div id="scanitems_holder" width="1500px" />
 	</div>
 
@@ -406,6 +388,11 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 <![CDATA[
 
 ngfun.checkMakeGrid(scanitems_colws, scanitems_collb, scanitems_holder, "grn_grid", "grn_rows", "", "", false);
+
+if(useraccessobj.accesslevel == 9)
+{
+	admin_b.setVisible(true);
+}
 
 ]]>
 </zscript>
