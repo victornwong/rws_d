@@ -41,6 +41,8 @@ kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
 guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
+JOBPICKLIST_PREFIX = "JPL";
+
 HashMap plx = new HashMap();
 glob_sel_job = glob_sel_jobsheet = glob_sel_jstat = "";
 last_joblist_type = 0;
@@ -50,6 +52,12 @@ listjobs_extrasql = " and jpl.pstatus='COMMIT'"; // only list committed items-re
 reqitems_grid_type = 2; // WH side req-items, ada asset-tags colm and boxes
 checkitems_doubleclicker = null;
 
+String JN_linkcode()
+{
+	if(glob_sel_jobsheet.equals("")) return "";
+	return JOBPICKLIST_PREFIX + glob_sel_jobsheet;
+}
+
  // Knockoff from jobSheetthing.zul but modified for WH side : pick-list functions dispenser
 void pl_DoFunc(String itype)
 {
@@ -57,6 +65,13 @@ void pl_DoFunc(String itype)
 	sqlstm = msgtext = "";
 	refresh = refresh_joblist = hideworkarea = false;
 	unm = useraccessobj.username;
+
+	if(itype.equals("shwauditlogs_b"))
+	{
+		showSystemAudit(auditlogs_holder,JN_linkcode(),"");
+		auditlogs_pop.open(shwauditlogs_b);
+	}
+
 
 	if(itype.equals("saveass_b")) // save 'em scanned asset-tags
 	{
@@ -129,10 +144,8 @@ void transfer_ScannedTags_toProd(String ijs)
 		new listboxHeaderWidthObj("Item",true,""),
 		new listboxHeaderWidthObj("Pallet",true,"50px"),
 	};
-
-	// check the asset-tags if already OUT/PROD/EIS
+	
 	ArrayList checktags = new ArrayList();
-
 	r = rwsqlfun.getJobPicklist_rec(ijs);
 	atgs = sqlhand.clobToString(r.get("pl_asset_tags")).split("~");
 
@@ -151,7 +164,6 @@ void transfer_ScannedTags_toProd(String ijs)
 
 	kql = FC5030_Sql();
 	tgs = checktags.toArray();
-
 	errcnt = 0;
 
 	Listbox newlb = lbhand.makeVWListbox_Width(tfxlist_holder, tfxhds, "atgspall_lb", 15);
@@ -159,7 +171,7 @@ void transfer_ScannedTags_toProd(String ijs)
 	String[] kbm = new String[3];
 	//errstyle = "background:#D40606;font-size:9px;font-weight:bold;color:#ffffff;text-decoration:underline;";
 	errstyle = "font-weight:bold;text-decoration:underline;font-size:9px";
-	for(i=0; i<tgs.length; i++)
+	for(i=0; i<tgs.length; i++) // check the asset-tags if already OUT/PROD/EIS
 	{
 		tk = tgs[i].trim();
 		plt = itm = sty = "";
@@ -193,11 +205,16 @@ void transfer_ScannedTags_toProd(String ijs)
 
 void reallyTransferItemsToProd()
 {
+	transf_Prod_pop.close();
 	allthe = null;
 	if( useraccessobj.accesslevel == 9) allthe = atgspall_lb.getSelectedItems();
 	else allthe = atgspall_lb.getItems();
+	if(allthe.size() == 0) return;
 
-	kpal = kiboo.replaceSingleQuotes( admpalletinp_tb.getValue().trim() );
+	if(Messagebox.show("All the picked assets will be transferred to PROD", "Are you sure?",
+		Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+	kpal = kiboo.replaceSingleQuotes( admpalletinp_tb.getValue().trim() ); // get pallet name from hidden tb. Only admin can see it.
 
 	sqlstm = "select top 1 masterid from mr003 where name='" + kpal + "';";
 	r = f30_gpSqlFirstRow(sqlstm);
@@ -208,16 +225,36 @@ void reallyTransferItemsToProd()
 	}
 	palnum = r.get("masterid");
 
-	sqlstm = "";
+	sqlstm = patgs = "";
 
 	ddt = allthe.toArray();
 	for(i=0; i<ddt.length; i++)
 	{
 		atg = lbhand.getListcellItemLabel(ddt[i],0); // get the asset-tag from LB
-		sqlstm += "update u0001 set PalletNoYH='" + palnum.toString() + "' where extraid=(select eoff from mr001 where code2='" + atg + "');";
+		if(!atg.equals("")) // must have tag
+		{
+			patgs += atg + ", ";
+			sqlstm += "update u0001 set PalletNoYH='" + palnum.toString() + "' where extraid=(select eoff from mr001 where code2='" + atg + "');";
+		}
 	}
 
-	alert(sqlstm);
+	if(!sqlstm.equals(""))
+	{
+		f30_gpSqlExecuter(sqlstm);
+
+		// Commit/transfer to prod audit-log and set rw_jobpicklist.ackby/ackdate
+		try { patgs = patgs.substring(0,patgs.length()-2); } catch (Exception e) {}
+		lgstr = "Tx assets to " + kpal + " : " + patgs;
+		add_RWAuditLog(JN_linkcode(), "", lgstr, useraccessobj.username);
+
+		sqlstm = "update rw_jobpicklist set ackby='" + useraccessobj.username + "'," +
+		"ackdate='" + kiboo.todayISODateTimeString() + "' where origid=" + glob_sel_jobsheet;
+
+		sqlhand.gpSqlExecuter(sqlstm);
+
+		guihand.showMessageBox("OK: Assets transferred to PROD..");
+	}
+	
 }
 
 ]]>
@@ -234,13 +271,23 @@ void reallyTransferItemsToProd()
 		<button id="realtransfer_b" label="Really transfer to PROD" style="font-weight:bold" onClick="reallyTransferItemsToProd()" />
 		<textbox id="admpalletinp_tb" sclass="k9" value="PROD" visible="false" />
 	</div>
+</popup>
 
+<popup id="auditlogs_pop">
+	<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
+		<label sclass="subhead" value="Audit Logs" />
+		<separator height="3px" />
+		<div id="auditlogs_holder" />
+		<separator height="3px" />
+		<button label="Ok" sclass="k9" onClick="auditlogs_pop.close()" />
+	</div>
 </popup>
 
 <popup id="adminPop">
 	<div style="background:#EE1010;padding:3px" width="350px">
 		<button id="admclrpckup_b" label="Clear pickup" sclass="k9mo" onClick="js_adminDo(self.getId())" />
 		<button id="admclrcommit_b" label="Clear commit" sclass="k9mo" onClick="js_adminDo(self.getId())" />
+		<button id="admclrack_b" label="Clear WH ack" sclass="k9mo" onClick="js_adminDo(self.getId())" />
 	</div>
 </popup> <!-- ENDOF adminPop -->
 
@@ -290,6 +337,7 @@ void reallyTransferItemsToProd()
 					<hbox>
 						<label value="Jobsheet - Request items" sclass="subhead1" />
 						<button id="tfxprod_b" label="Transfer items to PROD" style="font-weight:bold;color:#F01B1B" onClick="pl_DoFunc(self.getId())" />
+						<button id="shwauditlogs_b" label="AuditLog" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
 					</hbox>
 					<label value="WH extra notes" sclass="k9mo" style="color:#ffffff" />
 					<textbox id="j_extranotes" multiline="true" width="400px" height="60px" sclass="k9" />

@@ -8,6 +8,7 @@ Object[] dnsi_hds =
 	new listboxHeaderWidthObj("Amt",true,""),
 	new listboxHeaderWidthObj("RefNo",true,""),
 	new listboxHeaderWidthObj("Remarks",true,""),
+	new listboxHeaderWidthObj("Spec1&2",true,""),
 };
 vc_pos = 1;
 
@@ -68,6 +69,7 @@ void digDNSI(Object iwhat, Object iwhere, Object stdt, Object eddt)
 		for(d : recs)
 		{
 			ngfun.popuListitems_Data(kabom,fl,d);
+			kabom.add("");
 			ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 			lbhand.setListcellItemLabel(ki, vc_pos, "DN" + d.get("voucherno") );
 			kabom.clear();
@@ -76,12 +78,14 @@ void digDNSI(Object iwhat, Object iwhere, Object stdt, Object eddt)
 
 	// Dig SI
 	sqlstm = "select convert(datetime, focus5012.dbo.ConvertFocusDate(d.date_), 112) as vdate, a.name as customer_name, " +
-	"d.voucherno, d.amount1, siu.sonoyh, siu.remarksyh " +
+	"d.voucherno, d.amount1, siu.sonoyh, siu.remarksyh, di.spec1yh, di.spec2yh " +
 	"from data d left join u0012 siu on siu.extraid=d.extraheaderoff " +
 	"left join mr000 a on a.masterid = d.bookno " +
+	"left join u0112 di on di.extraid = d.extraoff " +
 	"where d.vouchertype=3328 " +
 	"and convert(datetime, focus5012.dbo.ConvertFocusDate(d.date_), 112) between '" + sdate + "' and '" + edate + "' " +
-	"and (siu.remarksyh like '%" + itype + "%' or siu.narrationyh like '%" + itype + "%'); ";
+	"and (siu.remarksyh like '%" + itype + "%' or siu.narrationyh like '%" + itype + "%' or " +
+	"di.spec1yh like '%" + itype + "%' or di.spec2yh like '%" + itype + "%'); ";
 
 	recs = sqlhand.rws_gpSqlGetRows(sqlstm);
 	if(recs.size() == 0) return;
@@ -90,6 +94,7 @@ void digDNSI(Object iwhat, Object iwhere, Object stdt, Object eddt)
 	for(d : recs)
 	{
 		ngfun.popuListitems_Data(kabom,fl,d);
+		kabom.add(d.get("spec1yh") + " " + d.get("spec2yh"));
 		ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		//lbhand.setListcellItemLabel(ki, vc_pos, "SI" + d.get("voucherno") );
 		kabom.clear();

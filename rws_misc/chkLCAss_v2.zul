@@ -5,10 +5,13 @@
 <zscript src="../rwglobal/systemAudit.zs" />
 <zscript src="../rwglobal/rwsqlfuncs.zs" />
 <zscript src="../rwglobal/formMaker_v1.zs" />
+<zscript src="../rwglobal/jobNotes_funcs.zs" />
+<zscript src="../rwglobal/uploadDocu_v1.zs" />
+<zscript src="../rws_customer/contractBillingTrack_funcs.zs" />
 <zscript>
 <![CDATA[
 MYTITLE = "Check LC / Assets";
-MYVERSION = "v0.2.1";
+MYVERSION = "v0.2.2";
 MY_ID = "chkjasspan";
 /*
 @Author Victor Wong
@@ -16,6 +19,7 @@ MY_ID = "chkjasspan";
 @NOTES: refer to new LC/ass tables
 16/06/2014: add GCO, buyout and billable flag in assets list
 26/09/2014: show asset BOM - req by Vijay helpdesk
+02/10/2014: req by Nisha and helpdesk - show more LC metadata
 */
 
 import org.victor.*;
@@ -23,8 +27,7 @@ sechand = new SecurityFuncs();
 myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
-kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
-guihand = new GuiFuncs(); luhand = new LookupFuncs();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler(); guihand = new GuiFuncs(); luhand = new LookupFuncs();
 ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 param_lc = Executions.getCurrent().getParameter("kc");
@@ -36,7 +39,7 @@ String JN_linkcode()
 	return LC_PREFIX + glob_sel_lcid;
 }
 
-void showAssetMetadata(String iwhat)
+void showAssetMetadata_sk(String iwhat)
 {
 	rc = rwsqlfun.getLCEquips_rec(iwhat);
 
@@ -57,12 +60,62 @@ void showAssetMetadata(String iwhat)
 	assbom_formholder.setVisible(true);
 }
 
+void showLCMetadata_sk(String iwhat)
+{
+	lcr = getLCNew_rec(iwhat);
+	glob_lcmeta_rec = lcr; // later use
+	if(lcr == null) { guihand.showMessageBox("DBERR: cannot access LC table"); return; }
+
+	clearLCMetaFields();
+
+	//recnum_lbl.setValue("Record: " + iwhat);
+
+	String[] flns = {
+	"lc_id", "rocno", "rwno", "fc6_custid", "customer_name", "remarks", "order_type", "product_name",
+	"fina_ref", "co_assigned_name", "co_do_ref", "co_master_lc", "co_inv_to_financer", "prev_lc", "prev_roc", "charge_out",
+	"cust_project_id", "noa_no", "lstartdate", "lenddate", "charge_out_date", "period", "inst_type", "invoice_date", "batch_lc"
+	};
+
+	Object[] ibx = {
+	i_lc_no, i_rocno, i_rwno, l_fc6_custid, customername, i_remarks, i_order_type, i_product_name,
+	i_fina_ref, i_co_assigned_name, i_co_do_ref, i_co_master_lc, i_co_inv_to_financer, i_prev_lc, i_prev_roc, i_charge_out,
+	i_cust_project_id, i_noa_no, i_lstartdate, i_lenddate, i_charge_out_date, i_period, i_inst_type, i_invoice_date, i_batch_lc
+	};
+
+	ngfun.populateUI_Data(ibx, flns, lcr);
+
+	iass = (lcr.get("assigned") == null) ? "NO" : ( (lcr.get("assigned")) ? "YES" : "NO" );
+	lbhand.matchListboxItems(i_assigned, iass );
+
+	String[] fln2 = {
+	"rm_month", "rm_contract", "qty_dt", "qty_mt", "qty_nb", "qty_pt", "qty_hs", "qty_ms",
+	"charge_out_period", "co_instalment_count", "co_due_date",
+	"fina_amount", "co_monthly_rental", "co_deposit", "co_recv_ex_deposit", "co_recv_in_deposit",
+	"co_pv_drawdown", "co_pv_drawdown_ex_deposit", "co_assigned_interest","sales_related"
+	};
+
+	Object[] ibx2 = {
+	i_rm_month, i_rm_contract, i_qty_dt, i_qty_mt, i_qty_nb, i_qty_pt, i_qty_hs, i_qty_ms,
+	i_charge_out_period, i_co_instalment_count, i_co_due_date,
+	i_fina_amount, i_co_monthly_rental, i_co_deposit, i_co_recv_ex_deposit, i_co_recv_in_deposit,
+	i_co_pv_drawdown, i_co_pv_drawdown_ex_deposit, i_co_assigned_interest, i_sales_related
+	};
+
+	ngfun.populateUI_Data(ibx2, fln2, lcr);
+	fillDocumentsList(documents_holder,LC_PREFIX,iwhat);
+
+	mainworkarea.setVisible(true);
+
+	showJobNotes(JN_linkcode(),jobnotes_holder,"jobnotes_lb");
+	jobnotes_div.setVisible(true);
+}
+
 class lcasscliker implements org.zkoss.zk.ui.event.EventListener
 {
 	public void onEvent(Event event) throws UiException
 	{
 		selitem = event.getReference();
-		showAssetMetadata( lbhand.getListcellItemLabel(selitem,0) );
+		showAssetMetadata_sk( lbhand.getListcellItemLabel(selitem,0) );
 	}
 }
 lcassetclik = new lcasscliker();
@@ -91,10 +144,10 @@ void listLCassets(String iwhat)
 	newlb.setMold("paging"); newlb.setRows(20);
 	ArrayList kabom = new ArrayList();
 	String[] fl = { "origid", "asset_tag", "serial_no", "origid", "type", "gcn_id", "buyout" , "billable" };
+	ks = "font-size:9px";
 	for(d : r)
 	{
 		ngfun.popuListitems_Data(kabom,fl,d);
-		ks = "font-size:9px";
 		if(d.get("gcn_id") != null && d.get("gcn_id") != 0 ) ks="background:#f77272;font-size:9px";
 		if(d.get("buyout")) ks = "background:#23B3DB;font-size:9px";
 		ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false",ks);
@@ -127,7 +180,8 @@ class lccliker implements org.zkoss.zk.ui.event.EventListener
 		glob_sel_customer = lbhand.getListcellItemLabel(selitem,3);
 		glob_order_type = lbhand.getListcellItemLabel(selitem,9);
 		listLCassets(glob_sel_lcid);
-		thelctitle_lbl.setValue(glob_sel_lc_str + " :: " + glob_sel_customer);
+		showLCMetadata_sk(glob_sel_lcid);
+		//thelctitle_lbl.setValue("LC " + glob_sel_lc_str + " :: " + glob_sel_customer);
 	}
 }
 lcsclicker = new lccliker();
@@ -163,11 +217,11 @@ void searchLCass(int itype)
 			break;
 	}
 
-	Listbox newlb = lbhand.makeVWListbox_Width(things_holder, lchds, "lcs_lb", 5);
+	Listbox newlb = lbhand.makeVWListbox_Width(things_holder, lchds, "lcs_lb", 10);
 	r = sqlhand.gpSqlGetRows(sqlstm);
 	if(r.size() == 0) return;
 	newlb.addEventListener("onSelect", lcsclicker);
-	newlb.setMold("paging"); newlb.setRows(20);
+	newlb.setMold("paging"); //newlb.setRows(20);
 	ArrayList kabom = new ArrayList();
 	String[] fl = { "origid", "lc_id", "rocno", "customer_name", "lstartdate", "lenddate", "lstatus",
 	"remarks", "product_name", "order_type" };
@@ -226,9 +280,46 @@ void exportAssetsList(String iwhat, int itype)
 	expasspop.open(newasset_b);
 }
 
-
 ]]>
 </zscript>
+
+<!-- update file description popup -->
+<popup id="updatefiledesc_popup">
+	<groupbox width="400px">
+		<caption id="updatefiledesc_label" />
+		<label value="Description" style="font-size:9px" />
+		<textbox id="update_file_description" multiline="true" height="70px" width="99%" sclass="k9" />
+		<separator height="3px" />
+		<hbox>
+			<button label="Update" style="font-size:9px" onClick="updateFileDescription(documents_holder,LC_PREFIX,glob_selected_lc)" />
+			<button label="Close" style="font-size:9px" onClick="updatefiledesc_popup.close()" />
+		</hbox>
+	</groupbox>
+</popup>
+
+<!-- upload a file popup -->
+<popup id="uploadfile_popup">
+	<groupbox>
+		<caption label="Upload a file" />
+			<grid>
+				<rows>
+					<row>
+						<label value="Filename" sclass="k9" />
+						<textbox id="fileupl_file_title" width="200px" sclass="k9" />
+					</row>
+					<row>
+						<label value="Description" sclass="k9" />
+						<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" sclass="k9" />
+					</row>
+				</rows>
+			</grid>
+	</groupbox>
+	<separator height="3px" />
+	<hbox>
+		<button label="Select file" onClick="uploadFile(documents_holder,LC_PREFIX,glob_selected_lc)" sclass="k9" />
+		<button label="Close" onClick="uploadfile_popup.close()" sclass="k9" />
+	</hbox>
+</popup>
 
 <popup id="expasspop">
 	<div id="expass_div" width="700px" />
@@ -246,32 +337,102 @@ void exportAssetsList(String iwhat, int itype)
 
 <style src="/real-world.css" />
 
-<window id="${MY_ID}" width="800px" title="${MYTITLE} ${MYVERSION}" position="top,center" mode="overlapped" border="normal" closable="true" sizable="true" >
+<window id="${MY_ID}" width="1000px" title="${MYTITLE} ${MYVERSION}" position="top,center" mode="overlapped" border="normal" closable="true" sizable="true" >
 <div>
-	<hbox>
-		<label value="LC/Asset/Serial/etc" style="font-size:9px" />
-		<textbox id="search_tb" width="99%" />
-		<button label="Dig" sclass="k9mo" onClick="searchLCass(0)" />
-	</hbox>
+	<div sclass="shadowbox" style="background:#D1BB2C">
+		<hbox>
+			<label value="LC/Asset/Serial/etc" style="font-size:9px" />
+			<textbox id="search_tb" width="99%" />
+			<button label="Dig" sclass="k9mo" onClick="searchLCass(0)" />
+		</hbox>
+		<separator height="2px" />
+		<div id="things_holder" />
+	</div>
 	<separator height="2px" />
-	<div id="things_holder" />
-	<separator height="2px" />
-	<hbox>
-		<button label="View LC logs" sclass="k9mo" onClick="showLClogs(self)" />
-		<button id="newasset_b" label="Export EVF(specs)" sclass="k9mo" onClick="exportAssetsList(glob_sel_lcid,6)" />
-	</hbox>
-	<separator height="2px" />
-	<label id="thelctitle_lbl" style="font-weight:bold" />
-	<separator height="2px" />
-	<div id="lcass_holder" />
-	<separator height="2px" />
-	<div id="assbom_formholder" visible="false" />
+
+	<div id="mainworkarea" sclass="shadowbox" style="background:#2E527C" visible="false">
+
+		<tabbox> <!-- WORKAREA accordion -->
+			<tabs>
+				<tab label="LC / ROC Metadata" />
+				<tab label="Job Notes" />
+				<tab label="ASSETS" />
+				<tab label="DOCUS / EMAILS / etc" />
+			</tabs>
+			<tabpanels>
+				<tabpanel>
+					<hbox>
+						<button label="View LC logs" sclass="k9mo" onClick="showLClogs(self)" />
+						<button label="Export EVF(specs)" sclass="k9mo" onClick="exportAssetsList(glob_sel_lcid,6)" />
+					</hbox>
+					<separator height="2px" />
+					<div id="lcrocmeta_formholder" />
+				</tabpanel>
+
+				<tabpanel>
+					<div sclass="shadowbox" style="background:#2e3436;" width="450px" id="jobnotes_div" >
+						<label sclass="subhead1" value="JOB NOTES" />
+						<separator height="3px" />
+						<div id="jobnotes_holder" />
+						<separator height="2px" />
+						<hbox>
+							<button id="deletejobn_b" label="Delete" style="font-size:9px;font-weight:bold"
+								onClick="jobNoteFunc(self,JN_linkcode())" />
+						</hbox>
+						<separator height="2px" />
+						<div id="jobnotes_entry_holder">
+							<grid>
+								<rows>
+									<row visible="false">
+										<label value="To" sclass="k9" />
+										<textbox id="jn_towho" width="99%" style="font-weight:bold" />
+									</row>
+									<row>
+										<label value="Subject" sclass="k9" />
+										<textbox id="jn_subject" width="99%" style="font-weight:bold" />
+									</row>
+									<row>
+										<label value="Notes" sclass="k9" />
+										<textbox id="jn_msgbody" width="99%" multiline="true" height="60px" />
+									</row>
+								</rows>
+							</grid>
+							<separator height="2px" />
+							<button id="postjobn_b" label="Post" style="font-weight:bold" onClick="jobNoteFunc(self,JN_linkcode())" />
+							<button id="clearjobn_b" label="Clear" style="font-weight:bold" onClick="jobNoteFunc(self,JN_linkcode())" />
+						</div>
+					</div>
+				</tabpanel>
+
+				<tabpanel>
+						<div sclass="shadowbox" style="background:#4EAFB2" id="lcass_holder" />
+						<div sclass="shadowbox" style="background:#4EAFB2" id="assbom_formholder" visible="false" />
+				</tabpanel>
+
+				<tabpanel> <!-- ATTACHMENTS -->
+					<hbox>
+						<button id="uploaddoc_btn" label="Upload file" sclass="k9"
+							onClick="showUploadPopup(LC_PREFIX,glob_selected_lc)" />
+						<button id="viewdoc_btn" label="View file" sclass="k9" onClick="viewFile()" />
+						<button id="editdoc_btn" label="Update" sclass="k9" onClick="updatefiledesc_popup.open(self)" />
+						<button id="deletedoc_btn" label="Delete" sclass="k9"
+							onClick="deleteFile(documents_holder,LC_PREFIX,glob_selected_lc)" />
+					</hbox>
+					<separator height="3px" />
+					<div id="documents_holder" />
+				</tabpanel> <!-- ENDOF ATTACHMENTS -->
+
+			</tabpanels>
+		</tabbox>
+	</div> <!-- mainworkarea -->
+
 </div>
 
 <zscript>
 <![CDATA[
 
 assbform = dynamicForm(assbom_formholder, "assbom_metgrid", "20");
+lcrocmetaform = dynamicForm(lcrocmeta_formholder, "lcroc_metagrid", "18");
 
 if(param_lc != null)
 {
@@ -285,8 +446,6 @@ if(useraccessobj.accesslevel == 9)
 
 ]]>
 </zscript>
-
-
 </window>
 </zk>
 

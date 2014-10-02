@@ -247,7 +247,9 @@ Object[] jobslbhds =
 	new listboxHeaderWidthObj("Pickup",true,"70px"),
 	new listboxHeaderWidthObj("P.By",true,"70px"), // 10
 	new listboxHeaderWidthObj("J.Sheet",true,"60px"),
-	new listboxHeaderWidthObj("J.Stat",true,"60px"),
+	new listboxHeaderWidthObj("J.Stat",true,"60px"), // 12
+	new listboxHeaderWidthObj("WH.Tx",true,"60px"),
+	new listboxHeaderWidthObj("WH.User",true,"60px"),
 };
 JOBSHEET_POS = 11;
 JOBSHEETSTAT_POS = 12;
@@ -282,7 +284,7 @@ void showJobs(int itype)
 	"(select top 1 origid from rw_jobpicklist where parent_job=rj.origid) as jobsheet, " +
 	"(select top 1 pstatus from rw_jobpicklist where parent_job=rj.origid) as jobstat " +
 	*/
-	"jpl.origid as jobsheet, jpl.pstatus as jobstat " +
+	"jpl.origid as jobsheet, jpl.pstatus as jobstat, jpl.ackby, jpl.ackdate " +
 	"from rw_jobs rj " +
 	"left join rw_jobpicklist jpl on jpl.parent_job=rj.origid ";
 
@@ -310,7 +312,7 @@ void showJobs(int itype)
 	newlb.addEventListener("onSelect", jobsclkier);
 	ArrayList kabom = new ArrayList();
 	String[] fl = { "origid","datecreated","customer_name","username","jobtype","order_type",
-	"priority","etd","eta","pickup_date", "pickup_by", "jobsheet", "jobstat" };
+	"priority","etd","eta","pickup_date", "pickup_by", "jobsheet", "jobstat", "ackdate", "ackby" };
 	for(d : rcs)
 	{
 		ngfun.popuListitems_Data(kabom,fl,d);
@@ -400,17 +402,24 @@ void js_adminDo(String itype)
 	{
 		if(glob_sel_job.equals("")) return;
 		sqlstm = "update rw_jobs set pickup_date=null, pickup_by=null where origid=" + glob_sel_job;
-		refresh_joblist = true;
 	}
 
 	if(itype.equals("admclrcommit_b")) // clear commit
 	{
 		if(glob_sel_jobsheet.equals("")) return;
 		sqlstm = "update rw_jobpicklist set pstatus='DRAFT', commitdate=null where origid=" + glob_sel_jobsheet;
-		refresh_joblist = true;
 	}
 
-	if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
+	if(itype.equals("admclrack_b")) // clear WH ackby/ackdate
+	{
+		if(glob_sel_jobsheet.equals("")) return;
+		sqlstm = "update rw_jobpicklist set ackby=null,ackdate=null where origid=" + glob_sel_jobsheet;
+	}
+
+	if(!sqlstm.equals(""))
+	{
+		sqlhand.gpSqlExecuter(sqlstm);
+		showJobs(last_joblist_type);
+	}
 	if(refresh) drawPicklist(plx);
-	if(refresh_joblist) showJobs(last_joblist_type);
 }
