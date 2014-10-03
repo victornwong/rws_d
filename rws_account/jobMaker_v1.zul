@@ -651,7 +651,7 @@ void trytask()
 			<label id="fcustomername" style="font-size:13px;font-weight:bold;text-decoration:underline" />
 			<separator height="2px" />
 			<label id="fcustomerdetails" multiline="true" width="99%" height="100px" style="font-weight:bold" />
-			<separator height="3px" />jreqnewequip_b
+			<separator height="3px" />
 			<button label="Select this customer" sclass="k9" onClick="assignCustomer()" />
 		</div>
 	</hbox>

@@ -72,7 +72,6 @@ void pl_DoFunc(String itype)
 		auditlogs_pop.open(shwauditlogs_b);
 	}
 
-
 	if(itype.equals("saveass_b")) // save 'em scanned asset-tags
 	{
 		if(saveScannedTags())
