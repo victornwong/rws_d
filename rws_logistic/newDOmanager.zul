@@ -42,12 +42,6 @@ global_selected_customername = "";
 last_showdo_type = 0;
 glob_sel_do = "";
 
-Object getnewDO_rec(String iwhat)
-{
-	sqlstm = "select * from deliveryordermaster where id=" + iwhat;
-	return sqlhand.gpSqlFirstRow(sqlstm);
-}
-
 String JN_linkcode()
 {
 	if(glob_sel_do.equals("")) return "";
@@ -77,19 +71,52 @@ void doFunc(String itype)
 
 	if(itype.equals("insnewdo_b"))
 	{
-		sqlstm = "insert into deliveryordermaster (name,user1,entrydate) values " +
-		"('UNDEF','" + unm + "','" + todaydate + "');";
+		sqlstm = "insert into deliveryordermaster (name,user1,entrydate,status) values " +
+		"('UNDEF','" + unm + "','" + todaydate + "','DRAFT');";
 	}
 
 	if(itype.equals("savedometa_b"))
 	{
 		if(glob_sel_do.equals("")) return;
-		Object[] jkl = { customername, d_code, d_shipaddress1, d_shipaddress2, d_shipaddress3, d_shippingcontact, d_shippingphone };
+		Object[] jkl = { customername, d_code, d_shipaddress1, d_shipaddress2, d_shipaddress3, d_shippingcontact, d_shippingphone, d_remark, d_transporter, d_airwaybill };
 		dt = ngfun.getString_fromUI(jkl);
 
 		sqlstm = "update deliveryordermaster set name='" + dt[0] + "', code='" + dt[1] + "'," +
 		"shipaddress1='" + dt[2] + "', shipaddress2='" + dt[3] + "', shipaddress3='" + dt[4] + "'," +
-		"shippingcontact='" + dt[5] + "', shippingphone='" + dt[6] + "' where id=" + glob_sel_do;
+		"shippingcontact='" + dt[5] + "', shippingphone='" + dt[6] + "', remark='" + dt[7] + "'," +
+		"transporter='" + dt[8] + "', airwaybill='" + dt[9] + "' where id=" + glob_sel_do;
+	}
+
+	if(itype.equals("savedoitems_b")) // save DO items
+	{
+		if(glob_sel_do.equals("")) return;
+		saveDO_items(glob_sel_do);
+		msgtext = "DO items saved..";
+	}
+
+	if(itype.equals("additem_b")) // add DO item
+	{
+		if(glob_sel_do.equals("")) return;
+		irow = gridhand.gridMakeRow("","","",items_rows);
+		ngfun.gpMakeCheckbox(irow,"","","");
+		lk = ngfun.gpMakeTextbox(irow,"","","font-size:9px;","99%",textboxnulldrop);
+		lk.setMultiline(true);
+		ngfun.gpMakeTextbox(irow,"", "1","font-size:9px;","60%",textboxnulldrop);
+	}
+
+	if(itype.equals("delitem_b")) // delete DO item
+	{
+		try
+		{
+			jk = items_rows.getChildren().toArray();
+			ArrayList itms = new ArrayList();
+
+			for(i=0;i<jk.length;i++)
+			{
+				ki = jk[i].getChildren().toArray();
+				if(ki[0].isChecked()) jk[i].setParent(null);
+			}
+		} catch (Exception e) {}
 	}
 
 	if(!sqlstm.equals(""))
@@ -97,6 +124,29 @@ void doFunc(String itype)
 		sqlhand.gpSqlExecuter(sqlstm);
 		showDOList(last_showdo_type);
 	}
+	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
+}
+
+void adminFunc(String itype)
+{
+	adminPop.close();
+	todaydate =  kiboo.todayISODateTimeString();
+	msgtext = sqlstm = sts = "";
+	refresh = true;
+
+	if(glob_sel_do.equals("")) return;
+
+	if(itype.equals("setdate_b"))
+	{
+		sqlstm = "update deliveryordermaster set entrydate='" + todaydate + "' where id=" + glob_sel_do;
+	}
+
+	if(!sqlstm.equals(""))
+	{
+		sqlhand.gpSqlExecuter(sqlstm);
+		showDOList(last_showdo_type);
+	}
+
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 }
 
@@ -128,8 +178,15 @@ void doFunc(String itype)
 
 <popup id="adminPop">
 	<div style="background:#EE1010;padding:3px" width="350px">
+		<button id="setdate_b" label="Set today" sclass="k9mo" onClick="adminFunc(self.getId())" />
 	</div>
 </popup> <!-- ENDOF adminPop -->
+
+<popup id="impjobshet_pop">
+	<div style="background:#9EB446;padding:3px" width="500px">
+		<div id="jobsdolb_holder" />
+	</div>
+</popup> <!-- ENDOF impjobshet_pop -->
 
 <style src="/real-world.css" />
 
@@ -137,7 +194,7 @@ void doFunc(String itype)
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true">
 <panelchildren style="background:#60718A">
 
-	<hbox style="padding:3px">
+	<hbox sclass="shadowbox" style="background:#793460">
 		<label value="Start date" sclass="k9mo" style="color:#ffffff" />
 		<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
 		<label value="End date" sclass="k9mo" style="color:#ffffff" />
@@ -158,20 +215,35 @@ void doFunc(String itype)
 			<button id="remdo_b" label="Remove" sclass="k9mo" onClick="doFunc(self.getId())" />
 			<button id="commitdo_b" label="COMMIT" sclass="k9mo" style="color:#D02727" onClick="doFunc(self.getId())" />
 			<button id="canceldo_b" label="CANCEL" sclass="k9mo" onClick="doFunc(self.getId())" />
+			<button id="postinvt_b" label="POST INVENTORY" sclass="k9mo" style="color:#D02727" onClick="doFunc(self.getId())" />
 		</hbox>
 	</div>
-	<separator height="3px" />
 	<div id="do_holder" />
 	<separator height="3px" />
 
-	<div sclass="shadowbox" style="background:#89AC4F">
-		<hbox>
-			<button id="asscust_b" label="Assign customer" sclass="k9mo" onClick="pickcustomer_popup.open(self)" />
-			<button id="savedometa_b" label="Save DO metadata" sclass="k9mo" onClick="doFunc(self.getId())" />
-		</hbox>
-		<separator height="3px" />
-		<div id="dometaform_holder" width="560px" />
-	</div>
+	<hbox>
+		<div sclass="shadowbox" style="background:#89AC4F">
+			<hbox>
+				<button id="asscust_b" label="Assign customer" sclass="k9mo" onClick="pickcustomer_popup.open(self)" />
+				<button label="Import job" sclass="k9mo" onClick="showJobsByCustomer(); impjobshet_pop.open(self)" />
+				<button id="savedometa_b" label="Save DO metadata" sclass="k9mo" onClick="doFunc(self.getId())" />
+			</hbox>
+			<separator height="3px" />
+			<div id="dometaform_holder" width="560px" />
+		</div>
+
+		<div sclass="shadowbox" style="background:#89AC4F">
+			<hbox>
+				<button id="additem_b" label="Add item" sclass="k9mo" onClick="doFunc(self.getId())" />
+				<button id="delitem_b" label="Delete" sclass="k9mo" onClick="doFunc(self.getId())" />
+				<button id="savedoitems_b" label="Save DO items" sclass="k9mo" onClick="doFunc(self.getId())" />
+
+			</hbox>
+			<separator height="3px" />
+			<div id="items_holder" />
+		</div>
+
+	</hbox>
 
 <zscript>
 <![CDATA[

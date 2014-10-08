@@ -277,7 +277,7 @@ void exportAssetsList(String iwhat, int itype)
 
 	newiframe.setSrc(thesrc);
 	newiframe.setParent(expass_div);
-	expasspop.open(newasset_b);
+	expasspop.open(evfbutt);
 }
 
 ]]>
@@ -363,7 +363,7 @@ void exportAssetsList(String iwhat, int itype)
 				<tabpanel>
 					<hbox>
 						<button label="View LC logs" sclass="k9mo" onClick="showLClogs(self)" />
-						<button label="Export EVF(specs)" sclass="k9mo" onClick="exportAssetsList(glob_sel_lcid,6)" />
+						<button id="evfbutt" label="Export EVF(specs)" sclass="k9mo" onClick="exportAssetsList(glob_sel_lcid,6)" />
 					</hbox>
 					<separator height="2px" />
 					<div id="lcrocmeta_formholder" />
