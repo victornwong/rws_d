@@ -1,11 +1,23 @@
 import java.lang.Float;
-import groovy.sql.Sql;
 import org.zkoss.zk.ui.*;
 import org.zkoss.zk.zutl.*;
 import java.math.BigDecimal;
 import org.zkoss.util.media.AMedia;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import javax.sql.DataSource;
+import groovy.sql.Sql;
 
-// 10/07/2013: moved 'em funcs here TODO byte-compile later
+// 10/07/2013: moved some funcs here TODO byte-compile later
+
+int calcFocusDate(String dstr)
+{
+	java.util.Calendar thedate = Calendar.getInstance();
+	thedate.setTime(GlobalDefs.dtf2.parse(dstr));
+	// ((2014-1950)*416) + ((9*32)+1) + (18 - 1);
+	retval = ((thedate.get(Calendar.YEAR)-1950)*416) + ((thedate.get(Calendar.MONTH)*32)+1) + (thedate.get(Calendar.DAY_OF_MONTH)-1);
+	return retval;
+}
 
 Object getGRN_rec_NEW(String iwhat)
 {
@@ -696,7 +708,7 @@ String getLinkingJobID_others(int itype, String ijid)
 }
 
 // DOs link to bom/picklist link to job - can be used for other mods to comma-string something
-// itype: 1=picklist, 2=boms, 3=PR, 4=GRN(iorigids=PR), 5=ADT->GCO
+// itype: 1=picklist, 2=boms, 3=PR, 4=GRN(iorigids=PR), 5=ADT->GCO, 6=job->RDO
 String getDOLinkToJob(int itype, String iorigids)
 {
 	retv = sqlstm = "";
@@ -729,6 +741,10 @@ String getDOLinkToJob(int itype, String iorigids)
 		case 5: // get GCO from ADT table
 		sqlstm = "select origid as doid from rw_qcaudit where gcn_no=" + iorigids;
 		break;
+
+		case 6: // get RDO by job-id
+		sqlstm = "select id as doid from deliveryordermaster where job_id=" + iorigids;
+		break;
 	}
 
 	if(!sqlstm.equals(""))
@@ -744,7 +760,6 @@ String getDOLinkToJob(int itype, String iorigids)
 		}
 	}
 	return retv;
-	//return sqlstm;
 }
 
 // FC6: Get MRN linked to T.GRN. iwhat=T.GRNs
@@ -802,3 +817,9 @@ void populateUsernames(Listbox ilb, String discardname)
 	ilb.setSelectedIndex(0);
 }
 
+//GroovyRowResult getJobPicklist_byParentJob(String iwhat) throws SQLException
+Object getJobPicklist_byParentJob(String iwhat)
+{
+	String sqlstm = "select * from rw_jobpicklist where parent_job=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
+}

@@ -4,10 +4,11 @@
 <zscript src="../rwglobal/rwglobaldefs.zs" />
 <zscript src="../rwglobal/rwsqlfuncs.zs" />
 <zscript src="../rwglobal/systemAudit.zs" />
+<zscript src="../rwglobal/uploadedWorksheet_v1.zs" />
 <zscript>
 <![CDATA[
 MYTITLE = "WhopAssets Checker/ Location Changer / Grade Also";
-MYVERSION = "v0.2.1";
+MYVERSION = "v0.2.2";
 MY_ID = "wopassdpan";
 /*
 @Author Victor Wong
@@ -17,6 +18,7 @@ Make it to check stock-tick scanned asset against what're inside FC6 inventory t
 
 21/08/2014: able to change parts/assets location from here
 24/09/2014: able to change asset grade too -- req by Vimalan
+13/10/2014: repair-dept(varan) request export lb to EXCEL. Put in checks to allow only authorized ppl to change loca/grade
 
 */
 
@@ -142,6 +144,13 @@ void massUpdateAssetGrade()
 	checkEmAssets(last_type);
 }
 
+void exportListbox()
+{
+	try {
+	exportExcelFromListbox(fndassets_lb, kasiexport, wpshd, "checkassets.xls","chkass");
+	} catch (Exception e) {}
+}
+
 ]]>
 </zscript>
 
@@ -158,6 +167,7 @@ void massUpdateAssetGrade()
 				<vbox>
 					<button label="Check asset-tag" sclass="k9" onClick="checkEmAssets(1)" />
 					<button label="Check serial-num" sclass="k9" onClick="checkEmAssets(2)" />
+					<button label="Export EXCEL" sclass="k9" onClick="exportListbox()" />
 					<button label="Clear" sclass="k9" onClick='wopass_tb.setValue("")' />
 				</vbox>
 				<separator height="2px" />
@@ -167,9 +177,9 @@ void massUpdateAssetGrade()
 				<hbox>
 					<label sclass="k9" value="Pallet/Loca" />
 					<textbox id="palletloca_tb" width="60px" sclass="k9" />
-					<button sclass="k9mo" label="Change pallet" onClick="massUpdatePalletLoca(palletloca_tb.getValue())" />
+					<button id="chgpallet_b" sclass="k9mo" label="Change pallet" onClick="massUpdatePalletLoca(palletloca_tb.getValue())" disabled="true" />
 					<listbox id="assgrade_lb" mold="select" sclass="k9" />
-					<button sclass="k9mo" label="Change grade" onClick="massUpdateAssetGrade()" />
+					<button id="chggrade_b" sclass="k9mo" label="Change grade" onClick="massUpdateAssetGrade()" disabled="true" />
 				</hbox>
 				<separator height="5px" />
 				<div id="fndass_holder" />
@@ -178,10 +188,17 @@ void massUpdateAssetGrade()
 			</div>
 		</hbox>
 	</div>
-
+<div id="kasiexport" visible="false" />
 <zscript>
 <![CDATA[
 	rws_fillListbox_uniqField("partsall_0","grade",assgrade_lb);
+	// || useraccessobj.accesslevel == 9
+	if(sechand.allowedUser(useraccessobj.username,"WHOPASSET_USER"))
+	{
+		chgpallet_b.setDisabled(false);
+		chggrade_b.setDisabled(false);
+	}
+
 ]]>
 </zscript>
 

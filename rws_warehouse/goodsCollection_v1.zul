@@ -21,9 +21,9 @@ MYTITLE = "Goods Collection Note / Order";
 MYVERSION = "v0.2.3";
 MYPANEL = "goodscolpa";
 /*
-Title		: Goods/assets collection management
-Written by	: Victor Wong
-Dated		: 14/08/2013
+@Title Goods/assets collection management
+@Author Victor Wong
+@Since 14/08/2013
 
 Have to link-back to LC(if required) or just free-fall collection. Logistic need to update accordingly
 Collection-list status : complete, partial, pending
@@ -360,93 +360,93 @@ BOXWIDTH = "800px";
 </zscript>
 
 <popup id="adminpopup">
-<div width="300px">
-	<button id="setnew_b" label="set NEW" onClick="adminFunc(self)" />
-	<button id="clrtransimp_b" label="Clear transient import" onClick="adminFunc(self)" />
-	<button id="delete_b" label="DELETE" onClick="adminFunc(self)" />
-	<separator height="2px" />
-	<button id="clradt_b" label="Clear ADT" onClick="adminFunc(self)" />
-	<button id="clrcsv_b" label="Clear CSV" onClick="adminFunc(self)" />
-</div>
+	<div width="300px">
+		<button id="setnew_b" label="set NEW" onClick="adminFunc(self)" />
+		<button id="clrtransimp_b" label="Clear transient import" onClick="adminFunc(self)" />
+		<button id="delete_b" label="DELETE" onClick="adminFunc(self)" />
+		<separator height="2px" />
+		<button id="clradt_b" label="Clear ADT" onClick="adminFunc(self)" />
+		<button id="clrcsv_b" label="Clear CSV" onClick="adminFunc(self)" />
+	</div>
 </popup>
 
 <popup id="impcsvs_pop">
-<div sclass="shadowbox" style="background:#f57900;" width="350px" >
-	<div id="impcsvs_holder" />
-	<separator height="3px" />
-	<button label="Import from CSV" onClick="impcsvs_pop.close(); impFromCSV_replacements(glob_sel_gco)" />
-</div>
+	<div sclass="shadowbox" style="background:#f57900;" width="350px" >
+		<div id="impcsvs_holder" />
+		<separator height="3px" />
+		<button label="Import from CSV" onClick="impcsvs_pop.close(); impFromCSV_replacements(glob_sel_gco)" />
+	</div>
 </popup>
 
 <popup id="imppartnerreq_pop">
-<div sclass="shadowbox" style="background:#f57900;" width="350px" >
-	<div id="imppartners_holder" />
-	<separator height="3px" />
-	<button id="impfrompartner_b" label="Import from partner's replacements" onClick="impFromPartnersReplacements(glob_sel_gco)" />
-</div>
+	<div sclass="shadowbox" style="background:#f57900;" width="350px" >
+		<div id="imppartners_holder" />
+		<separator height="3px" />
+		<button id="impfrompartner_b" label="Import from partner's replacements" onClick="impFromPartnersReplacements(glob_sel_gco)" />
+	</div>
 </popup>
 
 <popup id="imptransient_pop">
-<div sclass="shadowbox" style="background:#f57900;" width="350px" >
-	<label sclass="subhead" value="Import assets-tags from transient-table" />
-	<separator height="5px" />
-	<div id="imptrans_holder" />
-	<separator height="3px" />
-	<button id="realimptrans_b" label="Import asset-tags" onClick="impTransientAssets()" />
-</div>
+	<div sclass="shadowbox" style="background:#f57900;" width="350px" >
+		<label sclass="subhead" value="Import assets-tags from transient-table" />
+		<separator height="5px" />
+		<div id="imptrans_holder" />
+		<separator height="3px" />
+		<button id="realimptrans_b" label="Import asset-tags" onClick="impTransientAssets()" />
+	</div>
 </popup>
 
 <popup id="impasset_pop">
-<div sclass="shadowbox" style="background:#f57900;" width="600px" >
-	<div style="background:#2e3436;padding:2px">
-		<label style="color:#ffffff" value="IMPORT Asset-tags from LC/ROC" />
-	</div>
+	<div sclass="shadowbox" style="background:#f57900;" width="600px" >
+		<div style="background:#2e3436;padding:2px">
+			<label style="color:#ffffff" value="IMPORT Asset-tags from LC/ROC" />
+		</div>
+			<separator height="3px" />
+		<hbox>
+			<label value="LC/ROC No." />
+			<textbox id="implcasset_tb" value="1209" />
+			<button label="Load" class="k9" onClick="loadShowLCAssets(implcasset_tb)" />
+		</hbox>
 		<separator height="3px" />
-	<hbox>
-		<label value="LC/ROC No." />
-		<textbox id="implcasset_tb" value="1209" />
-		<button label="Load" class="k9" onClick="loadShowLCAssets(implcasset_tb)" />
-	</hbox>
-	<separator height="3px" />
-	<label id="implc_meta" multiline="true" style="font-size:9px;font-weight:bold;color:#000000" />
-	<separator height="3px" />
-	<button label="Import" onClick="procImpAssetTags()" />
-	<separator height="2px" />
-	<div id="impassets_holder" />
-</div>
+		<label id="implc_meta" multiline="true" style="font-size:9px;font-weight:bold;color:#000000" />
+		<separator height="3px" />
+		<button label="Import" onClick="procImpAssetTags()" />
+		<separator height="2px" />
+		<div id="impassets_holder" />
+	</div>
 </popup>
 
 <popup id="auditlogs_pop">
-<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
-	<label style="font-size:14px;font-weight:bold;">Audit Logs</label>
-	<separator height="3px" />
-	<div id="auditlogs_holder" />
-	<separator height="3px" />
-	<button label="Ok" class="k9" onClick="auditlogs_pop.close()" />
-</div>
+	<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
+		<label style="font-size:14px;font-weight:bold;">Audit Logs</label>
+		<separator height="3px" />
+		<div id="auditlogs_holder" />
+		<separator height="3px" />
+		<button label="Ok" class="k9" onClick="auditlogs_pop.close()" />
+	</div>
 </popup>
 
 <popup id="pickcustomer_popup">
-<div sclass="shadowbox" style="background:#f9b12d">
-	<hbox>
-		<label class="k9" >Customer name</label>
-		<textbox id="searchcust_tb" class="k9" />
-		<button label="Find" class="k9" onClick="findCustomers()" />
-	</hbox>
-	<separator height="2px" />
-	<hbox>
-		<div id="foundcusts_holder" width="400px" />
-		<separator width="5px" />
-		<div width="400px" id="custfound_wa" visible="false" >
-			<label id="fcustomername" style="font-size:13px;font-weight:bold;text-decoration:underline" />
-			<separator height="2px" />
-			<label id="fcustomerdetails" multiline="true" width="99%" height="100px" style="font-weight:bold" />
-			<separator height="3px" />
-			<button label="Select this customer" class="k9" onClick="assignCustomer()" />
-		</div>
-	</hbox>
-	<label id="selectcustid" visible="false" />
-</div>
+	<div sclass="shadowbox" style="background:#f9b12d">
+		<hbox>
+			<label class="k9" >Customer name</label>
+			<textbox id="searchcust_tb" class="k9" />
+			<button label="Find" class="k9" onClick="findCustomers()" />
+		</hbox>
+		<separator height="2px" />
+		<hbox>
+			<div id="foundcusts_holder" width="400px" />
+			<separator width="5px" />
+			<div width="400px" id="custfound_wa" visible="false" >
+				<label id="fcustomername" style="font-size:13px;font-weight:bold;text-decoration:underline" />
+				<separator height="2px" />
+				<label id="fcustomerdetails" multiline="true" width="99%" height="100px" style="font-weight:bold" />
+				<separator height="3px" />
+				<button label="Select this customer" class="k9" onClick="assignCustomer()" />
+			</div>
+		</hbox>
+		<label id="selectcustid" visible="false" />
+	</div>
 </popup> <!-- ENDOF pickcustomer_popup -->
 
 <!-- update file description popup -->

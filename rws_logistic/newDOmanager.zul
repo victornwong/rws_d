@@ -3,9 +3,11 @@
 <zk>
 <zscript src="../rwglobal/rwglobaldefs.zs" />
 <zscript src="../rwglobal/rwsqlfuncs.zs" />
+<zscript src="../rwglobal/systemAudit.zs" />
 <zscript src="../rwglobal/uploadDocu_v1.zs" />
 <zscript src="../rwglobal/formMaker_v1.zs" />
 <zscript src="../rwglobal/fc6_CustomerSelector.zs" />
+<zscript src="../rws_warehouse/goodsreceive/injtest.zs" />
 <zscript src="./newDO_funcs.zs" />
 
 <zscript>
@@ -35,12 +37,17 @@ guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 RWDO_PREFIX = "RDO";
+PROD_PALLET_STR = "UNKNOWN"; // TODO, chg to PROD for fc5012. used in postInventory_DO()
+OUT_PALLET = "3"; // hardcoded pallet-id - used by minusAddFocus_Stock()
+GENERAL_WH_PALLET = "4";
+
+HashMap postInventory_Map = new HashMap(); // used in those post-inventory funcs
 
 global_selected_customerid = ""; // set in fc6_CustomerSelector.zs
 global_selected_customername = "";
 
 last_showdo_type = 0;
-glob_sel_do = "";
+glob_sel_do = glob_sel_do_stat = glob_sel_do_jobid = "";
 
 String JN_linkcode()
 {
@@ -71,13 +78,16 @@ void doFunc(String itype)
 
 	if(itype.equals("insnewdo_b"))
 	{
-		sqlstm = "insert into deliveryordermaster (name,user1,entrydate,status) values " +
-		"('UNDEF','" + unm + "','" + todaydate + "','DRAFT');";
+		sqlstm = "insert into deliveryordermaster (name,user1,entrydate,status,packing_flag) values " +
+		"('UNDEF','" + unm + "','" + todaydate + "','DRAFT',0);";
+	}
+	else
+	{
+		if(glob_sel_do.equals("")) return;	
 	}
 
 	if(itype.equals("savedometa_b"))
 	{
-		if(glob_sel_do.equals("")) return;
 		Object[] jkl = { customername, d_code, d_shipaddress1, d_shipaddress2, d_shipaddress3, d_shippingcontact, d_shippingphone, d_remark, d_transporter, d_airwaybill };
 		dt = ngfun.getString_fromUI(jkl);
 
@@ -89,14 +99,12 @@ void doFunc(String itype)
 
 	if(itype.equals("savedoitems_b")) // save DO items
 	{
-		if(glob_sel_do.equals("")) return;
 		saveDO_items(glob_sel_do);
 		msgtext = "DO items saved..";
 	}
 
 	if(itype.equals("additem_b")) // add DO item
 	{
-		if(glob_sel_do.equals("")) return;
 		irow = gridhand.gridMakeRow("","","",items_rows);
 		ngfun.gpMakeCheckbox(irow,"","","");
 		lk = ngfun.gpMakeTextbox(irow,"","","font-size:9px;","99%",textboxnulldrop);
@@ -117,6 +125,106 @@ void doFunc(String itype)
 				if(ki[0].isChecked()) jk[i].setParent(null);
 			}
 		} catch (Exception e) {}
+	}
+
+	if(itype.equals("commitdo_b")) // commit the DO
+	{
+		if(glob_sel_do_stat.equals("DRAFT") || glob_sel_do_stat.equals(""))
+		{
+			if(Messagebox.show("Once DO committed, no more changes..", "Are you sure?",
+				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+			sqlstm = "update deliveryordermaster set status='COMMIT' where id=" + glob_sel_do;
+			glob_sel_do_stat = "COMMIT";
+			toggButts(2,true);
+			add_RWAuditLog(JN_linkcode(), "", "Commit DO", unm);
+		}
+		else
+			msgtext = "ERR: DO is not DRAFT, cannot commit or already committed..";
+	}
+
+	if(itype.equals("postinvt_b")) // post inventory -- DANGEROUS
+	{
+		if(glob_sel_do_stat.equals("COMMIT")) // only committed DO can post inventory, others tak boleh
+		{
+			postInventory_DO();
+		}
+		else
+			msgtext = "ERR: DO need to be committed before posting inventory..";
+	}
+
+	if(itype.equals("revertinventory_b")) // revert inventory -- only ADMIN can do for now
+	{
+		if(useraccessobj.accesslevel != 9) return;
+
+		if(Messagebox.show("POINT OF NO RETURN.. this will update the inventory!!", "Are you sure?",
+			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+		superDOInventoryUpdater(2);
+
+		sqlstm  = "update rw_jobpicklist set invtstat=0 where parent_job=" + glob_sel_do_jobid + "; " +
+		"update deliveryordermaster set status='REVERT' where id=" + glob_sel_do;
+
+		msgtext = "Inventory added back..";
+	}
+
+	if(itype.equals("realpostinventory_b"))
+	{
+		if(Messagebox.show("POINT OF NO RETURN.. this will update the inventory!!", "Are you sure?",
+			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+		superDOInventoryUpdater(1);
+
+		sqlstm = "update rw_jobpicklist set invtstat=1 where parent_job=" + glob_sel_do_jobid + "; " +
+		"update deliveryordermaster set status='STKOUT' where id=" + glob_sel_do;
+
+		msgtext = "Inventory posted..";
+	}
+
+	if(itype.equals("canceldo_b")) // only DRAFT DO can cancel
+	{
+		if(glob_sel_do_stat.equals("DRAFT") || glob_sel_do_stat.equals(""))
+		{
+			if(Messagebox.show("Cancelling this DO..", "Are you sure?",
+				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+			sqlstm = "update deliveryordermaster set status='CANCEL' where id=" + glob_sel_do;
+			glob_sel_do_stat = "CANCEL";
+			toggButts(2,true);
+			add_RWAuditLog(JN_linkcode(), "", "CANCEL DO", unm);
+		}
+		else
+			msgtext = "ERR: DO already committed or post-inventory, cannot CANCEL!!";
+	}
+
+	if(itype.equals("shwauditlogs_b"))
+	{
+		showSystemAudit(auditlogs_holder,JN_linkcode(),"");
+		auditlogs_pop.open(shwauditlogs_b);
+	}
+
+	if(itype.equals("printdo_b")) // only COMMITTED DO can be printed
+	{
+		if(glob_sel_do_stat.equals("COMMIT") || glob_sel_do_stat.equals("STKOUT"))
+		{
+			printBIRT_DO(glob_sel_do);
+		}
+		else
+		{
+			msgtext = "ERR: To print, you need to commit/post-inventory this DO..";
+		}
+	}
+
+	if(itype.equals("uptrefpack_b")) // update refurb/packing notes
+	{
+		rnt = kiboo.replaceSingleQuotes( d_packing_remarks.getValue().trim() );
+		if(!rnt.equals(""))
+		{
+			sqlstm = "update deliveryordermaster set packing_flag=1, packing_remarks='" + rnt + "' where id=" + glob_sel_do;
+			add_RWAuditLog(JN_linkcode(), "", "Update refurb/packing status", useraccessobj.username);
+		}
+		else
+			msgtext = "ERR: you must enter how boxes/cartons or any packing/refurb notes..";
 	}
 
 	if(!sqlstm.equals(""))
@@ -141,6 +249,29 @@ void adminFunc(String itype)
 		sqlstm = "update deliveryordermaster set entrydate='" + todaydate + "' where id=" + glob_sel_do;
 	}
 
+	if(itype.equals("setdraft_b"))
+	{
+		sqlstm = "update deliveryordermaster set status='DRAFT' where id=" + glob_sel_do;
+	}
+
+	if(itype.equals("clrdelstat_b")) // clear delivery stat
+	{
+		sqlstm = "update deliveryordermaster set deliverydate=null, del_status_date=null,del_status=null where id=" + glob_sel_do;
+	}
+
+	if(itype.equals("clrrefpackstat_b")) // clear refurb/packing stat
+	{
+		sqlstm = "update deliveryordermaster set packing_flag=0, packing_remarks=null where id=" + glob_sel_do;
+	}
+
+	if(itype.equals("clrjobid_b")) // clear linking job-id
+	{
+		if(glob_sel_do_stat.equals("STKOUT"))
+			msgtext = "Oii.. already stock-out, do not unlink job-id";
+		else
+			sqlstm = "update deliveryordermaster set job_id=null where id=" + glob_sel_do;
+	}
+
 	if(!sqlstm.equals(""))
 	{
 		sqlhand.gpSqlExecuter(sqlstm);
@@ -150,8 +281,96 @@ void adminFunc(String itype)
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 }
 
+void updateDO_deliveryStat(String istat)
+{
+	if(glob_sel_do.equals("")) return;
+	if(glob_sel_do_stat.equals("STKOUT")) // Only DO stat=STKOUT can update delivery status
+	{
+		dt = kiboo.getDateFromDatebox(delstat_date);
+		tdt = kiboo.todayISODateTimeString();
+		sqlstm = "update deliveryordermaster set deliverydate='" + dt + "', del_status_date='" + tdt + "',del_status='" + istat + "' where id=" + glob_sel_do;
+		sqlhand.gpSqlExecuter(sqlstm);
+		showDOList(last_showdo_type);
+		add_RWAuditLog(JN_linkcode(), "", "Update delivery status", useraccessobj.username);
+	}
+	else
+	{
+		guihand.showMessageBox("ERR: DO is not yet STKOUT, you cannot update the delivery status..");
+	}
+}
+
 ]]>
 </zscript>
+
+<popup id="expasspop">
+	<div id="expass_div" width="700px" />
+</popup>
+
+<popup id="postinventory_pop">
+	<div sclass="shadowbox" style="background:#ef2929;" width="600px" >
+		<label sclass="subhead1" value="Inventory/Location check" />
+		<separator height="3px" />
+		<div id="piscan_holder" />
+
+		<separator height="3px" />
+
+		<label id="posterr_lbl" value="PROBLEM DETECTED!! NOT ENOUGH QTY or UNKNOWN ITEM or ALREADY OUT"
+			sclass="blink" style="font-size:16px;font-weight:bold;color:#ffffff" visible="false" />
+
+		<button id="realpostinventory_b" label="SHORT INVENTORY" onClick="doFunc(self.getId())"
+			style="color:#E01B1B;font-size:14px;font-weight:bold" visible="false" />
+
+		<button id="revertinventory_b" label="REVERT INVENTORY" onClick="doFunc(self.getId())"
+			style="color:#25BA29;font-weight:bold" visible="false" />
+
+	</div>
+</popup>
+
+<popup id="auditlogs_pop">
+	<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
+		<label sclass="subhead" value="Audit Logs" />
+		<separator height="3px" />
+		<div id="auditlogs_holder" />
+		<separator height="3px" />
+		<button label="Ok" sclass="k9" onClick="auditlogs_pop.close()" />
+	</div>
+</popup>
+
+<popup id="updatefiledesc_popup"> <!-- update file description popup -->
+	<groupbox width="400px">
+		<caption id="updatefiledesc_label" />
+		<label value="Description" class="k9" />
+		<textbox id="update_file_description" multiline="true" height="70px" width="99%" class="k9" />
+		<separator height="3px" />
+		<hbox>
+			<button label="Update" class="k9" onClick="updateFileDescription(documents_holder,RWDO_PREFIX,glob_sel_do)" />
+			<button label="Close" class="k9" onClick="updatefiledesc_popup.close()" />
+		</hbox>
+	</groupbox>
+</popup>
+
+<popup id="uploadfile_popup"> <!-- upload a file popup -->
+	<groupbox>
+		<caption label="Upload a file" />
+		<grid>
+			<rows>
+				<row>
+					<label value="Filename" class="k9" />
+					<textbox id="fileupl_file_title" width="200px" class="k9" />
+				</row>
+				<row>
+					<label value="Description" class="k9" />
+					<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" class="k9" />
+				</row>
+			</rows>
+		</grid>
+	</groupbox>
+	<separator height="3px" />
+	<hbox>
+		<button label="Select file" onClick="uploadFile(documents_holder,RWDO_PREFIX,glob_sel_do)" class="k9" />
+		<button label="Close" onClick="uploadfile_popup.close()"  class="k9" />
+	</hbox>
+</popup>
 
 <popup id="pickcustomer_popup">
 	<div sclass="shadowbox" style="background:#f9b12d">
@@ -179,6 +398,10 @@ void adminFunc(String itype)
 <popup id="adminPop">
 	<div style="background:#EE1010;padding:3px" width="350px">
 		<button id="setdate_b" label="Set today" sclass="k9mo" onClick="adminFunc(self.getId())" />
+		<button id="setdraft_b" label="Set DRAFT" sclass="k9mo" onClick="adminFunc(self.getId())" />
+		<button id="clrjobid_b" label="Clear job-id" sclass="k9mo" onClick="adminFunc(self.getId())" />
+		<button id="clrdelstat_b" label="Clear delivery stat" sclass="k9mo" onClick="adminFunc(self.getId())" />
+		<button id="clrrefpackstat_b" label="Clear refurb/packing stat" sclass="k9mo" onClick="adminFunc(self.getId())" />
 	</div>
 </popup> <!-- ENDOF adminPop -->
 
@@ -187,6 +410,27 @@ void adminFunc(String itype)
 		<div id="jobsdolb_holder" />
 	</div>
 </popup> <!-- ENDOF impjobshet_pop -->
+
+<popup id="deliverystat_pop">
+	<div sclass="shadowbox" style="background:#3853D0;padding:3px" width="145px">
+		<vbox>
+			<label value="Actual delivery" sclass="k9b" />
+			<datebox id="delstat_date" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
+			<button label="DELIVERED" width="140px" style="font-weight:bold" onClick="updateDO_deliveryStat(self.getLabel())" />
+			<button label="PARTIAL" width="140px" style="font-weight:bold" onClick="updateDO_deliveryStat(self.getLabel())" />
+		</vbox>
+	</div>
+</popup>
+
+<popup id="refurb_pop">
+	<div sclass="shadowbox" style="background:#3853D0;padding:3px" width="300px">
+		<vbox>
+			<label value="Packing remarks" sclass="k9b" />
+			<textbox id="d_packing_remarks" width="290px" height="60px" multiline="true" />
+			<button id="uptrefpack_b" label="Update refurb/packing remarks" sclass="k9mo" onClick="doFunc(self.getId())" />
+		</vbox>
+	</div>
+</popup>
 
 <style src="/real-world.css" />
 
@@ -214,36 +458,62 @@ void adminFunc(String itype)
 			<button id="insnewdo_b" label="New DO" sclass="k9mo" onClick="doFunc(self.getId())" />
 			<button id="remdo_b" label="Remove" sclass="k9mo" onClick="doFunc(self.getId())" />
 			<button id="commitdo_b" label="COMMIT" sclass="k9mo" style="color:#D02727" onClick="doFunc(self.getId())" />
+			<button id="printdo_b" label="PRINT" sclass="k9mo" onClick="doFunc(self.getId())" />
 			<button id="canceldo_b" label="CANCEL" sclass="k9mo" onClick="doFunc(self.getId())" />
 			<button id="postinvt_b" label="POST INVENTORY" sclass="k9mo" style="color:#D02727" onClick="doFunc(self.getId())" />
+			<separator width="10px" />
+			<button label="Refurb/packing" sclass="k9mo" onClick="refurb_pop.open(self)" />
+			<button label="Delivery status" sclass="k9mo" onClick="deliverystat_pop.open(self)" />
+			<separator width="10px" />
+			<button id="shwauditlogs_b" label="AuditLog" sclass="k9mo" onClick="doFunc(self.getId())" />
 		</hbox>
 	</div>
 	<div id="do_holder" />
 	<separator height="3px" />
 
-	<hbox>
-		<div sclass="shadowbox" style="background:#89AC4F">
-			<hbox>
-				<button id="asscust_b" label="Assign customer" sclass="k9mo" onClick="pickcustomer_popup.open(self)" />
-				<button label="Import job" sclass="k9mo" onClick="showJobsByCustomer(); impjobshet_pop.open(self)" />
-				<button id="savedometa_b" label="Save DO metadata" sclass="k9mo" onClick="doFunc(self.getId())" />
-			</hbox>
-			<separator height="3px" />
-			<div id="dometaform_holder" width="560px" />
-		</div>
+	<div id="workarea" visible="false">
+		<hbox>
+			<separator width="5px" />
+			<label id="rdotitle_lbl" sclass="subhead1" />
+		</hbox>
+		<hbox>
+			<div sclass="shadowbox" style="background:#89AC4F" width="560px">
+				<vbox>
+					<hbox>
+						<button id="asscust_b" label="Assign customer" sclass="k9mo" onClick="pickcustomer_popup.open(self)" />
+						<button id="impjobbutt" label="Import job" sclass="k9mo" onClick="showJobsByCustomer(); impjobshet_pop.open(self)" />
+						<button id="savedometa_b" label="Save DO metadata" sclass="k9mo" onClick="doFunc(self.getId())" />
+					</hbox>
+					<separator height="3px" />
+					<div id="dometaform_holder" />
 
-		<div sclass="shadowbox" style="background:#89AC4F">
-			<hbox>
-				<button id="additem_b" label="Add item" sclass="k9mo" onClick="doFunc(self.getId())" />
-				<button id="delitem_b" label="Delete" sclass="k9mo" onClick="doFunc(self.getId())" />
-				<button id="savedoitems_b" label="Save DO items" sclass="k9mo" onClick="doFunc(self.getId())" />
+					<div sclass="shadowbox" style="background:#555753" id="docholder">
+						<label sclass="subhead1">ATTACHMENT / DOCUMENTS</label>
+						<separator height="3px" />
+						<hbox>
+							<button id="uploaddoc_btn" label="Upload file" class="k9" onClick="showUploadPopup(RWDO_PREFIX,glob_sel_do)" />
+							<button id="viewdoc_btn" label="View file" class="k9" onClick="viewFile()" />
+							<button id="editdoc_btn" label="Update" class="k9" onClick="updatefiledesc_popup.open(self)" />
+							<button id="deletedoc_btn" label="Delete" class="k9" onClick="deleteFile(documents_holder,RWDO_PREFIX,glob_sel_do)" />
+						</hbox>
+						<separator height="3px" />
+						<div id="documents_holder" />
+					</div>
+				</vbox>
+			</div>
 
-			</hbox>
-			<separator height="3px" />
-			<div id="items_holder" />
-		</div>
+			<div sclass="shadowbox" style="background:#89AC4F">
+				<hbox>
+					<button id="additem_b" label="Add item" sclass="k9mo" onClick="doFunc(self.getId())" />
+					<button id="delitem_b" label="Delete" sclass="k9mo" onClick="doFunc(self.getId())" />
+					<button id="savedoitems_b" label="Save DO items" sclass="k9mo" onClick="doFunc(self.getId())" />
 
-	</hbox>
+				</hbox>
+				<separator height="3px" />
+				<div id="items_holder" />
+			</div>
+		</hbox>
+	</div>
 
 <zscript>
 <![CDATA[

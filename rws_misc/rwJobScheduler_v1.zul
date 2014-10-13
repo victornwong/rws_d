@@ -14,14 +14,15 @@
 <zscript>
 <![CDATA[
 MYTITLE = "Job/ROC/SO Scheduler Thing";
-MYVERSION = "v0.1";
+MYVERSION = "v0.2.1";
 MYPANEL = "rwjobsiechulderpan";
 /*
-Title		: Job scheduler(Rentwise ONLY) - management browser
-Written by	: Victor Wong
-Dated		: 19/06/2014
+@Title Job scheduler(Rentwise ONLY) - management browser
+@Author Victor Wong
+@Since 19/06/2014
 
-Revisions:
+13/10/2014: link-up RWMS job-maker and RDO
+
 */
 import java.util.*;
 import java.text.*;
@@ -32,12 +33,9 @@ myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
-gridhand = new GridHandler();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
+guihand = new GuiFuncs(); luhand = new LookupFuncs(); gridhand = new GridHandler();
+ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 lastlisttype = 0;
 glob_sel_roc = glob_sel_customer = glob_sel_ponos = glob_sel_erg = glob_sel_prg = glob_sel_do = glob_sel_bom = "";
@@ -63,23 +61,26 @@ void rocmetaThing(String iroc)
 Object[] rocwinhds =
 {
 	new listboxHeaderWidthObj("Voucher",true,"70px"),
-	new listboxHeaderWidthObj("Dated",true,""),
+	new listboxHeaderWidthObj("Dated",true,"70px"),
 	new listboxHeaderWidthObj("Customer",true,""),
-	new listboxHeaderWidthObj("Cust.Ref",true,""),
-	new listboxHeaderWidthObj("ETD",true,""),
-	new listboxHeaderWidthObj("ETA",true,""),
-	new listboxHeaderWidthObj("JOB",true,""),
-	new listboxHeaderWidthObj("Type",true,""),
-	new listboxHeaderWidthObj("Prty",true,""),
-	new listboxHeaderWidthObj("PO",true,""),
-	new listboxHeaderWidthObj("PO.GRN",true,""),
-	new listboxHeaderWidthObj("ERG",true,""),
-	new listboxHeaderWidthObj("PRG",true,""), // 12
-	new listboxHeaderWidthObj("BOM",true,""),
-	new listboxHeaderWidthObj("DO",true,""),
-	new listboxHeaderWidthObj("DOS",true,""),
-	new listboxHeaderWidthObj("INV",true,""),
-	new listboxHeaderWidthObj("AMT",true,""),
+	new listboxHeaderWidthObj("Cust.Ref",true,"80px"),
+	new listboxHeaderWidthObj("ETD",true,"70px"),
+	new listboxHeaderWidthObj("ETA",true,"70px"),
+	new listboxHeaderWidthObj("JOB",true,"50px"),
+	new listboxHeaderWidthObj("Type",true,"60px"),
+	new listboxHeaderWidthObj("Prty",true,"60px"),
+	new listboxHeaderWidthObj("PO",true,"50px"),
+	new listboxHeaderWidthObj("PO.GRN",true,"50px"),
+	new listboxHeaderWidthObj("ERG",true,"60px"),
+	new listboxHeaderWidthObj("PRG",true,"60px"), // 12
+	new listboxHeaderWidthObj("JPL",true,"60px"),
+	new listboxHeaderWidthObj("BOM",true,"60px"),
+	new listboxHeaderWidthObj("DO",true,"70px"),
+	new listboxHeaderWidthObj("DOS",true,"70px"),
+	new listboxHeaderWidthObj("RDO",true,"70px"), // 17
+	new listboxHeaderWidthObj("RDOS",true,"70px"),
+	new listboxHeaderWidthObj("INV",true,"70px"),
+	new listboxHeaderWidthObj("AMT",true,"80px"),
 };
 CUSTNAME_IDX = 2;
 PO_IDX = 9;
@@ -87,6 +88,7 @@ ERG_IDX = 11;
 PRG_IDX = 12;
 DO_IDX = 14;
 BOM_IDX = 13;
+RDO_IDX = 17;
 
 class roclciker implements org.zkoss.zk.ui.event.EventListener
 {
@@ -165,7 +167,7 @@ void showFCROCs(int itype, int dtype)
 	tody = kiboo.todayISODateString();
 	for(d : trs)
 	{
-		popuListitems_Data(kabom, fl, d);
+		ngfun.popuListitems_Data(kabom, fl, d); // TODO
 
 		rr = getrwJobRec(d.get("voucherno")); // get rw-Job things
 		jid = prit = jtyp = "";
@@ -179,14 +181,24 @@ void showFCROCs(int itype, int dtype)
 
 		rpo = getDOLinkToJob(3, jid); // get PR/PO by jobs. rwsqlfuncs.zs
 		kabom.add(rpo);
-		kabom.add(getDOLinkToJob(4, rpo)); // PO's GRN
+		kabom.add(getDOLinkToJob(4, rpo)); // PO's GRN (TODO MUST tie to RWMS goods-receival also)
 
-		kabom.add( getERGPRG_by_roc(d.get("voucherno"),1) );
-		kabom.add( getERGPRG_by_roc(d.get("voucherno"),2) );
+		kabom.add( getERGPRG_by_roc(d.get("voucherno"),1) ); // ERG
+		kabom.add( getERGPRG_by_roc(d.get("voucherno"),2) ); // PRG
+
+		kabom.add( (!jid.equals("")) ? getPicklist_ByJob(jid) : ""); // 13/10/2014: RWMS pick-list linked to Job (rwjobfuncs.zs)
 
 		kabom.add( getBOM_byJob(jid) );
 		kabom.add( getDO_fromROC(d.get("voucherno")) );
 		dost = checkDOs_Delivered_byROC(d.get("voucherno")); kabom.add(dost);
+
+		// 13/10/2014: RDO things
+		rdo = (!jid.equals("")) ? getDOLinkToJob(6,jid) : "";
+		kabom.add(rdo);
+
+		rdostat = (!jid.equals("")) ? getRDO_DeliveryStatus(jid) : ""; // rwjobfuncs.zs
+		kabom.add(rdostat);
+
 		dinv = getInv_fromROC(d.get("voucherno"), glob_vtype);
 		kabom.add( dinv );
 
@@ -194,7 +206,7 @@ void showFCROCs(int itype, int dtype)
 		if(unm.equals("leanne") || unm.equals("padmin") || unm.equals("mandy") || unm.equals("carmen"))
 		{
 			ivr = getTotal_fromRWISI(dinv, glob_vtype);
-			try { if(ivr != null) kk = nf2.format(ivr.get("invtotal")); } catch (Exception e) {}
+			try { if(ivr != null) kk = GlobalDefs.nf2.format(ivr.get("invtotal")); } catch (Exception e) {}
 		}
 		kabom.add( kk ); // RWI/SI amount
 
@@ -260,6 +272,21 @@ void doFunc(String itype)
 ]]>
 </zscript>
 
+<popup id="minihelp_pop">
+	<div sclass="shadowbox" style="background:#4E8DB7" width="300px">
+	<label multiline="true">
+ERG = Equipment requests (FC6)
+PRG = Parts requests (FC6)
+BOM = Builds (RWMS)
+DO = Delivery Order (FC6)
+DOS = Delivery Order Status (FC6)
+RDO = Delivery Order (RWMS)
+RDOS = Delivery Order Status (RWMS)
+JPL = Job items pick-list (RWMS)
+	</label>
+	</div>
+</popup>
+
 <style src="/real-world.css" />
 <style>
 .GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
@@ -287,14 +314,15 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 		<button label="by ROC/SO" sclass="k9mo" onClick="showFCROCs(3,glob_vtype)" />
 		<separator width="10px" />
 		<button id="expexcel_b" label="Export EXCEL" sclass="k9mo" onClick="doFunc(self.getId())" />
+		<button label="Help" sclass="k9" onClick="minihelp_pop.open(self)" />
 	</hbox>
 </div>
-<separator height="3px" />
+<separator height="2px" />
 
-<div sclass="shadowbox" style="background:#3A4566">
-	<div id="rocsholder" />
+<div sclass="shadowbox" style="background:#3A4566;overflow:auto;overflow-y:hidden">
+	<div id="rocsholder" width="2000px" />
 </div>
-<separator height="3px" />
+<separator height="2px" />
 
 <div id="workarea" visible="false">
 

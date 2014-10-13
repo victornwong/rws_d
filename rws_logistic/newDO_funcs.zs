@@ -12,6 +12,22 @@ class tbnulldrop implements org.zkoss.zk.ui.event.EventListener
 }
 textboxnulldrop = new tbnulldrop();
 
+// itype: 1=main butts, 2=items butts
+void toggButts(int itype, boolean iwhat)
+{
+	Object[] itmsbutts = { asscust_b, impjobbutt, savedometa_b, additem_b, delitem_b, savedoitems_b, savedometa_b };
+
+	switch(itype)
+	{
+		case 2:
+			for(i=0; i<itmsbutts.length; i++)
+			{
+				itmsbutts[i].setDisabled(iwhat);
+			}
+			break;
+	}
+}
+
 // Get DOs tied to Job
 String getJob_linkDO(int ijb)
 {
@@ -90,24 +106,47 @@ void showDO_meta(String ido)
 
 	ngfun.populateUI_Data(jkl,fl,r);
 	showDO_items(ido);
+	fillDocumentsList(documents_holder,RWDO_PREFIX,ido);
+
+	ks = kiboo.checkNullString(r.get("Status"));
+	tg = true;
+	if(ks.equals("DRAFT") || ks.equals("")) tg = false;
+	toggButts(2,tg);
+
+	rdotitle_lbl.setValue("RDO " + ido + " : " + r.get("Name") );
+	workarea.setVisible(true);
 }
 
 Object[] dolbhds =
 {
-	new listboxHeaderWidthObj("RDO",true,"60px"),
+	new listboxHeaderWidthObj("RDO",true,"50px"),
 	new listboxHeaderWidthObj("Date",true,"70px"),
 	new listboxHeaderWidthObj("Customer",true,""),
-	new listboxHeaderWidthObj("JobId",true,"90px"),
+	new listboxHeaderWidthObj("Stat",true,"70px"), // 3
 	new listboxHeaderWidthObj("User",true,"70px"),
+	new listboxHeaderWidthObj("Rfb",true,"30px"),
+	new listboxHeaderWidthObj("Transp",true,"80px"),
+	new listboxHeaderWidthObj("Deliver",true,"80px"),
+	new listboxHeaderWidthObj("DelDate",true,"70px"),
+	new listboxHeaderWidthObj("JobId",true,"80px"), // 9
+	new listboxHeaderWidthObj("P.List",true,"80px"),
 };
+RDO_POS = 0;
+RDO_CUSTNAME_POS = 2;
+RDO_STAT_POS = 3;
+RDO_DELSTAT_POS = 6;
+RDO_JOBID_POS = 9;
 
 class dolbClick implements org.zkoss.zk.ui.event.EventListener
 {
 	public void onEvent(Event event) throws UiException
 	{
 		isel = event.getReference();
-		glob_sel_do = lbhand.getListcellItemLabel(isel,0);
-		global_selected_customername = lbhand.getListcellItemLabel(isel,2);
+		glob_sel_do = lbhand.getListcellItemLabel(isel,RDO_POS);
+		glob_sel_do_stat = lbhand.getListcellItemLabel(isel,RDO_STAT_POS);
+		glob_sel_do_jobid = lbhand.getListcellItemLabel(isel,RDO_JOBID_POS);
+		global_selected_customername = lbhand.getListcellItemLabel(isel,RDO_CUSTNAME_POS);
+
 		showDO_meta(glob_sel_do);
 	}
 }
@@ -125,7 +164,9 @@ void showDOList(int itype)
 
 	Listbox newlb = lbhand.makeVWListbox_Width(do_holder, dolbhds, "do_lb", 3);
 
-	sqlstm = "select top 200 id,entrydate,name,user1,job_id from DeliveryOrderMaster ";
+	sqlstm = "select top 200 id,entrydate,name,user1,job_id,status,del_status,transporter,deliverydate, packing_flag, " +
+	"(select origid from rw_jobpicklist where parent_job=job_id) as picklist " +
+	"from DeliveryOrderMaster ";
 
 	switch(itype)
 	{
@@ -144,7 +185,8 @@ void showDOList(int itype)
 	newlb.setRows(20); newlb.setMold("paging");
 	newlb.addEventListener("onSelect", dolbclkier);
 	ArrayList kabom = new ArrayList();
-	String[] fl = { "id", "entrydate", "name", "job_id", "user1" };
+	String[] fl = { "id", "entrydate", "name", "status", "user1", "packing_flag", "transporter",
+	"del_status", "deliverydate", "job_id", "picklist" };
 	for(d : rcs)
 	{
 		ngfun.popuListitems_Data(kabom,fl,d);
@@ -234,8 +276,9 @@ jobdodoubleclik = new jobdodclick();
 
 void showJobsByCustomer()
 {
-	sqlstm = "select origid, datecreated, eta, etd from rw_jobs where customer_name='" + global_selected_customername + "' ";
-	sqlstm += "order by origid desc";
+	// HARDCODED to list submitted jobs - TODO need to change to approved-job when they start approving jobs
+	sqlstm = "select origid, datecreated, eta, etd from rw_jobs where customer_name='" + global_selected_customername + "' " +
+	"and status='SUBMIT' order by origid desc";
 
 	Listbox newlb = lbhand.makeVWListbox_Width(jobsdolb_holder, jobdohds, "jobsdo_lb", 10);
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
@@ -251,4 +294,200 @@ void showJobsByCustomer()
 		kabom.clear();
 	}
 	lbhand.setDoubleClick_ListItems(newlb,jobdodoubleclik);
+}
+
+Object[] pichkstkhds =
+{
+	new listboxHeaderWidthObj("AssetTag",true,"90px"),
+	new listboxHeaderWidthObj("Item",true,""),
+	new listboxHeaderWidthObj("Pallet",true,"60px"),
+	new listboxHeaderWidthObj("Qty",true,"60px"),
+	new listboxHeaderWidthObj("Short",true,"60px"),
+};
+
+void postInventory_DO()
+{
+	postInventory_Map.clear(); // always clear the hashmap
+
+	// if DO is link to job, get the asset-tags from jobpicklist
+	if(glob_sel_do_jobid.equals("")) return; // now just return if not link to job
+
+	jrc = getJobPicklist_byParentJob(glob_sel_do_jobid);
+
+	if(jrc == null) // no job pick-list link to job
+	{
+		guihand.showMessageBox("ERR: No item pick-list associated to job.. cannot do inventory posting.");
+		return;
+	}
+
+	// in jobpicklist, check invtstat, if set, do not update inventory -- TODO, reverse-out
+	ivtbit = (jrc.get("invtstat") == null) ? false : jrc.get("invtstat");
+	if(ivtbit && useraccessobj.accesslevel != 9)
+	{
+		guihand.showMessageBox("ERRR!! Asset-tags in job already shorted in inventory..");
+		return;
+	}
+
+	kt = sqlhand.clobToString(jrc.get("pl_asset_tags")).split("~");
+	qtys = sqlhand.clobToString(jrc.get("pl_qty")).split("~");
+	itms = sqlhand.clobToString(jrc.get("pl_items")).split("~");
+
+	for(i=0; i<kt.length; i++) // go through the asset-tags and check for dups first before hitting SQL
+	{
+		ti = kt[i].split("\n");
+
+		for(j=0; j<ti.length; j++)
+		{
+			z = ti[j].trim();
+			if(!z.equals(""))
+			{
+				if(!postInventory_Map.containsKey(z))
+				{
+					postInventory_Map.put(z,1);
+				}
+				else
+				{
+					guihand.showMessageBox("ERR: duplicate asset-tags found.. " + z + ", please check.");
+					return;
+				}
+			}
+			else // if empty asset-tags, have to check and update inventory by quantity
+			{
+				//postInventory_Map.put( itms[i], Integer.parseInt(qtys[i]) );
+			}
+		}
+	}
+
+	Listbox newlb = lbhand.makeVWListbox_Width(piscan_holder, pichkstkhds, "pichkstk_lb", 20);
+	ArrayList kabom = new ArrayList();
+	errchek = 0;
+
+	// check all asset-tags pallet/loca
+	Set theset = postInventory_Map.entrySet();
+	Iterator ck = theset.iterator();
+	while(ck.hasNext())
+	{
+		Map.Entry me = (Map.Entry)ck.next();
+		tg = me.getKey();
+		tqy = me.getValue();
+
+		kabom.add(tg);
+
+		sqlstm = "select name,qty,pallet from partsall_0 where assettag='" + tg + "';";
+		qr = f30_gpSqlFirstRow(sqlstm);
+		p1 = p2 = p3 = "";
+		if(qr != null)
+		{
+			p1 = qr.get("name");
+			p2 = qr.get("pallet");
+
+			if(!p2.equals(PROD_PALLET_STR)) // if asset-tag was not set to PROD, err, all to-be DO items must be in PROD
+				errchek++;
+
+			// Check if qty in DB can fulfill this posting
+			if(qr.get("qty") < 0 || qr.get("qty") < tqy) errchek++;
+
+			p3 = GlobalDefs.nf0.format(qr.get("qty"));
+		}
+		else
+			errchek++;
+
+		kabom.add(p1);
+		kabom.add(p2);
+		kabom.add(p3);
+		kabom.add(tqy.toString());
+
+		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+		kabom.clear();
+	}
+
+	realpostinventory_b.setVisible( (errchek > 0) ? false : true);
+	posterr_lbl.setVisible( (errchek > 0) ? true : false);
+	postinventory_pop.open(postinvt_b);
+
+	if(useraccessobj.accesslevel == 9)
+	{
+		realpostinventory_b.setVisible(true); // admin can see the butts
+		revertinventory_b.setVisible(true);
+	}
+
+	// in job picklist module, add check for invtstat bit, if set, cannot modify anything
+}
+
+// check newDOmanager.zul for some hardcoded constants
+// make sure sqlstm in caller starts with "declare @_masterid int; "
+// u0001.PalletNoYH hardcoded pallet-id.. 3=out, 4=unknown(for testing only), need to chg in main-db
+// itype: 1=minus stock, 2=add stock
+String minusAddFocus_Stock(String iatg, int itype, int qty)
+{
+	if(iatg.equals("")) return;
+	if(itype == 1) qty *= -1;
+	tdate = calcFocusDate( kiboo.todayISODateTimeString() ).toString();
+
+	plt = (itype == 1) ? OUT_PALLET : GENERAL_WH_PALLET;
+
+	sqlstm = "if exists(select 1 from mr001 where code2='" + iatg + "')" +
+	"begin " +
+	"set @_masterid = (select masterid from mr001 where code2='" + iatg + "'); " +
+	"update u0001 set PalletNoYH='" + plt + "' where extraid=@_masterid;" +
+	"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) ";
+
+	switch(itype)
+	{
+		case 1: // do QISS
+			sqlstm +=
+			"values (@_masterid," + tdate + ",0," + qty.toString() + ",0,0,0); " +
+			"end; ";
+			break;
+
+		case 2: // do QREC
+		sqlstm +=
+			"values (@_masterid," + tdate + ",0,0," + qty.toString() + ",0,0); " +
+			"end; ";
+			break;
+	}
+	return sqlstm;
+}
+
+// itype: 1=minus stock, 2=add stock
+void superDOInventoryUpdater(int itype)
+{
+	if(postInventory_Map.size() == 0) return;
+
+	lgstr = ((itype == 1) ? "Short " : "Revert ") + "inventory via DO.\n";
+
+	sqlstm = "declare @_masterid int; ";
+	wps = "";
+
+	Set theset = postInventory_Map.entrySet();
+	Iterator ck = theset.iterator();
+	while(ck.hasNext())
+	{
+		Map.Entry me = (Map.Entry)ck.next();
+		tg = me.getKey();
+		tqy = me.getValue();
+		wps += tg + "(" + tqy + "), ";
+		sqlstm += minusAddFocus_Stock(tg,itype,tqy);
+	}
+
+	try { wps = wps.substring(0,wps.length()-2); } catch (Exception e) {}
+	add_RWAuditLog(JN_linkcode(), "", lgstr + wps, useraccessobj.username);
+
+	f30_gpSqlExecuter(sqlstm); // TODO - chg to main sql-handler
+}
+
+// UI things in main
+void printBIRT_DO(String ido)
+{
+	deliverystat_pop.close();
+	if(ido.equals("")) return;
+	if(expass_div.getFellowIfAny("expassframe") != null) expassframe.setParent(null);
+	Iframe newiframe = new Iframe();
+	newiframe.setId("expassframe"); newiframe.setWidth("100%"); newiframe.setHeight("600px");
+
+	bfn = "rwreports/rwms_DO_v1.rptdesign";
+	thesrc = birtURL() + bfn + "&thedonum1=" + ido;
+
+	newiframe.setSrc(thesrc); newiframe.setParent(expass_div);
+	expasspop.open(printdo_b);
 }

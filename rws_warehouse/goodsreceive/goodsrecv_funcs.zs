@@ -134,8 +134,10 @@ void searchProductName_FC(String sct)
 }
 
 // Split and insert scanned asset-tags and serials from textbox to grn-items list
+// PROB: always insert blank row - dunno why!!
 void fillUp_scanned_assets()
 {
+/* original-codes which uses asset-tags and serial-no textbox
 	kk = main_scan_atgs.getValue().trim();
 	if(kk.equals("")) return;
 	atgs = kk.split("\n");
@@ -153,6 +155,21 @@ void fillUp_scanned_assets()
 		tt = "";
 		try { tt = snm[i]; } catch (Exception e) {}
 		makeItemRow(grn_rows,"",atgs[i],tt,"1","DRAFT");
+	}
+*/
+	kk = main_scan_atgs.getValue().trim();
+	if(kk.equals("")) return;
+	atgsns = kk.split("\n");
+	t1 = t2 = "";
+
+	for(i=0; i<atgsns.length; i+=2)
+	{
+		try
+		{
+			t1 = atgsns[i].trim();
+			t2 = atgsns[i+1].trim();
+			makeItemRow(grn_rows,"",t1,t2,"1","DRAFT");
+	 } catch (Exception e) {}
 	}
 }
 

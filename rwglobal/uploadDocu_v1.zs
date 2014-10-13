@@ -32,7 +32,7 @@ Object[] documentLinks_lb_headers = {
 	if(useraccessobj.accesslevel == 9) incdel = ""; // admin can see everything..
 	sqlstm = "select origid,file_title,file_description,datecreated,username from DocumentTable " +
 	"where docu_link='" + duclink + "'" + incdel;
-	Listbox newlb = lbhand.makeVWListbox_onDB(idiv,documentLinks_lb_headers,"doculinks_lb",5,ds_sql,sqlstm);
+	Listbox newlb = lbhand.makeVWListbox_onDB(idiv,documentLinks_lb_headers,"doculinks_lb",15,ds_sql,sqlstm);
 	//newlb.setMultiple(true);
 	newlb.setMold("paging");
 	newlb.addEventListener("onSelect", docuclik);
@@ -57,7 +57,7 @@ Object[] documentLinks_lb_headers = {
 	if(useraccessobj.accesslevel == 9) incdel = ""; // admin can see everything..
 	sqlstm = "select origid,file_title,file_description,datecreated,username from DocumentTable " +
 	"where docu_link='" + duclink + "'" + incdel;
-	Listbox newlb = lbhand.makeVWListbox_onDB(idiv,documentLinks_lb_headers,"doculinks_lb",5,ds_sql,sqlstm);
+	Listbox newlb = lbhand.makeVWListbox_onDB(idiv,documentLinks_lb_headers,"doculinks_lb",15,ds_sql,sqlstm);
 	newlb.setMultiple(true);
 	newlb.setMold("paging");
 	newlb.addEventListener("onSelect", docuclik);

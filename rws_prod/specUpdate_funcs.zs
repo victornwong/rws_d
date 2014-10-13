@@ -1,12 +1,21 @@
 import org.victor.*;
 // Funcs used in specUpdate_v1.zul
 
+Object glob_focus6_grades = null;
+
 void toggButts(boolean iwhat)
 {
 	savespecs_b.setDisabled(iwhat);
 	sourcepecs_b.setDisabled(iwhat);
 	postspecs_b.setDisabled(iwhat);
 	mpfbutt.setDisabled(iwhat);
+}
+
+// Get Focus6 available inventory grades
+Object getFocus_StockGrades()
+{
+	sqlstm = "select distinct grade from partsall_0 order by grade";
+	return sqlhand.rws_gpSqlGetRows(sqlstm);
 }
 
 // GRN items insert new row - won't save into DB
@@ -35,9 +44,24 @@ org.zkoss.zul.Row makeItemRow_specup(Component irows, String iname, String iatg,
 		//ngfun.gpMakeLabel(nrw,"",iqty,k9);
 	}
 
+	String[] kabom = new String[1];
+
 	for(k=0;k<specs_fields.length;k++)
 	{
-		ngfun.gpMakeTextbox(nrw,"","","font-size:9px","95%",textboxnulldrop);
+		if(specs_field_type[k].equals("lb"))
+		{
+			klb = new Listbox();
+			klb.setMold("select"); klb.setStyle("font-size:9px");
+			klb.setParent(nrw);
+			for(d : glob_focus6_grades)
+			{
+				kabom[0] = d.get("grade");
+				lbhand.insertListItems(klb,kabom,"false","");
+			}
+			klb.setSelectedIndex(0);
+		}
+		else
+			ngfun.gpMakeTextbox(nrw,"","","font-size:9px","95%",textboxnulldrop);
 	}
 
 	return nrw;
@@ -47,6 +71,8 @@ void showGRN_things(String iwhat) // knockoff from goodsrecv_funcs.showGRN_meta(
 {
 	r = getGRN_rec_NEW(iwhat);
 	if(r == null) return;
+
+	if(glob_focus6_grades == null) glob_focus6_grades = getFocus_StockGrades(); // reload if null
 /*
 	String[] fl = { "ourpo", "vendor", "vendor_do", "vendor_inv", "shipmentcode", "grn_remarks","origid" };
 	Object[] jkl = { g_ourpo, g_vendor, g_vendor_do, g_vendor_inv, g_shipmentcode, g_grn_remarks, g_origid };
@@ -81,7 +107,15 @@ void showGRN_things(String iwhat) // knockoff from goodsrecv_funcs.showGRN_meta(
 		{
 			try
 			{
-				if(js != null) ki[k+4].setValue(js[k]);
+				if(js != null)
+				{
+					cix = k + 4;
+					if(ki[cix] instanceof Listbox)
+						lbhand.matchListboxItems(ki[cix], js[k]);
+					else
+						ki[cix].setValue(js[k]);
+				}
+
 			} catch (java.lang.ArrayIndexOutOfBoundsException e) {}
 		}
 	}
@@ -106,7 +140,13 @@ boolean postSpecs()
 				fql = "";
 				for(k=0; k<specs_fields.length;k++)
 				{
-					ct = kiboo.replaceSingleQuotes( ki[k+4].getValue().trim() );
+					cix = k + 4;
+
+					if(ki[cix] instanceof Listbox)
+						ct = ki[cix].getSelectedItem().getLabel();
+					else
+						ct = kiboo.replaceSingleQuotes( ki[k+4].getValue().trim() );
+
 					fql += specs_sql_fields[k] + "='" + ct + "',";
 				}
 				try { fql = fql.substring(0,fql.length()-1); } catch (Exception e) {}
@@ -114,7 +154,7 @@ boolean postSpecs()
 			}
 		}
 
-		f30_gpSqlExecuter(sqlstm);
+		f30_gpSqlExecuter(sqlstm); // TODO chg to main sqlhand
 
 		return true;
 
@@ -133,7 +173,14 @@ boolean saveSpecs()
 			ki = jk[i].getChildren().toArray();
 			for(k=0; k<specs_fields.length;k++)
 			{
-				ct = kiboo.replaceSingleQuotes( ki[k+4].getValue().trim() );
+				cix = k + 4;
+				ct = "";
+
+				if(ki[cix] instanceof Listbox)
+					ct = ki[cix].getSelectedItem().getLabel();
+				else
+					ct = kiboo.replaceSingleQuotes( ki[cix].getValue().trim() );
+
 				if(ct.equals("")) ct = "---";
 				spc += ct + "\n";
 			}
@@ -162,7 +209,11 @@ void sourcePrevious_NameSerials()
 				for(k=0; k<specs_fields.length;k++)
 				{
 					ct = kiboo.checkNullString( py.get(specs_fields[k]) );
-					ki[k+4].setValue(ct);
+					cix = k + 4;
+					if(ki[cix] instanceof Listbox)
+						lbhand.matchListboxItems(ki[cix], ct);
+					else
+						ki[cix].setValue(ct);
 				}
 			}
 		}

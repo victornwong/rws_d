@@ -37,7 +37,7 @@ guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 String[] scanitems_colws = { "30px","250px","90px","90px",
-"50px",
+"80px",
 "50px",
 "50px",
 "50px",
@@ -80,10 +80,15 @@ String[] scanitems_collb = { "","Item name","Asset tag","Serial",
  };
 
 String[] specs_fields = {
-"grade","Brand", "Item", "Model", "Processor", "MonitorSize", "MonitorType", "colour", "casing", "COA", "COA2", "RAM", "HDD", "Cdrom1", "Comment" };
+"grade","Brand", "Item", "Model", "Processor", "MonitorSize", "MonitorType",
+"colour", "casing", "COA", "COA2", "RAM", "HDD", "Cdrom1", "Comment" };
 
 String[] specs_sql_fields = {
-"GradeYH","BrandYH","ItemTypeYH","ModelYH","ProcessorYH","MonitorSizeYH","MonitorTypeYH","ColourYH","CasingYH","COA1YH","COA2YH","RAMSizeYH","HDDSizeYH","CD1YH","CommentsYH" };
+"GradeYH","BrandYH","ItemTypeYH","ModelYH","ProcessorYH","MonitorSizeYH","MonitorTypeYH",
+"ColourYH","CasingYH","COA1YH","COA2YH","RAMSizeYH","HDDSizeYH","CD1YH","CommentsYH" };
+
+String[] specs_field_type = {
+"lb", "tb","tb","tb","tb","tb", "tb","tb","tb","tb","tb", "tb","tb","tb","tb" };
 
 String[] specs_mpf_names = {
 	"m_grd", "m_brand", "m_type", "m_model", "m_processor", "m_msize", "m_mtype",
@@ -96,7 +101,7 @@ GRN_PREFIX = "GRN";
 last_showgrn_type = 1;
 glob_sel_grn = glob_sel_stat = glob_sel_auditstat = "";
 
-showgrn_extra_sql = " and status='STKIN' ";
+showgrn_extra_sql = " and status='STKIN' "; // use in goodsrecv_funcs.showGRN() to filter
 //showgrn_extra_sql = "";
 grn_show_meta = false; // used in goodsrecv_funcs.grnclicker to show grn-metadata or not
 
@@ -162,7 +167,7 @@ void itemFunc(String itype)
 		if(Messagebox.show("Posting specs into database, you cannot change anything after this..", "Are you sure?",
 			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
 
-		saveSpecs(); // do save to rw_grn before posting into u0001
+		saveSpecs(); // save to rw_grn before posting into u0001
 
 		if(postSpecs()) // post-specs and if ok, update other things
 		{
@@ -214,12 +219,6 @@ void adminFunc(String itype)
 		<div id="auditlogs_holder" />
 		<separator height="3px" />
 		<button label="Ok" sclass="k9" onClick="auditlogs_pop.close()" />
-	</div>
-</popup>
-
-<popup id="adminpop">
-	<div sclass="shadowbox" style="background:#E2241C" width="300px">
-		<button id="clearaudit_b" label="Clear specs-post" sclass="k9mo" onClick="adminFunc(self.getId())" />
 	</div>
 </popup>
 
@@ -317,6 +316,12 @@ void adminFunc(String itype)
 				</row>
 			</rows>
 		</grid>
+	</div>
+</popup>
+
+<popup id="adminpop">
+	<div sclass="shadowbox" style="background:#E2241C" width="300px">
+		<button id="clearaudit_b" label="Clear specs-post" sclass="k9mo" onClick="adminFunc(self.getId())" />
 	</div>
 </popup>
 

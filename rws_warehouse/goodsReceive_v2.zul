@@ -170,7 +170,6 @@ void grnFunc(String itype)
 	if(itype.equals("commgrn_b")) // commit GRN - lock it
 	{
 		if(glob_sel_grn.equals("")) return;
-
 		if(!glob_sel_stat.equals("COMMIT") && !glob_sel_stat.equals("STKIN"))
 		{
 			sqlstm = "update rw_grn set status='COMMIT',commitdate='" + todaydate + "' where origid=" + glob_sel_grn;
@@ -266,61 +265,61 @@ void adminFunc(String itype)
 }
 
 // Inject stock items and qtys, only item with pre-def product-name will work
-// use palletid 4=UNKNOWN
+// use palletid 4=UNKNOWN (TODO chg to "WH PALLET" id for fc5012)
 void updateInventory_GRNItems()
 {
-		try
+	try
+	{
+		log_assettags = "";
+		shpc = kiboo.replaceSingleQuotes( g_shipmentcode.getValue().trim() );
+		tdate = calcFocusDate( kiboo.todayISODateTimeString() ).toString();
+		sqlstm = "declare @maxid int; declare @maxseq int; declare @prodid varchar(200); declare @_masterid int; ";
+
+		jk = grn_rows.getChildren().toArray();
+		for(i=0;i<jk.length;i++) // check if items scanned
 		{
-			log_assettags = "";
-			shpc = kiboo.replaceSingleQuotes( g_shipmentcode.getValue().trim() );
-			tdate = calcFocusDate( kiboo.todayISODateTimeString() ).toString();
-			sqlstm = "declare @maxid int; declare @maxseq int; declare @prodid varchar(200); declare @_masterid int; ";
+			ki = jk[i].getChildren().toArray();
+			itm = ki[1].getValue();
+			atg = kiboo.replaceSingleQuotes( ki[2].getValue().trim() );
+			snm = kiboo.replaceSingleQuotes( ki[3].getValue().trim() );
+			qty = kiboo.replaceSingleQuotes( ki[4].getValue().trim() );
+			try { kx = Integer.parseInt(qty); } catch (Exception e) { qty = "1"; } // just have to make sure got qty
 
-			jk = grn_rows.getChildren().toArray();
-			for(i=0;i<jk.length;i++) // check if items scanned
+			if(!itm.equals("")) // only entry with item-name
 			{
-				ki = jk[i].getChildren().toArray();
-				itm = ki[1].getValue();
-				atg = kiboo.replaceSingleQuotes( ki[2].getValue().trim() );
-				snm = kiboo.replaceSingleQuotes( ki[3].getValue().trim() );
-				qty = kiboo.replaceSingleQuotes( ki[4].getValue().trim() );
-				try { kx = Integer.parseInt(qty); } catch (Exception e) { qty = "1"; } // just have to make sure got qty
+				log_assettags += atg + "(" + snm + " / " + qty + "), ";
 
-				if(!itm.equals("")) // only entry with item-name
-				{
-					log_assettags += atg + "(" + snm + " / " + qty + "), ";
+				sqlstm += "if not exists(select 1 from mr001 where code2='" + atg + "')" +
+				"begin " +
+				"set @maxid = (select max(masterid)+1 from mr001);" +
+				"set @maxseq = (select max(sequence)+1 from mr001);" +
+				"set @prodid = (select top 1 masterid from mr008 where name='" + itm + "'); " +
 
-					sqlstm += "if not exists(select 1 from mr001 where code2='" + atg + "')" +
-					"begin " +
-					"set @maxid = (select max(masterid)+1 from mr001);" +
-					"set @maxseq = (select max(sequence)+1 from mr001);" +
-					"set @prodid = (select top 1 masterid from mr008 where name='" + itm + "'); " +
+				"insert into mr001 (masterid,sequence,name,code,code2,limit,l2,type,attribute,eoff,doff,creditdays,date_,time_,limit2) " +
+				"values (@maxid,@maxseq, " +
+				"'" + itm + " - " + atg + "','" + snm + "','" + atg + "', " +
+				"0,-1,131,0,@maxid,0,0," + tdate + ",0xe332e,0); " +
 
-					"insert into mr001 (masterid,sequence,name,code,code2,limit,l2,type,attribute,eoff,doff,creditdays,date_,time_,limit2) " +
-					"values (@maxid,@maxseq, " +
-					"'" + itm + " - " + atg + "','" + snm + "','" + atg + "', " +
-					"0,-1,131,0,@maxid,0,0," + tdate + ",0xe332e,0); " +
+				"insert into u0001 (extraid,productnameyh,palletnoyh,shipmentcodeyh) values (@maxid,@prodid,4,'" + shpc + "'); " +
 
-					"insert into u0001 (extraid,productnameyh,palletnoyh,shipmentcodeyh) values (@maxid,@prodid,4,'" + shpc + "'); " +
+				"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) " +
+				"values (@maxid," + tdate + ",0,0," + qty + ",0,0); " +
 
-					"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) " +
-					"values (@maxid," + tdate + ",0,0," + qty + ",0,0); " +
+				"end else begin " +
+				"set @_masterid = (select masterid from mr001 where code2='" + atg + "'); " +
 
-					"end else begin " +
-					"set @_masterid = (select masterid from mr001 where code2='" + atg + "'); " +
+				"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) " +
+				"values (@_masterid," + tdate + ",0,0," + qty + ",0,0); " +
 
-					"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) " +
-					"values (@_masterid," + tdate + ",0,0," + qty + ",0,0); " +
-
-					//"update mr001 set name='" + itm + "',code='" + snm + "' where code2='" + atg + "';" +
-					"end;";
-				}
+				//"update mr001 set name='" + itm + "',code='" + snm + "' where code2='" + atg + "';" +
+				"end;";
 			}
-			f30_gpSqlExecuter(sqlstm);
-			lgstr = "Update inventory : " + log_assettags;
-			add_RWAuditLog(JN_linkcode(),"", lgstr, useraccessobj.username);
+		}
+		f30_gpSqlExecuter(sqlstm);
+		lgstr = "Update inventory : " + log_assettags;
+		add_RWAuditLog(JN_linkcode(),"", lgstr, useraccessobj.username);
 
-		} catch (Exception e) {}
+	} catch (Exception e) {}
 }
 
 // used by admin for now .. later put into another module to FAST add/minus stock
@@ -453,6 +452,19 @@ void minusAddFocus_Stock(int itype, int qty)
 	</div>
 </popup>
 
+<popup id="smallHelp_pop">
+	<div sclass="shadowbox" style="background:#4CC5C1" width="300px">
+	<label multiline="true" sclass="k9">
+V.DO = Vendor Delivery Order
+V.Inv = Vendor Invoice
+GCO = Goods Collection Order
+A.Date = Audit date
+A.Stat = Audit status
+A.User = Audit user
+	</label>
+	</div>
+</popup>
+
 <style src="/real-world.css" />
 <style>
 .GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
@@ -494,6 +506,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 			<button id="uptstock_b" label="UPDATE INVENTORY" sclass="k9mo" style="color:#D41212" onClick="grnFunc(self.getId())" visible="false" />
 			<separator width="10px" />
 			<button id="shwauditlogs_b" label="AuditLog" sclass="k9mo" onClick="grnFunc(self.getId())" />
+			<button label="Help" sclass="k9" onClick="smallHelp_pop.open(self)" />
 		</hbox>
 		<separator height="3px" />
 		<div id="grnheaders_holder" />
@@ -556,22 +569,26 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 
 		<vbox id="grnitems_workarea" visible="false">
 			<div sclass="shadowbox" style="background:#36427F">
-				<grid sclass="GridLayoutNoBorder">
+<!--
+Hide serial-no box as Satish wanted only 1 barcode scan textbox , 2 lines constitute asset-tag + serial-no
+have to change fillUp_scanned_assets() accordingly
+-->
+				<grid sclass="GridLayoutNoBorder" width="250px">
 					<rows>
 						<row style="background:#36427F">
-							<label value="Scan asset-tags" style="color:#ffffff;font-weight:bold" />
-							<label value="Scan serial-numbers" style="color:#ffffff;font-weight:bold" />
+							<label value="Scan asset-tags/serial-numbers" style="color:#ffffff;font-weight:bold" />
+							<label value="Scan serial-numbers" style="color:#ffffff;font-weight:bold" visible="false" />
 						</row>
 						<row style="background:#36427F">
 							<textbox id="main_scan_atgs" width="99%" height="200px" multiline="true" />
-							<textbox id="main_scan_serials" width="99%" height="200px" multiline="true" />
+							<textbox id="main_scan_serials" width="99%" height="200px" multiline="true" visible="false" />
 						</row>
 					</rows>
 				</grid>
 				<hbox>
 					<button id="fillupitems_b" label="Insert" sclass="k9mo" onClick="itemFunc(self.getId())" />
 					<button label="Clear assets-tags" sclass="k9mo" onClick='main_scan_atgs.setValue("")' />
-					<button label="Clear serial-numbers" sclass="k9mo" onClick='main_scan_serials.setValue("")' />
+					<button label="Clear serial-numbers" sclass="k9mo" onClick='main_scan_serials.setValue("")' visible="false" />
 				</hbox>
 			</div>
 
@@ -614,6 +631,21 @@ if(useraccessobj.accesslevel == 9)
 	admin_b.setVisible(true);
 }
 
+/*
+V.DO = 
+Vendor Delivery Order
+V.Inv = 
+Vendor Invoice
+GCO = 
+Goods Collection Order
+A.Date = 
+Audit date
+A.Stat = 
+Audit status
+A.User = 
+Audit user
+*/
+ 
 
 ]]>
 </zscript>

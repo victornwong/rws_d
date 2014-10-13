@@ -126,3 +126,21 @@ Object getTotal_fromRWISI(String ivn, int itype)
 
 	return sqlhand.rws_gpSqlFirstRow(sqlstm);
 }
+
+// 13/10/2014: Get toppest RDO status
+String getRDO_DeliveryStatus(String ijid)
+{
+	sqlstm = "select top 1 del_status from deliveryordermaster where job_id=" + ijid +
+	" and (del_status is not null or del_status<>'') order by id desc";
+
+	r = sqlhand.gpSqlFirstRow(sqlstm);
+	return (r != null) ? r.get("del_status") : "";
+}
+
+// 13/10/2014: Return the rw_jobpicklist id linked to Job
+String getPicklist_ByJob(String ijid)
+{
+	sqlstm = "select top 1 origid from rw_jobpicklist where parent_job=" + ijid;
+	r = sqlhand.gpSqlFirstRow(sqlstm);
+	return (r != null) ? r.get("origid").toString() : "";
+}
