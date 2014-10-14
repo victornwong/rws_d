@@ -299,6 +299,10 @@ void exportAssetsList(String iwhat, int itype)
 		case 5: // evf with specs
 		bfn = "rwreports/lc_assetslist_v3.rptdesign";
 		break;
+		case 6: // multi-LC EVF with grouping (mainly for MISC or other big customers)
+		udi = userdef_inv.getValue().trim().replaceAll(" ","%20");
+		bfn = "rwreports/multilcgroupy_1.rptdesign&userdef_inv=" + udi;
+		break;
 	}
 
 	thesrc = birtURL() + bfn + "&lcid=" + iwhat + 
@@ -373,6 +377,8 @@ BUTT_WIDTH2 = "190px";
 			<button label="Export EVF(with specs)" sclass="k9" width="${BUTT_WIDTH2}" onClick="exportAssetsList(glob_selected_lc,5)" />
 			<button label="Export equipments/rental" sclass="k9" width="${BUTT_WIDTH2}" onClick="exportAssetsList(glob_selected_lc,2)" />
 			<button label="Export equipments/rental(no location)" sclass="k9" width="${BUTT_WIDTH2}" onClick="exportAssetsList(glob_selected_lc,4)" />
+			<textbox id="userdef_inv" sclass="k9" />
+			<button label="Export multi-LC EVF with grouping" sclass="k9" width="${BUTT_WIDTH2}" onClick="exportAssetsList(glob_selected_lc,6)" />
 		</vbox>
 	</div>
 </popup>

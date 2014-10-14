@@ -298,6 +298,7 @@ void showAllRiskSched()
 
 	"(select top 1 case u.contractendyh when 0 then null else convert(datetime, focus5012.dbo.ConvertFocusDate(u.contractendyh), 112) " +
 	"end from data d2 left join u011b u on u.extraid = d2.extraoff where d2.voucherno=d.voucherno ) as InsExp, " +
+/*
 	"dbo.grossByItemType(d.voucherno,'NB') as nb_gross, " +
 	"dbo.grossByItemType(d.voucherno,'DT') as dt_gross, " +
 	"dbo.grossByItemType(d.voucherno,'MT') as mt_gross, " +
@@ -306,6 +307,7 @@ void showAllRiskSched()
 	"dbo.qtyByItemType(d.voucherno,'DT') as dt_qty, " +
 	"dbo.qtyByItemType(d.voucherno,'MT') as mt_qty, " +
 	"dbo.qtyByItemType(d.voucherno,'SVR') as svr_qty, " +
+*/
 	"ri.remarksyh, d.bookno " +
 	"from data d left join mr008 ro on ro.masterid = d.tags6 " +
 	"left join mr000 a on a.masterid = d.bookno left join u001b ri on ri.extraid=d.extraheaderoff " +
@@ -315,9 +317,9 @@ void showAllRiskSched()
 	"order by d.voucherno,d.bodyid;";
 
 	recs = sqlhand.rws_gpSqlGetRows(sqlstm);
+
 	if(recs.size() == 0) return;
-	newlb.setRows(22);
-	newlb.setMold("paging");
+	newlb.setRows(20); newlb.setMold("paging");
 	//newlb.setMultiple(true);
 	//newlb.addEventListener("onSelect", rwinscliker );
 	ArrayList kabom = new ArrayList();
@@ -336,76 +338,126 @@ void showAllRiskSched()
 			mmd.set(Calendar.DATE,1);
 			pimpidt = dtf2.format(mmd.getTime());
 		}
-/*
-		if(d.get("nb_qty") != null)
+
+		dds = null;
+		if(d.get("DONo") != null) dds = getFC6_DOitems(d.get("DONo"),"NB");
+		if(dds != null)
 		{
-*/
-			dds = null;
-			if(d.get("DONo") != null) dds = getFC6_DOitems(d.get("DONo"),"NB");
-			if(dds != null)
+			for(pp : dds)
 			{
-				for(pp : dds)
+				popuListitems_Data(kabom,fl,d);
+
+				kabom.add( "" );
+				kabom.add( "" );
+				/*
+				mq = nf0.format( (d.get("nb_qty") == null) ? 0 : d.get("nb_qty") );
+				kabom.add( mq );
+				*/
+				kabom.add("NBNB");
+
+				kabom.add( pp.get("product_name") );
+
+				//kabom.add( nf2.format( ( d.get("nb_gross") == null) ? 0 : d.get("nb_gross") ) );
+				kabom.add("NNBB");
+
+				ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+				lbhand.setListcellItemLabel(ki, INCEPTION_DATE_POS, pimpidt); // inject calc-incep-date
+
+				// 09/04/2014: if del-addrss is empty or "same as above" , use address from account-table (req by Shopa)
+				cka = d.get("DelAddr").toUpperCase();
+				if(cka.equals("") || cka.indexOf("ABOVE") != -1)
 				{
-					popuListitems_Data(kabom,fl,d);
-
-					kabom.add( "" );
-					kabom.add( "" );
-					mq = nf0.format( (d.get("nb_qty") == null) ? 0 : d.get("nb_qty") );
-					kabom.add( mq );
-					kabom.add( pp.get("product_name") );
-					kabom.add( nf2.format( ( d.get("nb_gross") == null) ? 0 : d.get("nb_gross") ) );
-					ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
-					lbhand.setListcellItemLabel(ki, INCEPTION_DATE_POS, pimpidt); // inject calc-incep-date
-
-					// 09/04/2014: if del-addrss is empty or "same as above" , use address from account-table (req by Shopa)
-					cka = d.get("DelAddr").toUpperCase();
-					if(cka.equals("") || cka.indexOf("ABOVE") != -1)
-					{
-						madr = getFC6_CustomerAddress(d.get("bookno").toString());
-						kx = madr.get("address1yh") + ",\n" + madr.get("address2yh") + ",\n" + madr.get("address3yh") + ",\n" + madr.get("address4yh");
-						lbhand.setListcellItemLabel(ki, DELADDRESS_POS, kx);
-					}
-
-					kabom.clear();
+					madr = getFC6_CustomerAddress(d.get("bookno").toString());
+					kx = madr.get("address1yh") + ",\n" + madr.get("address2yh") + ",\n" + madr.get("address3yh") + ",\n" + madr.get("address4yh");
+					lbhand.setListcellItemLabel(ki, DELADDRESS_POS, kx);
 				}
+
+				kabom.clear();
 			}
-//		}
-/*
-		if(d.get("dt_qty") != null)
+		}
+
+		dds = null;
+		if(d.get("DONo") != null) dds = getFC6_DOitems(d.get("DONo"),"DT");
+		if(dds != null)
 		{
-*/
-			dds = null;
-			if(d.get("DONo") != null) dds = getFC6_DOitems(d.get("DONo"),"DT");
-			if(dds != null)
+			for(pp : dds)
 			{
-				for(pp : dds)
+				popuListitems_Data(kabom,fl,d);
+				/*
+				kabom.add( nf0.format( (d.get("dt_qty") == null) ? 0 : d.get("dt_qty") ) );
+				kabom.add( nf0.format( (d.get("mt_qty") == null) ? 0 : d.get("mt_qty") ) );
+				*/
+				kabom.add("DTDT");
+				kabom.add("MTMT");
+
+				kabom.add( "" );
+				kabom.add( pp.get("product_name") );
+
+				/*
+				kabom.add( nf2.format(
+				((d.get("dt_gross") == null) ? 0 : d.get("dt_gross")) + 
+				((d.get("mt_gross") == null) ? 0 : d.get("mt_gross"))
+				));
+				*/
+				kabom.add("DTMT");
+				
+				ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+				lbhand.setListcellItemLabel(ki, INCEPTION_DATE_POS, pimpidt); // inject calc-incep-date
+
+				// 09/04/2014: if del-addrss is empty or "same as above" , use address from account-table (req by Shopa)
+				cka = d.get("DelAddr").toUpperCase();
+				if(cka.equals("") || cka.indexOf("ABOVE") != -1)
 				{
-					popuListitems_Data(kabom,fl,d);
-					kabom.add( nf0.format( (d.get("dt_qty") == null) ? 0 : d.get("dt_qty") ) );
-					kabom.add( nf0.format( (d.get("mt_qty") == null) ? 0 : d.get("mt_qty") ) );
-					kabom.add( "" );
-					kabom.add( pp.get("product_name") );
-					kabom.add( nf2.format(
-					((d.get("dt_gross") == null) ? 0 : d.get("dt_gross")) + 
-					((d.get("mt_gross") == null) ? 0 : d.get("mt_gross"))
-					));
-					
-					ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
-					lbhand.setListcellItemLabel(ki, INCEPTION_DATE_POS, pimpidt); // inject calc-incep-date
-
-					// 09/04/2014: if del-addrss is empty or "same as above" , use address from account-table (req by Shopa)
-					cka = d.get("DelAddr").toUpperCase();
-					if(cka.equals("") || cka.indexOf("ABOVE") != -1)
-					{
-						madr = getFC6_CustomerAddress(d.get("bookno").toString());
-						kx = madr.get("address1yh") + ",\n" + madr.get("address2yh") + ",\n" + madr.get("address3yh") + ",\n" + madr.get("address4yh");
-						lbhand.setListcellItemLabel(ki, DELADDRESS_POS, kx);
-					}
-
-					kabom.clear();
+					madr = getFC6_CustomerAddress(d.get("bookno").toString());
+					kx = madr.get("address1yh") + ",\n" + madr.get("address2yh") + ",\n" + madr.get("address3yh") + ",\n" + madr.get("address4yh");
+					lbhand.setListcellItemLabel(ki, DELADDRESS_POS, kx);
 				}
+
+				kabom.clear();
 			}
-		//}
+		}
+
+		dds = null;
+		if(d.get("DONo") != null) dds = getFC6_DOitems(d.get("DONo"),"MT");
+		if(dds != null)
+		{
+			for(pp : dds)
+			{
+				popuListitems_Data(kabom,fl,d);
+				/*
+				kabom.add( nf0.format( (d.get("dt_qty") == null) ? 0 : d.get("dt_qty") ) );
+				kabom.add( nf0.format( (d.get("mt_qty") == null) ? 0 : d.get("mt_qty") ) );
+				*/
+				kabom.add("");
+				kabom.add("MTMT");
+
+				kabom.add( "" );
+				kabom.add( pp.get("product_name") );
+
+				/*
+				kabom.add( nf2.format(
+				((d.get("dt_gross") == null) ? 0 : d.get("dt_gross")) + 
+				((d.get("mt_gross") == null) ? 0 : d.get("mt_gross"))
+				));
+				*/
+				kabom.add("MTMT");
+				
+				ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+				lbhand.setListcellItemLabel(ki, INCEPTION_DATE_POS, pimpidt); // inject calc-incep-date
+
+				// 09/04/2014: if del-addrss is empty or "same as above" , use address from account-table (req by Shopa)
+				cka = d.get("DelAddr").toUpperCase();
+				if(cka.equals("") || cka.indexOf("ABOVE") != -1)
+				{
+					madr = getFC6_CustomerAddress(d.get("bookno").toString());
+					kx = madr.get("address1yh") + ",\n" + madr.get("address2yh") + ",\n" + madr.get("address3yh") + ",\n" + madr.get("address4yh");
+					lbhand.setListcellItemLabel(ki, DELADDRESS_POS, kx);
+				}
+
+				kabom.clear();
+			}
+		}
+
 /*
 		alltot = (( d.get("nb_gross") == null) ? 0 : d.get("nb_gross")) +
 		(( d.get("dt_gross") == null) ? 0 : d.get("dt_gross")) +

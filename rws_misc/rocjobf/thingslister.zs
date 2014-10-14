@@ -43,7 +43,7 @@ void showROC_items(String ivn, int itype, Div idiv, String ilbid)
 	for(d : trs)
 	{
 		kabom.add(lnc.toString() + ".");
-		popuListitems_Data2(kabom, fl, d);
+		ngfun.popuListitems_Data2(kabom, fl, d);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
 		lnc++;
@@ -60,14 +60,12 @@ void showROC_meta(String ivn, int itype)
 	extratb = "u001b"; // def extra-table = ROC's
 	xflds = ",li.ordertypeyh, li.deliverytoyh ";
 
-	switch(itype)
+	if(itype == 2) // 14/10/2014: put in the missing fields from SO extra-table, ordertypeyh and deliverytoyh as static string
 	{
-		case 2:
-			vtype = "5632";
-			extratb = "u0017";
-			xflds = ",li.consignmentperiodyh, convert(datetime, dbo.ConvertFocusDate(li.csgnstartdateyh)) as csgnstart, " +
-			"convert(datetime, dbo.ConvertFocusDate(li.csgnenddateyh)) as csgnend, li.delivertoyh ";
-			break;
+		vtype = "5632";
+		extratb = "u0017";
+		xflds = ",li.consignmentperiodyh, convert(datetime, dbo.ConvertFocusDate(li.csgnstartdateyh)) as csgnstart, " +
+		"convert(datetime, dbo.ConvertFocusDate(li.csgnenddateyh)) as csgnend, li.delivertoyh, 'UNDEF' as ordertypeyh, 'UNDEF' as deliverytoyh ";
 	}
 
 	sqlstm = "select distinct d.voucherno, d.bookno, " +
@@ -84,9 +82,9 @@ void showROC_meta(String ivn, int itype)
 	if(r == null) return;
 
 	Object[] jkl = { roc_contactyh, roc_telyh, roc_emailyh, roc_etd, roc_eta, roc_customerrefyh, roc_ordertypeyh,
-		roc_deliverynotes, roc_deliverytoyh, roc_deliverytoyh, so_consignmentperiodyh, so_csgnstart, so_csgnend };
+		roc_deliverynotes, roc_deliverytoyh, so_consignmentperiodyh, so_csgnstart, so_csgnend };
 	String[] fl = { "contactyh", "telyh", "emailyh", "etd", "eta", "customerrefyh", "ordertypeyh",
-		"deliverynotes", "deliverytoyh", "delivertoyh", "consignmentperiodyh", "csgnstart", "csgnend" };
+		"deliverynotes", "deliverytoyh", "consignmentperiodyh", "csgnstart", "csgnend" };
 
 	populateUI_Data(jkl, fl, r);
 }
@@ -122,7 +120,7 @@ void showReqItems(String ivn, int itype, Div idiv, String ilbid) // knockoff fro
 		kabom.add( d.get("salesid").toString() );
 		kabom.add( lnc.toString() + "." );
 		kabom.add( kiboo.checkNullString(d.get("name")) ); 
-		kabom.add( nf0.format(d.get("qty2")) );
+		kabom.add( GlobalDefs.nf0.format(d.get("qty2")) );
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		lnc++;
 		kabom.clear();
@@ -313,7 +311,7 @@ void showBuildsLikeExcel(String ibom, Div idiv, String ilbid) // knockoff from r
 	"gfxcard", "f_gfxcard", "osversion", "coa1", "offapps", "coa2", "coa3", "coa4", "misc", "description" };
 	for(d : r)
 	{
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 
 		for(i=0;i<kabom.size();i++)
 		{

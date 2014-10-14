@@ -15,15 +15,16 @@ MYTITLE = "Equipments Requests Tracker";
 MYVERSION = "v0.2.3";
 MYPANEL = "eqreqtracoidpan";
 /*
-Title : Equipments requests tracker
-Written by : Victor Wong
-Dated : 26/02/2014
+@Title Equipments requests tracker
+@Author Victor Wong
+@Since 26/02/2014
 
 20/05/2014: allow WH to update pallet/loca for scanned asset-tags on each req. fixed to PROD
 21/05/2014: add check dup scanned-ass - req by Mus
 13/06/2014: put in auto-save scanned asset-tags when use switch part-req record or req-item
 27/06/2014: prob in saving scanned ass-tags into individual req-items -- lesap when they ammend ERG/PRG. Save the scan-asstags
 	into reqthings_stat now
+14/10/2014: chg reqthings_stat.extra1 to NTEXT instead of VARCHAR - scanned asset-tags truncated reported by Salina
 */
 import java.util.*;
 import java.text.*;
@@ -157,7 +158,8 @@ void showEqReqMeta(String iwhat)
 	if(r == null) return;
 	lbhand.matchListboxItems(e_rstatus, kiboo.checkNullString(r.get("rstatus")) );
 	e_extranotes.setValue( kiboo.checkNullString(r.get("extranotes")) );
-	asstg_scans.setValue( kiboo.checkNullString(r.get("extra1")) ); // 27/06/2014: the scanned asset-tags
+	//asstg_scans.setValue( kiboo.checkNullString(r.get("extra1")) ); // 27/06/2014: the scanned asset-tags
+	asstg_scans.setValue( sqlhand.clobToString(r.get("extra1")) );
 	//alert(r);
 }
 
@@ -476,54 +478,54 @@ void checkDupScannedAss(String iwhat)
 </zscript>
 
 <popup id="changeloca_pop">
-<div class="shadowbox" style="background:#E36619" width="350px">
-	<label value="Pallet/Loca" />
-	<textbox id="palletloca_tb" width="60px" value="PROD" disabled="true" />
-	<button label="Update" onClick="massUpdatePalletLoca(glob_sel_ereq, palletloca_tb.getValue())" />
-</div>
+	<div class="shadowbox" style="background:#E36619" width="350px">
+		<label value="Pallet/Loca" />
+		<textbox id="palletloca_tb" width="60px" value="PROD" disabled="true" />
+		<button label="Update" onClick="massUpdatePalletLoca(glob_sel_ereq, palletloca_tb.getValue())" />
+	</div>
 </popup>
 
 <popup id="auditlogs_pop">
 	<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
-	<label style="font-size:14px;font-weight:bold;">Audit Logs</label>
-	<separator height="3px" />
-	<div id="auditlogs_holder" />
-	<separator height="3px" />
-	<button label="Ok" class="k9" onClick="auditlogs_pop.close()" />
+		<label style="font-size:14px;font-weight:bold;">Audit Logs</label>
+		<separator height="3px" />
+		<div id="auditlogs_holder" />
+		<separator height="3px" />
+		<button label="Ok" class="k9" onClick="auditlogs_pop.close()" />
 	</div>
 </popup>
 
 <!-- update file description popup -->
 <popup id="updatefiledesc_popup">
-<groupbox width="400px">
-	<caption id="updatefiledesc_label" />
-	<label value="Description" class="k9" />
-	<textbox id="update_file_description" multiline="true" height="70px" width="99%" class="k9" />
-	<separator height="3px" />
-	<hbox>
-		<button label="Update" style="font-size:9px" onClick="updateFileDescription(documents_holder,p_vtype,glob_sel_ereq)" />
-		<button label="Close" style="font-size:9px" onClick="updatefiledesc_popup.close()" />
-	</hbox>
-</groupbox>
+	<groupbox width="400px">
+		<caption id="updatefiledesc_label" />
+		<label value="Description" class="k9" />
+		<textbox id="update_file_description" multiline="true" height="70px" width="99%" class="k9" />
+		<separator height="3px" />
+		<hbox>
+			<button label="Update" style="font-size:9px" onClick="updateFileDescription(documents_holder,p_vtype,glob_sel_ereq)" />
+			<button label="Close" style="font-size:9px" onClick="updatefiledesc_popup.close()" />
+		</hbox>
+	</groupbox>
 </popup>
 
 <!-- upload a file popup -->
 <popup id="uploadfile_popup">
-<groupbox>
-<caption label="Upload a file" />
-	<grid>
-		<rows>
-			<row>
-				<label value="Filename" class="k9" />
-				<textbox id="fileupl_file_title" width="200px" class="k9" />
-			</row>
-			<row>
-				<label value="Description" style="font-size:9px" />
-				<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" class="k9" />
-			</row>
-		</rows>
-	</grid>
-</groupbox>
+	<groupbox>
+	<caption label="Upload a file" />
+		<grid>
+			<rows>
+				<row>
+					<label value="Filename" class="k9" />
+					<textbox id="fileupl_file_title" width="200px" class="k9" />
+				</row>
+				<row>
+					<label value="Description" style="font-size:9px" />
+					<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" class="k9" />
+				</row>
+			</rows>
+		</grid>
+	</groupbox>
 <separator height="3px" />
 <hbox>
 	<button label="Select file" onClick="uploadFile(documents_holder,p_vtype,glob_sel_ereq)" class="k9" />
