@@ -1,6 +1,6 @@
 import org.victor.*;
 // General funcs for goodsReceive_v2.zul
-// 
+//  Written by Victor Wong
 
 String[] scanitems_colws = { "30px", "",          "180px",     "100px", "40px" };
 String[] scanitems_collb = { "",     "Item name", "Asset tag", "Serial","Qty" };
@@ -208,7 +208,7 @@ void saveGRN_items(String igrn)
 void showGRN_meta(String iwhat)
 {
 	r = getGRN_rec_NEW(iwhat);
-	if(r == null) { alert("www"); return; }
+	if(r == null) { guihand.showMessageBox("ERR: cannot access GRN database.."); return; }
 
 	String[] fl = { "ourpo", "vendor", "vendor_do", "vendor_inv", "shipmentcode", "grn_remarks","origid" };
 	Object[] jkl = { g_ourpo, g_vendor, g_vendor_do, g_vendor_inv, g_shipmentcode, g_grn_remarks, g_origid };
@@ -375,4 +375,36 @@ void sourcePrevious_NameSerials()
 	} catch (Exception e) {}	
 }
 
+// 16/10/2014: generate GRN printout
+void genPrint_GRN(igrn)
+{
+	r = getGRN_rec_NEW(igrn);
+	if(r == null) { guihand.showMessageBox("ERR: cannot access GRN database.."); return; }
 
+	itms = sqlhand.clobToString(r.get("item_names")).split("~");
+	atgs = sqlhand.clobToString(r.get("asset_tags")).split("~");
+	srls = sqlhand.clobToString(r.get("serials")).split("~");
+	qtys = sqlhand.clobToString(r.get("qtys")).split("~");
+
+	sqlstm = "delete from rw_grn_tags where grn_id=" + igrn;
+	sqlhand.gpSqlExecuter(sqlstm); // delete prev rec from rw_grn_tags
+
+	msql = "";
+	for(i=0;i<itms.length; i++)
+	{
+		try {
+			msql += "insert into rw_grn_tags (grn_id,g_actual_name,g_asset_tag,g_serial_no,g_qty) values " +
+			"(" + igrn + ",'" + itms[i] + "','" + atgs[i] + "','" + srls[i] + "'," + qtys[i] + ");";
+		} catch (Exception e) {}
+	}
+	sqlhand.gpSqlExecuter(msql);
+
+	if(expass_div.getFellowIfAny("expassframe") != null) expassframe.setParent(null);
+	Iframe newiframe = new Iframe();
+	newiframe.setId("expassframe"); newiframe.setWidth("100%"); newiframe.setHeight("600px");
+	bfn = "rwreports/GRN_prnout_v1.rptdesign";
+	thesrc = birtURL() + bfn + "&grn_id_1=" + igrn;
+	newiframe.setSrc(thesrc);
+	newiframe.setParent(expass_div);
+	expasspop.open(genprn_b);
+}

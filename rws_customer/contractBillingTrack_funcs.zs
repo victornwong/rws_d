@@ -288,4 +288,43 @@ void clearLCMetaFields()
 	ngfun.clearUI_Field(flds);
 }
 
+void exportAssetsList(String iwhat, int itype)
+{
+	if(iwhat.equals("")) return;
+	if(expass_div.getFellowIfAny("expassframe") != null) expassframe.setParent(null);
+	Iframe newiframe = new Iframe();
+	newiframe.setId("expassframe");
+	newiframe.setWidth("100%");
+	newiframe.setHeight("600px");
+	cnm = glob_sel_customer.replaceAll(" ","%20");
+	ort = i_order_type.getValue().trim().replaceAll(" ","%20");
+
+	bfn = "rwreports/lc_assetslist_v1.rptdesign";
+
+	switch(itype)
+	{
+		case 2:
+		bfn = "rwreports/lc_assetslist_amt_v1.rptdesign";
+		break;
+		case 3: // evf w/o specs but with location
+		bfn = "rwreports/lc_assetslist_v2.rptdesign";
+		break;
+		case 4:
+		bfn = "rwreports/lc_assetslist_amt_v2.rptdesign";
+		break;
+		case 5: // evf with specs
+		bfn = "rwreports/lc_assetslist_v3.rptdesign";
+		break;
+		case 6: // multi-LC EVF with grouping (mainly for MISC or other big customers)
+		udi = userdef_inv.getValue().trim().replaceAll(" ","%20");
+		bfn = "rwreports/multilcgroupy_1.rptdesign&userdef_inv=" + udi;
+		break;
+	}
+
+	thesrc = birtURL() + bfn + "&lcid=" + iwhat + 
+	"&customername=" + cnm + "&ordertype=" + ort + "&rwno=" + glob_sel_lc_str;
+	newiframe.setSrc(thesrc);
+	newiframe.setParent(expass_div);
+	expasspop.open(newasset_b);
+}
 

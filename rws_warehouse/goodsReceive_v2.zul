@@ -24,6 +24,8 @@ MYPANEL = "goodsrecv2pan";
 @Notes
 Total redesign from last year's module - to replace tempGRN, MRN and audit specs update. Import from GCO also.
 
+16/10/2014: generate GRN printout . goodsrecv_funcs.zs.genPrint_GRN()
+
 */
 import java.util.*;
 import java.text.*;
@@ -174,7 +176,9 @@ void grnFunc(String itype)
 		{
 			sqlstm = "update rw_grn set status='COMMIT',commitdate='" + todaydate + "' where origid=" + glob_sel_grn;
 			hidereset_workarea();
+			add_RWAuditLog(JN_linkcode(),"", "Commit GRN", useraccessobj.username);
 			// TODO send notif email to procurement
+			// gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, "victor@rentwise.com","RE: TESTING gmailsend","Just testing..");
 		}
 		else
 		{
@@ -190,9 +194,9 @@ void grnFunc(String itype)
 			if(Messagebox.show("This will stock-in the GRN items.. POINT OF NO RETURN!!", "Are you sure?",
 				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
 
-			//updateInventory_GRNItems();
+			updateInventory_GRNItems(); // IMPORTANT TODO need to chg pallet-loca to AUDIT when first stock-in
 			sqlstm = "update rw_grn set status='STKIN' where origid=" + glob_sel_grn;
-			msgtext = "OK: Inventory stock-in.. (not really...)";
+			msgtext = "OK: Inventory stock-in..";
 			hidereset_workarea();
 		}
 		else
@@ -205,6 +209,16 @@ void grnFunc(String itype)
 	{
 		showSystemAudit(auditlogs_holder,JN_linkcode(),"");
 		auditlogs_pop.open(shwauditlogs_b);
+	}
+
+	if(itype.equals("genprn_b"))
+	{
+		if(glob_sel_grn.equals("")) return;
+		if(glob_sel_stat.equals("COMMIT") || glob_sel_stat.equals("STKIN")) // commit/stkin can print grn
+		{
+			genPrint_GRN(glob_sel_grn);
+			add_RWAuditLog(JN_linkcode(),"", "Generate and print GRN", useraccessobj.username);
+		}
 	}
 
 	if(!sqlstm.equals(""))
@@ -288,7 +302,7 @@ void updateInventory_GRNItems()
 			if(!itm.equals("")) // only entry with item-name
 			{
 				log_assettags += atg + "(" + snm + " / " + qty + "), ";
-
+// IMPORTANT chg pallet-loca to AUDIT . GRN->AUDIT process
 				sqlstm += "if not exists(select 1 from mr001 where code2='" + atg + "')" +
 				"begin " +
 				"set @maxid = (select max(masterid)+1 from mr001);" +
@@ -465,6 +479,10 @@ A.User = Audit user
 	</div>
 </popup>
 
+<popup id="expasspop">
+	<div id="expass_div" width="700px" />
+</popup>
+
 <style src="/real-world.css" />
 <style>
 .GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
@@ -503,6 +521,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 			<button id="newgrn_b" label="New GRN" sclass="k9mo" onClick="grnFunc(self.getId())" />
 			<button id="remgrn_b" label="Remove" sclass="k9mo" onClick="grnFunc(self.getId())" />
 			<button id="commgrn_b" label="Commit" sclass="k9mo" onClick="grnFunc(self.getId())" />
+			<button id="genprn_b" label="Print GRN" sclass="k9mo" onClick="grnFunc(self.getId())" />
 			<button id="uptstock_b" label="UPDATE INVENTORY" sclass="k9mo" style="color:#D41212" onClick="grnFunc(self.getId())" visible="false" />
 			<separator width="10px" />
 			<button id="shwauditlogs_b" label="AuditLog" sclass="k9mo" onClick="grnFunc(self.getId())" />
@@ -529,7 +548,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 							<textbox id="g_shipmentcode" sclass="k9" />
 						</row>
 						<row spans="1,3">
-							<label value="Vendor" sclass="k9" />
+							<label value="Vendor / Customer" sclass="k9" />
 							<textbox id="g_vendor" sclass="k9" width="99%" />
 						</row>
 						<row>
@@ -630,22 +649,6 @@ if(useraccessobj.accesslevel == 9)
 {
 	admin_b.setVisible(true);
 }
-
-/*
-V.DO = 
-Vendor Delivery Order
-V.Inv = 
-Vendor Invoice
-GCO = 
-Goods Collection Order
-A.Date = 
-Audit date
-A.Stat = 
-Audit status
-A.User = 
-Audit user
-*/
- 
 
 ]]>
 </zscript>

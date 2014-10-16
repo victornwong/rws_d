@@ -128,6 +128,12 @@ void pl_DoFunc(String itype)
 		transfer_ScannedTags_toProd(glob_sel_jobsheet);
 	}
 
+	if(itype.equals("prnpickedass_b")) // print picked asset-tags checklist (15/10/2014)
+	{
+		if(glob_sel_jobsheet.equals("")) return;
+		genAssetTags_printout(glob_sel_job,glob_sel_jobsheet);
+	}
+
 	if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
 	if(refresh) drawPicklist(plx);
 	if(refresh_joblist) showJobs(last_joblist_type);
@@ -259,6 +265,10 @@ void reallyTransferItemsToProd()
 ]]>
 </zscript>
 
+<popup id="expasspop">
+	<div id="expass_div" width="700px" />
+</popup>
+
 <popup id="transf_Prod_pop">
 	<div style="background:#496FB2;padding:3px" width="400px">
 		<label id="tfxerr_lbl" sclass="blink" style=";color:#ffffff;font-size:12px;font-weight:bold;" visible="false">
@@ -304,12 +314,13 @@ void reallyTransferItemsToProd()
 		<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
 		<label value="End date" sclass="k9b" />
 		<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
-
 		<textbox id="searhtxt_tb" width="100px" sclass="k9" />
 		<button label="Load/Find" sclass="k9mo" onClick="showJobs(1)" />
-
 		<textbox id="jobid_tb" width="50px" sclass="k9" />
 		<button label="by job" sclass="k9mo" onClick="showJobs(2)" />
+
+		<button id="prnpickedass_b" label="Print picked asset-tags" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+		<separator width="10px" />
 
 		<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#D60D0D" onClick="adminPop.open(self)" visible="false" />
 	</hbox>

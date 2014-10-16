@@ -47,7 +47,8 @@ void showJobItems(Object tjrc, Div iholder, String igid, String irowsid)
 	if(tjrc.get("items") == null) return; // nothing to show
 
 	checkMakeItemsGrid(iholder,igid,irowsid);
-	items = tjrc.get("items").split("::");
+
+	items = sqlhand.clobToString(tjrc.get("items")).split("::");
 	qtys = tjrc.get("qtys").split("::");
 	colors = tjrc.get("colors").split("::");
 	prows = iholder.getFellowIfAny(irowsid);
@@ -156,21 +157,19 @@ void showLinkJobsAll(Object iwhat, String iexjob)
 
 	screcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(screcs.size() == 0) return;
-	newlb.setRows(21);
-	newlb.setMold("paging");
+	newlb.setRows(20); newlb.setMold("paging");
 	newlb.addEventListener("onSelect", joblcioekr);
 	ArrayList kabom = new ArrayList();
 	String[] fl = { "origid", "datecreated", "customer_name", "username", "jobtype", "rwroc", "priority" };
 	for(dpi : screcs)
 	{
-		popuListitems_Data(kabom,fl,dpi);
+		ngfun.popuListitems_Data(kabom,fl,dpi);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","font-weight:bold");
 		kabom.clear();
 	}
 	if(jobitems_holder.getFellowIfAny("items_grid") != null) items_grid.setParent(null);
 	linkjobs_pop.open(iwhat);
 }
-
 
 // chg job-id var for other mod
 void viewJobWindow(String ijid, Component ipanel)

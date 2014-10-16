@@ -279,15 +279,14 @@ void showBOMList()
 
 	screcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(screcs.size() == 0) return;
-	newlb.setRows(21);
-	newlb.setMold("paging");
+	newlb.setRows(20); newlb.setMold("paging");
 	newlb.addEventListener("onSelect", bomclkier);
 	ArrayList kabom = new ArrayList();
 	String[] fl = { "createdate", "customer_name", "createdby", "bomstatus", "bomcategory", "job_id", "roc_id", "commitby", "commitdate", "approveby", "approvedate" };
 	for(dpi : screcs)
 	{
 		kabom.add(BOM_PREFIX + dpi.get("origid").toString());
-		popuListitems_Data(kabom,fl,dpi);
+		ngfun.popuListitems_Data(kabom,fl,dpi);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
 	}
@@ -322,7 +321,7 @@ void showBuild_metadata(String ibui)
 	"grade", "osversion", "offapps",
 	"optical", "webcam", "cardreader", "bluetooth" };
 
-	populateUI_Data(fls,fln,ris);
+	ngfun.populateUI_Data(fls,fln,ris);
 }
 
 Object[] builds_headers = 
@@ -367,10 +366,8 @@ void showBuildItems(String ibid)
 	sqlstm = "select origid,bomtype,grade,misc,asset_tag from stockrentalitems_det where parent_id=" + ibid;
 	screcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(screcs.size() == 0) return;
-	newlb.setRows(21);
-	newlb.setMold("paging");
-	newlb.setMultiple(true);
-	newlb.setCheckmark(true);
+	newlb.setRows(21); newlb.setMold("paging");
+	newlb.setMultiple(true); newlb.setCheckmark(true);
 	newlb.addEventListener("onSelect", buidlsclik);
 	lncnt = 1;
 	ArrayList kabom = new ArrayList();
@@ -378,7 +375,7 @@ void showBuildItems(String ibid)
 	for(dpi : screcs)
 	{
 		kabom.add(lncnt.toString() + ".");
-		popuListitems_Data2(kabom,fl,dpi);
+		ngfun.popuListitems_Data2(kabom,fl,dpi);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		lncnt++;
 		kabom.clear();

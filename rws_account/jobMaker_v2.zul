@@ -18,7 +18,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "Job Maker (ROC/SO/etc)";
-MYVERSION = "v0.3.6";
+MYVERSION = "v2.0";
 MYPANEL = "jobmakeapanr";
 /*
 @Title Job maker - to manage ROC,SO,RMA or anything else
@@ -32,7 +32,7 @@ MYPANEL = "jobmakeapanr";
 16/04/2014: Lai req to see MRN which linked to T.GRN
 24/06/2014: import meta and items from ROC and SO FC6
 26/09/2014: chg rw_jobs.items to NTEXT to store unlimited items
-16/10/2014: some optimization and linking to new modules
+16/10/2014: bump to version 2. Linking to new modules and UI redesign
 
 */
 import java.util.*;
@@ -786,164 +786,156 @@ void trytask()
 
 <!-- jobs-list and docu div -->
 <div sclass="shadowbox" style="background:#3465a4" id="listdocu_div" >
-
-	<hbox>
+	<div id="listappr_div" >
 		<hbox>
-			<button id="blind_list" label="-" sclass="k9" onClick="blindTings_withTitle(self,listappr_div,listtitle)" />
-			<label id="listtitle" sclass="subhead2" value="JOBS LIST" visible="false" />
+			<button id="newjob_b" label="New job" sclass="k9mo" onClick="doFunc(self)" />
+			<button id="submitjob_b" label="Submit job" sclass="k9mo" onClick="doFunc(self)" />
+			<separator width="10px" />
+			<button id="pickjob_b" label="Pickup" sclass="k9mo" onClick="doFunc(self)" />
+			<button id="compjob_b" label="Complete" sclass="k9mo" onClick="doFunc(self)" />
+			<separator width="20px" />
+			<button id="viewbom_b" label="View BOM" sclass="k9mo" onClick="doFunc(self)" />
+			<button id="viewpick_b" label="View Pick-list" sclass="k9mo" onClick="doFunc(self)" />
+			<button id="viewpo_b" label="View PO" sclass="k9mo" onClick="doFunc(self)" />
+			<button id="viewgrn_b" label="View GRN" sclass="k9mo" onClick="doFunc(self)" />
+			<button id="viewmrn_b" label="View MRN" sclass="k9mo" onClick="doFunc(self)" />
+			<button id="admin_b" label="Admin" visible="false" sclass="k9mo" style="color:#EC1B1B" onClick="adminpopup.open(self)" />
+			<separator width="20px" />	
+			<button id="jobshelp_b" label="?" onClick="showMiniHelp(self)" />
 		</hbox>
-	
-		<div id="listappr_div" >
-			<hbox>
-				<button id="newjob_b" label="New job" sclass="k9mo" onClick="doFunc(self)" />
-				<button id="submitjob_b" label="Submit job" sclass="k9mo" onClick="doFunc(self)" />
-				<separator width="10px" />
-				<button id="pickjob_b" label="Pickup" sclass="k9mo" onClick="doFunc(self)" />
-				<button id="compjob_b" label="Complete" sclass="k9mo" onClick="doFunc(self)" />
-				<separator width="20px" />
-				<button id="viewbom_b" label="View BOM" sclass="k9mo" onClick="doFunc(self)" />
-				<button id="viewpick_b" label="View Pick-list" sclass="k9mo" onClick="doFunc(self)" />
-				<button id="viewpo_b" label="View PO" sclass="k9mo" onClick="doFunc(self)" />
-				<button id="viewgrn_b" label="View GRN" sclass="k9mo" onClick="doFunc(self)" />
-				<button id="viewmrn_b" label="View MRN" sclass="k9mo" onClick="doFunc(self)" />
-				<button id="admin_b" label="Admin" visible="false" sclass="k9mo" style="color:#EC1B1B" onClick="adminpopup.open(self)" />
-				<separator width="20px" />	
-				<button id="jobshelp_b" label="?" onClick="showMiniHelp(self)" />
-			</hbox>
-			<separator height="3px" />
-			<div id="jobs_holder" />
-		</div>
-	</hbox>
+		<separator height="3px" />
+		<div id="jobs_holder" />
+	</div>
 </div> <!-- ENDOF jobs-list and docu div -->
 <separator height="3px" />
 
-<!-- jobs meta and workarea -->
-<div sclass="shadowbox" style="background:#2e3436;" id="workarea" visible="false" >
-<hbox>
-	<hbox>
-		<button id="blind_meta" label="-" sclass="k9" onClick="blindTings_withTitle(self,workarea_2,jobmetatitle)" />
-		<label id="jobmetatitle" sclass="subhead1" value="JOB DETAILS" visible="false" />
-	</hbox>
+<div sclass="shadowbox" style="background:#2e3436;" id="workarea" visible="false" > <!-- jobs meta and workarea -->
+	<tabbox>
+		<tabs>
+			<tab label="Job Metadata" />
+			<tab label="Items" />
+			<tab label="Documents" />
+			<tab label="Approval" />
+		</tabs>
+		<tabpanels>
+			<tabpanel> <!-- job metadata -->
+				<hbox>
+					<button id="asscust_b" label="Assign customer" sclass="k9mo" onClick="pickcustomer_popup.open(self)" />
+					<button id="updatejob_b" label="Update/Save" sclass="k9mo" onClick="doFunc(self)" />
+					<separator width="10px" />
+					<button id="improc_b" label="Import ROC" sclass="k9mo" onClick="improc_pop.open(self)" />
+					<button id="impso_b" label="Import SO" sclass="k9mo" onClick="impso_pop.open(self)" />
+				</hbox>
+				<separator height="3px" />
 
-	<div id="workarea_2">
-	<hbox>
-		<button id="asscust_b" label="Assign customer" sclass="k9mo" onClick="pickcustomer_popup.open(self)" />
-		<button id="updatejob_b" label="Update/Save" sclass="k9mo" onClick="doFunc(self)" />
-		<separator width="10px" />
-		<button id="improc_b" label="Import ROC" sclass="k9mo" onClick="improc_pop.open(self)" />
-		<button id="impso_b" label="Import SO" sclass="k9mo" onClick="impso_pop.open(self)" />
+				<hbox>
+					<div id="jobmetaform_holder" width="700px" />
 
-	</hbox>
-	<separator height="3px" />
+					<div sclass="shadowbox" style="background:#555753;" width="450px" id="jobnotes_div" visible="false" >
+						<label sclass="subhead1">JOB NOTES</label>
+						<separator height="3px" />
+						<div id="jobnotes_holder" />
+						<separator height="2px" />
+						<hbox>
+							<button id="deletejobn_b" label="Delete" sclass="k9mo" onClick="jobNoteFunc(self,JN_linkcode())" />
+						</hbox>
+						<separator height="2px" />
+						<div id="jobnotes_entry_holder">
+							<grid>
+								<rows>
+									<row visible="false">
+										<label value="To" sclass="k9"  />
+										<textbox id="jn_towho" width="99%" style="font-weight:bold" />
+									</row>
+									<row>
+										<label value="Subject" sclass="k9"  />
+										<textbox id="jn_subject" width="99%" style="font-weight:bold" />
+									</row>
+									<row>
+										<label value="Notes" sclass="k9"  />
+										<textbox id="jn_msgbody" width="99%" multiline="true" height="60px" />
+									</row>
+								</rows>
+							</grid>
+							<separator height="2px" />
+							<button id="postjobn_b" label="Post" sclass="k9mo" onClick="jobNoteFunc(self,JN_linkcode())" />
+							<button id="clearjobn_b" label="Clear" sclass="k9mo" onClick="jobNoteFunc(self,JN_linkcode())" />
+						</div>
+					</div>
+				</hbox>
+			</tabpanel>
 
-	<hbox>
-		<vbox>
-			<div id="jobmetaform_holder" width="700px" />
-			<div sclass="shadowbox" style="background:#555753;" >
-				<div style="background:#555753;padding:2px">
-					<label value="JOB APPROVAL" sclass="subhead1" />
-					<button label="Logs" sclass="k9" onClick="viewBPM_logs(JOBS_PREFIX + glob_sel_job, self)" />
+			<tabpanel> <!-- items -->
+				<div sclass="shadowbox" style="background:#555753;" >
+					<hbox>
+						<label sclass="subhead1" value="JOB ITEMS" />
+						<separator width="20px" />
+						<button id="ji_insert_b" label="Insert" sclass="k9" onClick="jobItems(self)" />
+						<button id="ji_remove_b" label="Remove" sclass="k9" onClick="jobItems(self)" />
+						<button id="ji_calc_b" label="Calc" sclass="k9" onClick="jobItems(self)" />
+				
+						<separator width="20px" />
+						<button id="ji_save_b" label="Save items" style="font-weight:bold" onClick="jobItems(self)" />
+						<label id="saved_label" value="SAVED.." style="color:#ffffff;text-decoration:blink;font-weight:bold" visible="false" />
+
+						<separator width="20px" />
+						<button label="Get stock-item" sclass="k9" onClick="getstkitems_pop.open(self)" />
+
+					</hbox>
+					<separator height="3px" />
+					<hbox>
+						<div id="items_holder" />
+						<vbox>
+						<hbox id="grandtotalbox" visible="false" >
+							<vbox>
+								<label value="Total monthly rental" style="color:#eeeeee;font-weight:bold" />
+								<separator bar="true" />
+								<label value="Job Grand Total" style="color:#eeeeee;font-weight:bold" />
+								<separator bar="true" />
+							</vbox>
+							<vbox>
+								<label id="grandmonthly" sclass="subhead2" />
+								<label id="grandtotal" sclass="subhead2" style=";text-decoration:underline" />
+							</vbox>
+						</hbox>
+						<!-- <label value="NOTI.ME" style="font-size:80px;color:#eb531a;font-weight:bold" /> -->
+						</vbox>
+					</hbox>
 				</div>
-				<div id="approvers_box" />
-			</div>
-		</vbox>
+			</tabpanel>
 
-		<vbox>
+			<tabpanel> <!-- documents -->
+				<div sclass="shadowbox" style="background:#555753;" >
+					<label sclass="subhead1">ATTACHMENT / DOCUMENTS</label>
+					<separator height="3px" />
+					<hbox>
+						<button id="uploaddoc_btn" label="Upload file" style="font-size:9px"
+							onClick="showUploadPopup(JOBS_PREFIX,glob_sel_job)" />
+						<button id="viewdoc_btn" label="View file" style="font-size:9px" onClick="viewFile()" />
+						<button id="editdoc_btn" label="Update" style="font-size:9px" onClick="updatefiledesc_popup.open(self)" />
+						<button id="deletedoc_btn" label="Delete" style="font-size:9px"
+							onClick="deleteFile(documents_holder,JOBS_PREFIX,glob_sel_job)" />
+					</hbox>
+					<separator height="3px" />
+					<div id="documents_holder" />
+				</div>
+			</tabpanel>
 
-		<div sclass="shadowbox" style="background:#555753;" >
-			<label sclass="subhead1">ATTACHMENT / DOCUMENTS</label>
-			<separator height="3px" />
-			<hbox>
-				<button id="uploaddoc_btn" label="Upload file" style="font-size:9px"
-					onClick="showUploadPopup(JOBS_PREFIX,glob_sel_job)" />
-				<button id="viewdoc_btn" label="View file" style="font-size:9px" onClick="viewFile()" />
-				<button id="editdoc_btn" label="Update" style="font-size:9px" onClick="updatefiledesc_popup.open(self)" />
-				<button id="deletedoc_btn" label="Delete" style="font-size:9px"
-					onClick="deleteFile(documents_holder,JOBS_PREFIX,glob_sel_job)" />
-			</hbox>
-			<separator height="3px" />
-			<div id="documents_holder" />
-		</div>
+			<tabpanel> <!-- approvals -->
+				<div sclass="shadowbox" style="background:#555753;" >
+					<div style="background:#555753;padding:2px">
+						<label value="JOB APPROVAL" sclass="subhead1" />
+						<button label="Logs" sclass="k9" onClick="viewBPM_logs(JOBS_PREFIX + glob_sel_job, self)" />
+					</div>
+					<div id="approvers_box" />
+				</div>
+			</tabpanel>
 
-		<div sclass="shadowbox" style="background:#555753;" width="450px" id="jobnotes_div" visible="false">
-			<label sclass="subhead1">JOB NOTES</label>
-			<separator height="3px" />
-			<div id="jobnotes_holder" />
-			<separator height="2px" />
-			<hbox>
-				<button id="deletejobn_b" label="Delete" sclass="k9mo" onClick="jobNoteFunc(self,JN_linkcode())" />
-			</hbox>
-			<separator height="2px" />
-			<div id="jobnotes_entry_holder">
-				<grid>
-					<rows>
-						<row visible="false">
-							<label value="To" sclass="k9"  />
-							<textbox id="jn_towho" width="99%" style="font-weight:bold" />
-						</row>
-						<row>
-							<label value="Subject" sclass="k9"  />
-							<textbox id="jn_subject" width="99%" style="font-weight:bold" />
-						</row>
-						<row>
-							<label value="Notes" sclass="k9"  />
-							<textbox id="jn_msgbody" width="99%" multiline="true" height="60px" />
-						</row>
-					</rows>
-				</grid>
-				<separator height="2px" />
-				<button id="postjobn_b" label="Post" sclass="k9mo" onClick="jobNoteFunc(self,JN_linkcode())" />
-				<button id="clearjobn_b" label="Clear" sclass="k9mo" onClick="jobNoteFunc(self,JN_linkcode())" />
-			
-			</div>
-		</div>
-		</vbox>
-	</hbox>
-	<separator height="2px" />
-
-	<div sclass="shadowbox" style="background:#555753;" >
-		<hbox>
-			<label sclass="subhead1" value="JOB ITEMS" />
-			<separator width="20px" />
-			<button id="ji_insert_b" label="Insert" sclass="k9" onClick="jobItems(self)" />
-			<button id="ji_remove_b" label="Remove" sclass="k9" onClick="jobItems(self)" />
-			<button id="ji_calc_b" label="Calc" sclass="k9" onClick="jobItems(self)" />
-	
-			<separator width="20px" />
-			<button id="ji_save_b" label="Save items" style="font-weight:bold" onClick="jobItems(self)" />
-			<label id="saved_label" value="SAVED.." style="color:#ffffff;text-decoration:blink;font-weight:bold" visible="false" />
-
-			<separator width="20px" />
-			<button label="Get stock-item" sclass="k9" onClick="getstkitems_pop.open(self)" />
-
-		</hbox>
-		<separator height="3px" />
-		<hbox>
-			<div id="items_holder" />
-			<vbox>
-			<hbox id="grandtotalbox" visible="false" >
-				<vbox>
-					<label value="Total monthly rental" style="color:#eeeeee;font-weight:bold" />
-					<separator bar="true" />
-					<label value="Job Grand Total" style="color:#eeeeee;font-weight:bold" />
-					<separator bar="true" />
-				</vbox>
-				<vbox>
-					<label id="grandmonthly" sclass="subhead2" />
-					<label id="grandtotal" sclass="subhead2" style=";text-decoration:underline" />
-				</vbox>
-			</hbox>
-			<!-- <label value="NOTI.ME" style="font-size:80px;color:#eb531a;font-weight:bold" /> -->
-			</vbox>
-		</hbox>
-	</div>
-
-	</div> <!-- ENDOF workarea_2 -->
-</hbox>
-<separator height="3px" />
-
+		</tabpanels>
+	</tabbox>
 </div> <!-- ENDOF jobs meta and workarea -->
 
+<div id="workarea_2" />
 <div id="windsholder" />
 <div id="winsholder" />
 

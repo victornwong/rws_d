@@ -71,18 +71,23 @@ void showAssets(String iwhat)
 	for(d : asrs)
 	{
 		ngfun.popuListitems_Data(kabom,fl,d);
-		ks = "font-size:9px";
-		if(d.get("gcn_id") != null && d.get("gcn_id") != 0 ) ks="background:#f77272;font-size:9px";
-		
+		ks = "font-size:9px;";
+		if(d.get("gcn_id") != null && d.get("gcn_id") != 0 )
+		{
+			if(d.get("buyout") != null)
+				ks += "background:#EF780F";
+			else
+				ks += "background:#f77272";
+		}
+
 		if(d.get("buyout") != null)
-			if(d.get("buyout")) ks = "background:#23B3DB;font-size:9px";
+			if(d.get("buyout")) ks += "background:#23B3DB";
 
 		if(d.get("billable") != null)
-			if(d.get("billable")) ks = "background:#AEF26B;font-size:9px";
+			if(d.get("billable")) ks += "background:#AEF26B";
 
 		if(d.get("hotswap") != null)
-			if(d.get("hotswap")) ks = "background:#D11CBE;font-size:9px";
-
+			if(d.get("hotswap")) ks += "background:#D11CBE";
 
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false",ks);
 		kabom.clear();
@@ -276,6 +281,9 @@ void assFunc(Object iwhat)
 			add_RWAuditLog(LC_PREFIX + glob_selected_lc, "", "Copy assets from LC " + olc , useraccessobj.username);
 		}
 	}
+
+// sedutmuntah_b
+
 
 	if(itype.equals("cleargcntrans_b")) // 08/04/2014: clear transient-GCO recs
 	{

@@ -16,12 +16,12 @@
 <zscript>
 <![CDATA[
 MYTITLE = "Bill Of Materials (BOM)";
-MYVERSION = "v0.5.3";
+MYVERSION = "v0.5.4";
 MYPANEL = "rentitebom3";
 /*
-Title		: Rental items BOM maker
-Written by	: Victor Wong
-Dated		: 23/06/2013
+@Title Rental items BOM maker
+@Author Victor Wong
+@Dated 23/06/2013
 
 **Notes**
 Focus uses mr000 and u0000 to store customer info
@@ -36,6 +36,7 @@ ERR: javax.mail.AuthenticationFailedException: No authentication mechansims supp
 07/07/2014: when assigning job to BOM, import also ROC-no from job-maker
 09/07/2014: thanesh requested for MPF to update remarks/others, webcam, optical, cardreader, grade and bluetooh. Added W7PR code-prefix to import SN/Keys
 10/07/2014: mass-update the things requested by Thanesh above to all selected builds
+16/10/2014: only show textbox to let user enter Job-ID which will link to BOM
 
 */
 import java.util.*;
@@ -47,12 +48,8 @@ useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 param_bomid = Executions.getCurrent().getParameter("bom");
 
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
-gridhand = new GridHandler();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler(); guihand = new GuiFuncs();
+luhand = new LookupFuncs(); gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 APPROVE_STR = "APPROVE";
 NEW_STR = "NEW";
@@ -186,7 +183,7 @@ void doFunc(Object iwhat)
 		m_poweradaptor, m_misc, m_monitor, m_battery, osversion, coa1, coa2, coa3, coa4, offapps,
 		m_ram2, m_ram3, m_ram4, m_hdd2, m_hdd3, m_hdd4, m_optical, m_cardreader, m_webcam, m_bluetooth };
 
-		dt = getString_fromUI(ob);
+		dt = ngfun.getString_fromUI(ob);
 
 		sqlstm = "update stockrentalitems_det set grade='" + dt[0] + "', asset_tag='" + dt[1] + "', description='" + dt[2] + "'," +
 		"cpu='" + dt[3] + "', ram='" + dt[4] + "', hdd='" + dt[5] + "', gfxcard='" + dt[6] + "', vgacable='" + dt[7] + "'," +
@@ -249,7 +246,7 @@ void doFunc(Object iwhat)
 
 	if(itype.equals("shortinventory_b"))
 	{
-		msgtext = "Bulum lagi";
+		msgtext = "Bulum lagi..kena pakai DO le";
 	}
 
 	if(itype.equals("confirmcommit_b")) // really commit BOM
@@ -365,6 +362,18 @@ void assignJobLink(String ilnk)
 	showBOMList();
 }
 
+// 16/10/2014: Link Job to BOM - uses only textbox instead of listing all jobs
+void assignJobLink_2(String ibom)
+{
+	linkjobbom_pop.close();
+	if(ibom.equals("")) return;
+	ljb = kiboo.replaceSingleQuotes( lnk_jobid_tb.getValue().trim() );
+	if(ljb.equals("")) return;
+	try { kk = Integer.parseInt(ljb); } catch (Exception e) { return; }
+	sqlstm = "update stockrentalitems set job_id=" + ljb + " where origid=" + ibom;
+	sqlhand.gpSqlExecuter(sqlstm);
+}
+
 void minishowJobItems()
 {
 	jid = job_id.getValue();
@@ -431,131 +440,141 @@ void mpfFunc(String itype)
 ]]>
 </zscript>
 
+<popup id="linkjobbom_pop">
+	<div sclass="shadowbox" style="background:#204a87;">
+		<hbox>
+			<label value="Job ID" style="color:#ffffff" />
+			<textbox id="lnk_jobid_tb" width="70px" />
+			<button label="Link job to this BOM" onClick="assignJobLink_2(global_selected_bom)" />
+		</hbox>
+	</div>
+</popup>
+
 <popup id="linkjobs_pop">
-<div sclass="shadowbox" style="background:#204a87;" width="600px" >
-	<label id="linkjob_header" style="color:#ffffff;font-weight:bold" multiline="true" />
-	<separator height="3px" />
-	<hbox>
-		<div id="jobs_holder" width="350px" />
-		<button label="Assign job" style="font-weight:bold" onClick="assignJobLink(global_selected_bom)"  />
-	</hbox>
-	<separator height="3px" />
-	<div id="jobitems_holder" />
-	<separator height="3px" />
-	<button label="Close" sclass="k9" onClick="linkjobs_pop.close()" />
-</div>
+	<div sclass="shadowbox" style="background:#204a87;" width="600px" >
+		<label id="linkjob_header" style="color:#ffffff;font-weight:bold" multiline="true" />
+		<separator height="3px" />
+		<hbox>
+			<div id="jobs_holder" width="350px" />
+			<button label="Assign job" style="font-weight:bold" onClick="assignJobLink(global_selected_bom)" />
+		</hbox>
+		<separator height="3px" />
+		<div id="jobitems_holder" />
+		<separator height="3px" />
+		<button label="Close" sclass="k9" onClick="linkjobs_pop.close()" />
+	</div>
 </popup>
 
 <popup id="viewjob_popup">
-<div sclass="shadowbox" style="background:#204a87;" width="600px" >
-	<label id="vj_jobid_label" style="font-size:18;font-weight:bold;color:#ffffff" />
-	<separator height="2px" />
-	<div id="vj_jobitems_holder" />
-</div>
+	<div sclass="shadowbox" style="background:#204a87;" width="600px" >
+		<label id="vj_jobid_label" style="font-size:18;font-weight:bold;color:#ffffff" />
+		<separator height="2px" />
+		<div id="vj_jobitems_holder" />
+	</div>
 </popup>
 
 <popup id="auditlogs_pop">
-<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
-	<label style="font-size:14px;font-weight:bold;">Audit Logs</label>
-	<separator height="3px" />
-	<div id="auditlogs_holder" />
-	<separator height="3px" />
-	<button label="Ok" sclass="k9" onClick="auditlogs_pop.close()" />
-</div>
+	<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
+		<label style="font-size:14px;font-weight:bold;">Audit Logs</label>
+		<separator height="3px" />
+		<div id="auditlogs_holder" />
+		<separator height="3px" />
+		<button label="Ok" sclass="k9" onClick="auditlogs_pop.close()" />
+	</div>
 </popup>
 
 <popup id="commitpro_pop">
-<div sclass="shadowbox" style="background:#ce5c00;" width="500px" >
-	<label value="Commit BOM verification" style="font-size:15px;font-weight:bold;color:#eeeeee" />
-	<separator height="3px" />
-	<label id="commbom_lbl" style="font-weight:bold;color:#eeeeee" multiline="true" width="99%" height="100px" />
-	<separator height="3px" />
-	<button id="confirmcommit_b" label="Confirm commit" onClick="doFunc(self)" />
-	<button label="Cancel" sclass="k9" onClick="commitpro_pop.close()" />
-</div>
+	<div sclass="shadowbox" style="background:#ce5c00;" width="500px" >
+		<label value="Commit BOM verification" style="font-size:15px;font-weight:bold;color:#eeeeee" />
+		<separator height="3px" />
+		<label id="commbom_lbl" style="font-weight:bold;color:#eeeeee" multiline="true" width="99%" height="100px" />
+		<separator height="3px" />
+		<button id="confirmcommit_b" label="Confirm commit" onClick="doFunc(self)" />
+		<button label="Cancel" sclass="k9" onClick="commitpro_pop.close()" />
+	</div>
 </popup>
 
 <popup id="adminpopup">
-<div sclass="shadowbox" style="background:#F50F6F;">
-<vbox>
-	<hbox>
-		<datebox id="admchg_date" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
-		<button id="chgdate_b" label="Chg date" sclass="k9" onClick="adminFunc(self)" />
-	</hbox>
-	<button id="adm_setnew_b" label="${NEW_STR}" sclass="k9mo" onClick="adminFunc(self)" />
-	<button id="adm_setcommit_b" label="${COMMIT_STR}" sclass="k9mo" onClick="adminFunc(self)" />
-	<button id="adm_setapprove_b" label="${APPROVE_STR}" sclass="k9mo" onClick="adminFunc(self)" />
-	<button id="adm_clrcommit_b" label="Clear commit" sclass="k9mo" onClick="adminFunc(self)" />
-	<button id="adm_clrapprove_b" label="Clear commit" sclass="k9mo" onClick="adminFunc(self)" />
-	<separator bar="true" />
-	<button id="opencompop_b" label="open commit popup" sclass="k9" onClick="adminFunc(self)" />
-	<button id="uncommit_b" label="Uncommit BOM" sclass="k9" onClick="adminFunc(self)" />
-</vbox>
-</div>
+	<div sclass="shadowbox" style="background:#F50F6F;">
+		<vbox>
+			<hbox>
+				<datebox id="admchg_date" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
+				<button id="chgdate_b" label="Chg date" sclass="k9" onClick="adminFunc(self)" />
+			</hbox>
+			<button id="adm_setnew_b" label="${NEW_STR}" sclass="k9mo" onClick="adminFunc(self)" />
+			<button id="adm_setcommit_b" label="${COMMIT_STR}" sclass="k9mo" onClick="adminFunc(self)" />
+			<button id="adm_setapprove_b" label="${APPROVE_STR}" sclass="k9mo" onClick="adminFunc(self)" />
+			<button id="adm_clrcommit_b" label="Clear commit" sclass="k9mo" onClick="adminFunc(self)" />
+			<button id="adm_clrapprove_b" label="Clear approve" sclass="k9mo" onClick="adminFunc(self)" />
+			<separator bar="true" />
+			<button id="opencompop_b" label="open commit popup" sclass="k9" onClick="adminFunc(self)" />
+			<button id="uncommit_b" label="Uncommit BOM" sclass="k9" onClick="adminFunc(self)" />
+		</vbox>
+	</div>
 </popup>
 
 <popup id="pickcustomer_popup">
-<div sclass="shadowbox" style="background:#f9b12d;">
-	<hbox>
-		<label sclass="k9">Customer name</label>
-		<textbox id="searchcust_tb" sclass="k9" />
-		<button label="Find" sclass="k9" onClick="findCustomers()" />
-	</hbox>
-	<separator height="2px" />
-	<hbox>
-		<div id="foundcusts_holder" width="400px" />
-		<separator width="5px" />
-		<div width="400px" id="custfound_wa" visible="false" >
-			<label id="fcustomername" style="font-size:13px;font-weight:bold;text-decoration:underline" />
-			<separator height="2px" />
-			<label id="fcustomerdetails" multiline="true" width="99%" height="100px" style="font-weight:bold" />
-			<separator height="3px" />
-			<button label="Select this customer" sclass="k9" onClick="assignCustomer()" />
-		</div>
-	</hbox>
-	<label id="selectcustid" visible="false" />
-</div>
+	<div sclass="shadowbox" style="background:#f9b12d;">
+		<hbox>
+			<label sclass="k9">Customer name</label>
+			<textbox id="searchcust_tb" sclass="k9" />
+			<button label="Find" sclass="k9" onClick="findCustomers()" />
+		</hbox>
+		<separator height="2px" />
+		<hbox>
+			<div id="foundcusts_holder" width="400px" />
+			<separator width="5px" />
+			<div width="400px" id="custfound_wa" visible="false" >
+				<label id="fcustomername" style="font-size:13px;font-weight:bold;text-decoration:underline" />
+				<separator height="2px" />
+				<label id="fcustomerdetails" multiline="true" width="99%" height="100px" style="font-weight:bold" />
+				<separator height="3px" />
+				<button label="Select this customer" sclass="k9" onClick="assignCustomer()" />
+			</div>
+		</hbox>
+		<label id="selectcustid" visible="false" />
+	</div>
 </popup> <!-- ENDOF pickcustomer_popup -->
 
 <popup id="impERG_pop">
-<div sclass="shadowbox" style="background:#611C20;" width="450px">
-	<hbox>
-		<label value="ERG" sclass="k9b" />
-		<textbox id="ergimp_tb" sclass="k9" />
-		<button label="Dig" sclass="k9" onClick="showReqItems( ergimp_tb.getValue(), ergitems_holder)" />
-	</hbox>
-	<separator height="5px" bar="true" />
-	<hbox>
-		<label value="Customer:" style="color:#ffffff" />
-		<label id="ergcustomer_lbl" style="color:#ffffff" />
-	</hbox>
-	<separator height="3px" />
-	<div id="ergitems_holder" />
-	<separator height="3px" />
-	<button label="Import ERG" sclass="k9" onClick="impERG_toBOM()" />
-</div>
+	<div sclass="shadowbox" style="background:#611C20;" width="450px">
+		<hbox>
+			<label value="ERG" sclass="k9b" />
+			<textbox id="ergimp_tb" sclass="k9" />
+			<button label="Dig" sclass="k9" onClick="showReqItems( ergimp_tb.getValue(), ergitems_holder)" />
+		</hbox>
+		<separator height="5px" bar="true" />
+		<hbox>
+			<label value="Customer:" style="color:#ffffff" />
+			<label id="ergcustomer_lbl" style="color:#ffffff" />
+		</hbox>
+		<separator height="3px" />
+		<div id="ergitems_holder" />
+		<separator height="3px" />
+		<button label="Import ERG" sclass="k9" onClick="impERG_toBOM()" />
+	</div>
 </popup>
 
 <popup id="enterROCpopup">
-<div sclass="shadowbox" style="background:#611C20;" width="450px">
-<hbox>
-	<label value="ROC No." sclass="k9b" />
-	<textbox id="entroc_tb" width="60px" />
-	<button id="tieroctobom_b" label="Tie ROC to BOM" sclass="k9mo" onClick="doFunc(self)" />
-</hbox>
-</div>
+	<div sclass="shadowbox" style="background:#611C20;" width="450px">
+	<hbox>
+		<label value="ROC No." sclass="k9b" />
+		<textbox id="entroc_tb" width="60px" />
+		<button id="tieroctobom_b" label="Tie ROC to BOM" sclass="k9mo" onClick="doFunc(self)" />
+	</hbox>
+	</div>
 </popup>
 
 <popup id="bomcommiterpopup">
-<div sclass="shadowbox" style="background:#611C20;" width="600px">
-	<label sclass="subhead1" value="Builds committal" />
-	<separator height="3px" />
-	<div id="cm_bomitems_holder" />
-	<separator height="3px" />
-	<label id="cm_error_lbl" sclass="blink" style="color:#ffffff;font-weight:bold" />
-	<separator height="3px" />
-	<button id="realcommit_b" label="Continue commit" sclass="k9mo" disabled="true" onClick="doFunc(self)" />
-</div>
+	<div sclass="shadowbox" style="background:#611C20;" width="600px">
+		<label sclass="subhead1" value="Builds committal" />
+		<separator height="3px" />
+		<div id="cm_bomitems_holder" />
+		<separator height="3px" />
+		<label id="cm_error_lbl" sclass="blink" style="color:#ffffff;font-weight:bold" />
+		<separator height="3px" />
+		<button id="realcommit_b" label="Continue commit" sclass="k9mo" disabled="true" onClick="doFunc(self)" />
+	</div>
 </popup>
 
 <popup id="bommpfpop">
@@ -608,159 +627,159 @@ void mpfFunc(String itype)
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
 <panelchildren style="background:#69644C">
 
-<div sclass="shadowbox" style="background:#324544">
-<hbox>
-	<label value="Start date" sclass="k9b" />
-	<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
-	<label value="End date" sclass="k9b" />
-	<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
-	<textbox id="searhtxt_tb" width="200px" sclass="k9" />
-	<button label="Search/Load" sclass="k9" onClick="showBOMList()" />
-	<separator width="20px" />
-	<button id="admin_b" label="ADMIN" style="color:#ff0000;font-weight:bold;font-size:9px" onClick="adminpopup.open(self)" visible="false" />
-</hbox>
-<separator height="5px" bar="true" />
-<hbox>
-	<button id="newbom_butt" label="New BOM" sclass="k9mo" onClick="doFunc(self)" />
-	<button id="commitbom_butt" label="COMMIT" sclass="k9mo" onClick="newBOMCommiter();" />
-	<button id="approveby_b" label="APPROVE" sclass="k9mo" onClick="doFunc(self)" />
-	<button id="shortinventory_b" label="SHORT INVENTORY" sclass="k9mo" style="color:#ff1111" onClick="doFunc(self)" />
-	<separator width="20px" />
-	<button label="Tie to ROC" sclass="k9mo" onClick="enterROCpopup.open(self)" />
-</hbox>
-</div>
-<separator height="3px" />
-
-<div id="workloadholder" sclass="shadowbox" style="background:#324544;" visible="false" >
-
-<div id="buildslikexcel_holder" sclass="shadowbox" style="background:#DBBB07">
-	<hbox>
-		<button label="Show builds like Excel" sclass="k9mo" onClick="showBuildsLikeExcel()" />
-		<button label="Export as Excel" sclass="k9mo" onClick="exportBuildsDetails()" />
-		<separator width="10px" />
-		<label style="color:#ffffff" value="Builds:" />
-		<label id="buildsnombor_lbl" style="font-weight:bold;color:#ffffff" />
-	</hbox>
-	<separator height="3px" />
-</div>
-<separator height="3px" />
-
-<hbox>
-	<vbox>
-		<div id="boms_holder" />
-		<separator height="3px" />
-		<grid width="700px">
-			<rows>
-				<row>
-					<label id="bomheader" style="font-weight:bold" value="BOM#" />
-					<label id="bomuserheader" value="User" />
-					<label value="Category" sclass="k9" />
-					<listbox id="bomcategory" mold="select" rows="1" />
-				</row>
-				<row spans="1,2,1">
-					<label value="Customer" sclass="k9" />
-					<label id="customername" style="font-weight:bold" />
-					<button id="assigncust_b" label="Assign customer" sclass="k9mo" onClick="pickcustomer_popup.open(newbom_butt)" />
-				</row>
-				<row spans="1,3">
-					<label value="Job Link: JOB" sclass="k9" />
-					<hbox>
-						<label id="job_id" style="font-weight:bold;font-size:15px" />
-						<separator width="5px" />
-						<button id="viewjob_b" label="View job" sclass="k9mo" onClick="minishowJobItems()" />
-						<!-- onClick="viewJobWindow(glob_sel_jobid,rentitebom3);" /> -->
-						<button id="getjobid_b" label="Get job-id" sclass="k9mo" onClick="showLinkJobs(self,glob_sel_jobid)" />
-					</hbox>
-				</row>
-				<row id="shwmini_ji_row" visible="false" spans="4" >
-					<div id="mini_jobitems_holder" />
-				</row>
-			</rows>
-		</grid>
-		<separator height="2px" />
+	<div sclass="shadowbox" style="background:#324544">
 		<hbox>
-			<button id="updatebom_butt" label="Update BOM details" sclass="k9mo" onClick="doFunc(self)" />
+			<label value="Start date" sclass="k9b" />
+			<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
+			<label value="End date" sclass="k9b" />
+			<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
+			<textbox id="searhtxt_tb" width="200px" sclass="k9" />
+			<button label="Search/Load" sclass="k9" onClick="showBOMList()" />
+			<separator width="20px" />
+			<button id="admin_b" label="ADMIN" style="color:#ff0000;font-weight:bold;font-size:9px" onClick="adminpopup.open(self)" visible="false" />
 		</hbox>
-	</vbox>
+		<separator height="5px" bar="true" />
+		<hbox>
+			<button id="newbom_butt" label="New BOM" sclass="k9mo" onClick="doFunc(self)" />
+			<button id="commitbom_butt" label="COMMIT" sclass="k9mo" onClick="newBOMCommiter();" />
+			<button id="approveby_b" label="APPROVE" sclass="k9mo" onClick="doFunc(self)" />
+			<button id="shortinventory_b" label="SHORT INVENTORY" sclass="k9mo" style="color:#ff1111" onClick="doFunc(self)" />
+			<separator width="20px" />
+			<button label="Tie to ROC" sclass="k9mo" onClick="enterROCpopup.open(self)" />
+		</hbox>
+	</div>
+	<separator height="3px" />
 
-	<vbox>
-		<div sclass="shadowbox" style="background:#555753;" width="480px" id="jobnotes_div" visible="false" >
-			<label sclass="subhead1">JOB NOTES</label>
-			<separator height="3px" />
-			<div id="jobnotes_holder" />
-			<separator height="2px" />
+	<div id="workloadholder" sclass="shadowbox" style="background:#324544;" visible="false" >
+
+		<div id="buildslikexcel_holder" sclass="shadowbox" style="background:#DBBB07">
 			<hbox>
-				<button id="deletejobn_b" label="Delete" sclass="k9mo" onClick="jobNoteFunc(self,JN_linkcode())" />
+				<button label="Show builds like Excel" sclass="k9mo" onClick="showBuildsLikeExcel()" />
+				<button label="Export as Excel" sclass="k9mo" onClick="exportBuildsDetails()" />
+				<separator width="10px" />
+				<label style="color:#ffffff" value="Builds:" />
+				<label id="buildsnombor_lbl" style="font-weight:bold;color:#ffffff" />
 			</hbox>
-			<separator height="2px" />
-			<div id="jobnotes_entry_holder">
-				<grid>
+			<separator height="3px" />
+		</div>
+		<separator height="3px" />
+
+		<hbox>
+			<vbox>
+				<div id="boms_holder" />
+				<separator height="3px" />
+				<grid width="700px">
 					<rows>
-						<row visible="false">
-							<label value="To" sclass="k9" />
-							<textbox id="jn_towho" width="99%" style="font-weight:bold" />
-						</row>
 						<row>
-							<label value="Subject" sclass="k9" />
-							<textbox id="jn_subject" width="99%" style="font-weight:bold" />
+							<label id="bomheader" style="font-weight:bold" value="BOM#" />
+							<label id="bomuserheader" value="User" />
+							<label value="Category" sclass="k9" />
+							<listbox id="bomcategory" mold="select" rows="1" />
 						</row>
-						<row>
-							<label value="Notes" sclass="k9" />
-							<textbox id="jn_msgbody" width="99%" multiline="true" height="60px" />
+						<row spans="1,2,1">
+							<label value="Customer" sclass="k9" />
+							<label id="customername" style="font-weight:bold" />
+							<button id="assigncust_b" label="Assign customer" sclass="k9mo" onClick="pickcustomer_popup.open(self)" />
+						</row>
+						<row spans="1,3">
+							<label value="Job Link: JOB" sclass="k9" />
+							<hbox>
+								<label id="job_id" style="font-weight:bold;font-size:15px" />
+								<separator width="5px" />
+								<button id="viewjob_b" label="View job" sclass="k9mo" onClick="minishowJobItems()" />
+								<!-- onClick="viewJobWindow(glob_sel_jobid,rentitebom3);" /> -->
+								<!-- <button id="getjobid_b" label="Get job-id" sclass="k9mo" onClick="showLinkJobs(self,glob_sel_jobid)" /> -->
+								<button id="getjobid_b" label="Get job-id" sclass="k9mo" onClick="linkjobbom_pop.open(self)" />
+							</hbox>
+						</row>
+						<row id="shwmini_ji_row" visible="false" spans="4" >
+							<div id="mini_jobitems_holder" />
 						</row>
 					</rows>
 				</grid>
 				<separator height="2px" />
-				<button id="postjobn_b" label="Post" sclass="k9mo" onClick="jobNoteFunc(self,JN_linkcode())" />
-				<button id="clearjobn_b" label="Clear" sclass="k9mo" onClick="jobNoteFunc(self,JN_linkcode())" />
-			</div>
-		</div>
-	</vbox>
-</hbox>
-</div> <!-- ENDOF BOM listing things -->
-<separator height="3px" />
+				<hbox>
+					<button id="updatebom_butt" label="Update BOM details" sclass="k9mo" onClick="doFunc(self)" />
+				</hbox>
+			</vbox>
 
-<div id="workarea" visible="false" sclass="shadowbox" style="background:#324544;" >
-	<hbox>
-		<label style="font-weight:bold;color:#ffffff">RENTAL ITEMS</label>
-		<separator width="5px" />
-		<textbox id="newdt_qty" sclass="k9" width="30px" value="1" />
-		<button id="newdesktop_butt" label="New desktop" sclass="k9mo" onClick="doFunc(self)" />
-		<textbox id="newnb_qty" sclass="k9" width="30px" value="1" />
-		<button id="newnotebook_butt" label="New notebook" sclass="k9mo" onClick="doFunc(self)" />
-		<textbox id="newmt_qty" sclass="k9" width="30px" value="1" />
-		<button id="newmonitor_butt" label="New monitor" sclass="k9mo" onClick="doFunc(self)" />
-		<button id="imperg_b" label="Import equip-request" sclass="k9mo" onClick="impERG_pop.open(self)" />
-		<button label="MPF" sclass="k9mo" onClick="bommpfpop.open(self)" />
-		<separator width="10px" />
-
-		<button id="delbuilds_butt" label="REMOVE" sclass="k9mo" style=";color:#ff0000" onClick="doFunc(self)" />
-		<button id="updbuild_b" label="Save build's parts" sclass="k9mo" onClick="doFunc(self)" />
-		<button label="Clear build's parts" sclass="k9mo" onClick="clearBuilds_items()" />
-	</hbox>
+			<vbox>
+				<div sclass="shadowbox" style="background:#555753;" width="480px" id="jobnotes_div" visible="false" >
+					<label sclass="subhead1">JOB NOTES</label>
+					<separator height="3px" />
+					<div id="jobnotes_holder" />
+					<separator height="2px" />
+					<hbox>
+						<button id="deletejobn_b" label="Delete" sclass="k9mo" onClick="jobNoteFunc(self,JN_linkcode())" />
+					</hbox>
+					<separator height="2px" />
+					<div id="jobnotes_entry_holder">
+						<grid>
+							<rows>
+								<row visible="false">
+									<label value="To" sclass="k9" />
+									<textbox id="jn_towho" width="99%" style="font-weight:bold" />
+								</row>
+								<row>
+									<label value="Subject" sclass="k9" />
+									<textbox id="jn_subject" width="99%" style="font-weight:bold" />
+								</row>
+								<row>
+									<label value="Notes" sclass="k9" />
+									<textbox id="jn_msgbody" width="99%" multiline="true" height="60px" />
+								</row>
+							</rows>
+						</grid>
+						<separator height="2px" />
+						<button id="postjobn_b" label="Post" sclass="k9mo" onClick="jobNoteFunc(self,JN_linkcode())" />
+						<button id="clearjobn_b" label="Clear" sclass="k9mo" onClick="jobNoteFunc(self,JN_linkcode())" />
+					</div>
+				</div>
+			</vbox>
+		</hbox>
+	</div> <!-- ENDOF BOM listing things -->
 	<separator height="3px" />
 
-	<hbox>
-		<div id="builds_holder" width="500px" />
-		<div id="form_holder">
-			<div style="background:#DBBB07;padding:5px">
-				<hbox>
-					<textbox id="fastscan_tb" multiline="true" width="180px" height="70px" />
-					<vbox>
-						<button id="pbuildparts_b" label="Populate selected build's parts" sclass="k9mo" onClick="autoPopulateParts()" />
-						<button id="autinserteq_b" label="Auto insert equipments" sclass="k9mo" onClick="autoInsertEquips()" />
-						<button id="autinsertmon_b" label="Auto insert monitors ONLY" sclass="k9mo" onClick="bomAutoInsertEquips(1)" />
-						<button label="Clear" sclass="k9mo" onClick='fastscan_tb.setValue("")' />
-					</vbox>
-				</hbox>
+	<div id="workarea" visible="false" sclass="shadowbox" style="background:#324544;" >
+		<hbox>
+			<label style="font-weight:bold;color:#ffffff">RENTAL ITEMS</label>
+			<separator width="5px" />
+			<textbox id="newdt_qty" sclass="k9" width="30px" value="1" />
+			<button id="newdesktop_butt" label="New desktop" sclass="k9mo" onClick="doFunc(self)" />
+			<textbox id="newnb_qty" sclass="k9" width="30px" value="1" />
+			<button id="newnotebook_butt" label="New notebook" sclass="k9mo" onClick="doFunc(self)" />
+			<textbox id="newmt_qty" sclass="k9" width="30px" value="1" />
+			<button id="newmonitor_butt" label="New monitor" sclass="k9mo" onClick="doFunc(self)" />
+			<button id="imperg_b" label="Import equip-request" sclass="k9mo" onClick="impERG_pop.open(self)" />
+			<button label="MPF" sclass="k9mo" onClick="bommpfpop.open(self)" />
+			<separator width="10px" />
+
+			<button id="delbuilds_butt" label="REMOVE" sclass="k9mo" style=";color:#ff0000" onClick="doFunc(self)" />
+			<button id="updbuild_b" label="Save build's parts" sclass="k9mo" onClick="doFunc(self)" />
+			<button label="Clear build's parts" sclass="k9mo" onClick="clearBuilds_items()" />
+		</hbox>
+		<separator height="3px" />
+
+		<hbox>
+			<div id="builds_holder" width="500px" />
+			<div id="form_holder">
+				<div style="background:#DBBB07;padding:5px">
+					<hbox>
+						<textbox id="fastscan_tb" multiline="true" width="180px" height="70px" />
+						<vbox>
+							<button id="pbuildparts_b" label="Populate selected build's parts" sclass="k9mo" onClick="autoPopulateParts()" />
+							<button id="autinserteq_b" label="Auto insert equipments" sclass="k9mo" onClick="autoInsertEquips()" />
+							<button id="autinsertmon_b" label="Auto insert monitors ONLY" sclass="k9mo" onClick="bomAutoInsertEquips(1)" />
+							<button label="Clear" sclass="k9mo" onClick='fastscan_tb.setValue("")' />
+						</vbox>
+					</hbox>
+				</div>
+				<separator height="2px" />
 			</div>
-			<separator height="2px" />
-		</div>
-	</hbox>
+		</hbox>
+	</div> <!-- ENDOF workarea -->
 
-</div> <!-- ENDOF workarea -->
-
-<div id="kasiexport" visible="false" />
+	<div id="kasiexport" visible="false" />
 
 <zscript>
 <![CDATA[

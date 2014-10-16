@@ -299,7 +299,9 @@ void showJobsByCustomer()
 Object[] pichkstkhds =
 {
 	new listboxHeaderWidthObj("AssetTag",true,"90px"),
+	new listboxHeaderWidthObj("Serial",true,"90px"),
 	new listboxHeaderWidthObj("Item",true,""),
+	new listboxHeaderWidthObj("Type",true,""),
 	new listboxHeaderWidthObj("Pallet",true,"60px"),
 	new listboxHeaderWidthObj("Qty",true,"60px"),
 	new listboxHeaderWidthObj("Short",true,"60px"),
@@ -362,27 +364,34 @@ void postInventory_DO()
 	ArrayList kabom = new ArrayList();
 	errchek = 0;
 
-	// check all asset-tags pallet/loca
+	// check all asset-tags pallet/loca and serial-no/type
 	Set theset = postInventory_Map.entrySet();
 	Iterator ck = theset.iterator();
 	while(ck.hasNext())
 	{
 		Map.Entry me = (Map.Entry)ck.next();
-		tg = me.getKey();
-		tqy = me.getValue();
+		tg = me.getKey(); // asset-tag from hashmap
+		tqy = me.getValue(); // the qty
 
 		kabom.add(tg);
 
-		sqlstm = "select name,qty,pallet from partsall_0 where assettag='" + tg + "';";
+		sqlstm = "select name,qty,pallet,serial,item from partsall_0 where assettag='" + tg + "';";
 		qr = f30_gpSqlFirstRow(sqlstm);
-		p1 = p2 = p3 = "";
+		p1 = p2 = p3 = p4 = p5 = "";
 		if(qr != null)
 		{
-			p1 = qr.get("name");
-			p2 = qr.get("pallet");
+			p1 = kiboo.checkNullString( qr.get("name") ).trim();
+			p2 = kiboo.checkNullString( qr.get("pallet") );
+			p4 = kiboo.checkNullString( qr.get("serial") ).trim().toUpperCase();
+			p5 = kiboo.checkNullString( qr.get("item") ).trim();
 
 			if(!p2.equals(PROD_PALLET_STR)) // if asset-tag was not set to PROD, err, all to-be DO items must be in PROD
 				errchek++;
+
+			if( p5.equals("DT") || p5.equals("MT") || p5.equals("NB") ) // if item-type = things requiring serial-num
+			{
+				if( p4.equals("") || p4.equals("NOSN") || p4.equals("---") ) errchek++; // and no serial-num found.. Error!!
+			}
 
 			// Check if qty in DB can fulfill this posting
 			if(qr.get("qty") < 0 || qr.get("qty") < tqy) errchek++;
@@ -392,9 +401,11 @@ void postInventory_DO()
 		else
 			errchek++;
 
-		kabom.add(p1);
-		kabom.add(p2);
-		kabom.add(p3);
+		kabom.add(p4); // serial
+		kabom.add(p1); // item name
+		kabom.add(p5); // item type
+		kabom.add(p2); // pallet
+		kabom.add(p3); // qty
 		kabom.add(tqy.toString());
 
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");

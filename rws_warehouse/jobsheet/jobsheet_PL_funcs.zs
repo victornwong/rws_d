@@ -185,3 +185,61 @@ void genWH_picklist(String iwhat)
 
 }
 
+String[] sourceSerialNo_byAssetTag(String iatg)
+{
+	String[] retv = new String[2];
+	retv[0] = retv[1] = "";
+	sqlstm = "select serial,name from partsall_0 where assettag='" + iatg + "';";
+	r = f30_gpSqlFirstRow(sqlstm); // TODO - chg back sqlhand
+
+	if(r != null)
+	{
+		retv[0] = kiboo.checkNullString( r.get("serial") );
+		retv[1] = kiboo.checkNullString( r.get("name") );
+	}
+	return retv;
+}
+
+void genAssetTags_printout(String ijid, String ipl)
+{
+	jpl = rwsqlfun.getJobPicklist_rec(ipl);
+	if(jpl == null)
+	{
+		guihand.showMessageBox("ERR: Cannot access pick-list!!");
+		return;
+	}
+	// remove all rec from rw_jobpicklist_tags by pl_id
+	sqlstm = "delete from rw_jobpicklist_tags where pl_id=" + ipl;
+	sqlhand.gpSqlExecuter(sqlstm);
+
+	msql = "";
+	itms = sqlhand.clobToString( jpl.get("pl_items")).split("~"); // split 'em item names
+	atgs = sqlhand.clobToString(jpl.get("pl_asset_tags")).split("~"); // split atgs linked to item
+
+	for(i=0; i<itms.length; i++)
+	{
+		u = "";
+		try { u = atgs[i]; } catch (Exception e) {}
+		if(!u.equals(""))
+		{
+			tgs = u.split("\n");
+			for(j=0; j<tgs.length; j++)
+			{
+				kuk = sourceSerialNo_byAssetTag(tgs[j].trim()); // source serial-number/actual-name from fc6 by asset-tags chopped from picklist
+				msql += "insert into rw_jobpicklist_tags (pl_id,pl_item,pl_asset_tag,pl_serial_no,pl_actual_name) values " +
+				"(" + ipl + ",'" + itms[i] + "','" + tgs[j] + "','" + kuk[0] + "','" + kuk[1] + "');";
+			}
+		}
+	}
+	sqlhand.gpSqlExecuter(msql);
+
+	if(expass_div.getFellowIfAny("expassframe") != null) expassframe.setParent(null);
+	Iframe newiframe = new Iframe();
+	newiframe.setId("expassframe"); newiframe.setWidth("100%"); newiframe.setHeight("600px");
+	bfn = "rwreports/JPL_checklist_v1.rptdesign";
+	thesrc = birtURL() + bfn + "&jobid_1=" + ijid + "&pl_id_1=" + ipl;
+	newiframe.setSrc(thesrc);
+	newiframe.setParent(expass_div);
+	expasspop.open(prnpickedass_b);
+
+}

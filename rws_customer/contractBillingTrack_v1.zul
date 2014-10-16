@@ -272,46 +272,6 @@ void adminFunc(Object iwhat)
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 }
 
-void exportAssetsList(String iwhat, int itype)
-{
-	if(iwhat.equals("")) return;
-	if(expass_div.getFellowIfAny("expassframe") != null) expassframe.setParent(null);
-	Iframe newiframe = new Iframe();
-	newiframe.setId("expassframe");
-	newiframe.setWidth("100%");
-	newiframe.setHeight("600px");
-	cnm = glob_sel_customer.replaceAll(" ","%20");
-	ort = i_order_type.getValue().trim().replaceAll(" ","%20");
-
-	bfn = "rwreports/lc_assetslist_v1.rptdesign";
-
-	switch(itype)
-	{
-		case 2:
-		bfn = "rwreports/lc_assetslist_amt_v1.rptdesign";
-		break;
-		case 3: // evf w/o specs but with location
-		bfn = "rwreports/lc_assetslist_v2.rptdesign";
-		break;
-		case 4:
-		bfn = "rwreports/lc_assetslist_amt_v2.rptdesign";
-		break;
-		case 5: // evf with specs
-		bfn = "rwreports/lc_assetslist_v3.rptdesign";
-		break;
-		case 6: // multi-LC EVF with grouping (mainly for MISC or other big customers)
-		udi = userdef_inv.getValue().trim().replaceAll(" ","%20");
-		bfn = "rwreports/multilcgroupy_1.rptdesign&userdef_inv=" + udi;
-		break;
-	}
-
-	thesrc = birtURL() + bfn + "&lcid=" + iwhat + 
-	"&customername=" + cnm + "&ordertype=" + ort + "&rwno=" + glob_sel_lc_str;
-	newiframe.setSrc(thesrc);
-	newiframe.setParent(expass_div);
-	expasspop.open(newasset_b);
-}
-
 // List assets where hotswap flag
 void listHotswaps()
 {
@@ -326,8 +286,7 @@ Object[] cstkhds =
 };
 
 	mwin = ngfun.vMakeWindow(winsholder,"HOTSWAPS List","0","center","650px","");
-	kdiv = new Div();
-	kdiv.setParent(mwin);
+	kdiv = new Div(); kdiv.setParent(mwin);
 	Listbox newlb = lbhand.makeVWListbox_Width(kdiv, cstkhds, "chkstock_lb", 3);
 
 	csqlstm = "select lce.asset_tag, lcr.lc_id, lcr.customer_name, lcr.lstartdate, lcr.lenddate " +
@@ -402,14 +361,17 @@ BUTT_WIDTH2 = "190px";
 </popup>
 
 <popup id="copyasslc_pop">
-	<hbox>
-		<label value="Copy assets from LC" />
-		<textbox id="copylcid" />
-		<hbox>
-			<button id="copyassflc_b" label="Copy semua" onClick="assFunc(self)" />
-			<button id="copyassflc_filt_b" label="Sedut dengan filter" onClick="assFunc(self)" />
-		</hbox>
-	</hbox>
+	<div sclass="shadowbox" style="background:#204a87;" width="250px" >
+		<vbox>
+			<hbox>
+				<label value="Copy assets from LC" sclass="k9b" />
+				<textbox id="copylcid" />
+			</hbox>
+
+			<button id="copyassflc_b" label="Copy semua" sclass="k9mo" onClick="assFunc(self)" />
+			<button id="copyassflc_filt_b" label="Sedut dengan filter" sclass="k9mo" onClick="assFunc(self)" />
+		</vbox>
+	</div>
 </popup>
 
 <popup id="contcarepop" >
