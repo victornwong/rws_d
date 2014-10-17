@@ -98,28 +98,6 @@ int jobitems_gridRows()
 	return retv;
 }
 
-void toggleButts(String itype, boolean iwhat)
-{
-	if(itype.equals("submitjob_b") || itype.equals("all"))
-	{
-		submitjob_b.setDisabled(iwhat);
-	}
-
-	if(itype.equals("pickjob_b") || itype.equals("all"))
-	{
-		pickjob_b.setDisabled(iwhat);
-	}
-
-	if(itype.equals("workarea_butts") || itype.equals("all"))
-	{
-		Object[] ob = { ji_insert_b, ji_remove_b, ji_calc_b, ji_save_b, asscust_b, updatejob_b, improc_b, impso_b };
-		for(i=0; i<ob.length; i++)
-		{
-			ob[i].setDisabled(iwhat);
-		}
-	}
-}
-
 void doFunc(Object iwhat)
 {
 	itype = iwhat.getId();
@@ -247,6 +225,8 @@ void doFunc(Object iwhat)
 		"order_type='" + jim[14] + "', debit_note='" + jim[15] + "', whoscode='" + jim[16] + "' " +
 		jim[17] + jim[18] +
 		"where origid=" + glob_sel_job;
+
+		jobItems(ji_save_b); // save the items too when save job metadata
 
 		refresh = refreshmeta = true;
 		injectApprovers(lnkc, jim[1]);
@@ -565,6 +545,11 @@ void adminFunc(Object iwhat)
 		glob_sel_job = "";
 	}
 
+	if(itype.equals("clrlinkqt_b")) // clear linking QT 17/10/2014
+	{
+		sqlstm = "update rw_jobs set quote_id=null where origid=" + glob_sel_job;
+	}
+
 	if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
 	if(refresh) showJobs();
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
@@ -599,18 +584,19 @@ void trytask()
 </zscript>
 
 <popup id="adminpopup">
-	<div sclass="shadowbox" style="background:#F20F53" width="400px">
+	<div sclass="shadowbox" style="background:#F20F53" width="200px">
 		<vbox>
 			<datebox id="adm_datechg" format="yyyy-MM-dd" sclass="k9" onCreate="kiboo.setTodayDatebox(self)" visible="false" />
 			<button id="chgtkdate_b" label="Set to-date" sclass="k9" onClick="adminFunc(self)" />
 			<button id="setnew_b" label="set New" sclass="k9" onClick="adminFunc(self)" />
 			<button id="setsubmit_b" label="set Submit" sclass="k9" onClick="adminFunc(self)" />
 			<button id="setspickup_b" label="set Pickup" sclass="k9" onClick="adminFunc(self)" />
-			<button id="deljob_b" label="DELETE" style="color:#ff0000" onClick="adminFunc(self)" />
+			<button id="clrlinkqt_b" label="Clear linked QT" sclass="k9" onClick="adminFunc(self)" />
 			<button id="clrpickup_b" label="clr Pickup.Date.By" sclass="k9" onClick="adminFunc(self)" />
 			<button label="showfellows" onClick="alert(job_metaform.getFellows())" />
 			<button label="try send gmail" onClick="trysendgmail()" />
 			<button label="inject task" onClick="trytask()" />
+			<button id="deljob_b" label="DELETE" style="color:#ff0000" onClick="adminFunc(self)" />
 		</vbox>
 	</div>
 </popup>
@@ -669,7 +655,6 @@ void trytask()
 	</groupbox>
 </popup>
 
-
 <popup id="uploadfile_popup"> <!-- upload a file popup -->
 	<groupbox>
 	<caption label="Upload a file" />
@@ -705,8 +690,17 @@ void trytask()
 <popup id="impso_pop">
 	<div sclass="shadowbox" style="background:#5568A3">
 		<hbox>
-			<textbox id="impso_tb" width="80px" value="SO04636" />
+			<textbox id="impso_tb" width="80px" />
 			<button label="Import SO" sclass="k9" onClick="impso_pop.close(); impFC6_SOROC(2,impso_tb)" />
+		</hbox>
+	</div>
+</popup>
+
+<popup id="impqt_pop">
+	<div sclass="shadowbox" style="background:#5568A3">
+		<hbox>
+			<textbox id="impqt_tb" width="80px" />
+			<button label="Import QT" sclass="k9" onClick="impqt_pop.close(); impRWMS_QT(impqt_tb.getValue().trim());" />
 		</hbox>
 	</div>
 </popup>
@@ -741,6 +735,13 @@ void trytask()
 </popup>
 
 <style src="/real-world.css" />
+<style>
+.GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
+{
+border: none; overflow: hidden; zoom: 1;
+border-top: none; border-left: none; border-right: none; border-bottom: none;
+}
+</style>
 
 <div width="1200px">
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
@@ -823,6 +824,7 @@ void trytask()
 					<button id="asscust_b" label="Assign customer" sclass="k9mo" onClick="pickcustomer_popup.open(self)" />
 					<button id="updatejob_b" label="Update/Save" sclass="k9mo" onClick="doFunc(self)" />
 					<separator width="10px" />
+					<button id="impquote_b" label="Import Quotation" sclass="k9mo" onClick="impqt_pop.open(self)" />
 					<button id="improc_b" label="Import ROC" sclass="k9mo" onClick="improc_pop.open(self)" />
 					<button id="impso_b" label="Import SO" sclass="k9mo" onClick="impso_pop.open(self)" />
 				</hbox>
@@ -905,7 +907,7 @@ void trytask()
 			</tabpanel>
 
 			<tabpanel> <!-- documents -->
-				<div sclass="shadowbox" style="background:#555753;" >
+				<div sclass="shadowbox" style="background:#555753;" width="600px" >
 					<label sclass="subhead1">ATTACHMENT / DOCUMENTS</label>
 					<separator height="3px" />
 					<hbox>
@@ -922,7 +924,7 @@ void trytask()
 			</tabpanel>
 
 			<tabpanel> <!-- approvals -->
-				<div sclass="shadowbox" style="background:#555753;" >
+				<div sclass="shadowbox" style="background:#555753;" width="600px" >
 					<div style="background:#555753;padding:2px">
 						<label value="JOB APPROVAL" sclass="subhead1" />
 						<button label="Logs" sclass="k9" onClick="viewBPM_logs(JOBS_PREFIX + glob_sel_job, self)" />
@@ -942,20 +944,13 @@ void trytask()
 <zscript>
 <![CDATA[
 
-/*
-showRentableItems(digdesktop_holder,"dtmodels_lb","DT","");
-showRentableItems(dignotebook_holder,"nbmodels_lb","NB","");
-showRentableItems(digmonitor_holder,"mtmodels_lb","MT","");
-showRentableItems(digram_holder,"rams_lb","","RAM");
-showRentableItems(dighdd_holder,"hdds_lb","","HDD");
-*/
-
 glob_formmaker = dynamicForm(jobmetaform_holder, "job_metaform", "5");
 j_fc6_custid.setVisible(false); // hide fc6-custid
 
 if(useraccessobj.accesslevel == 9)
 {
 	admin_b.setVisible(true);
+	impso_tb.setValue("SO04636");
 }
 
 if(param_jobid != null)
@@ -974,11 +969,17 @@ else
 	showJobs();
 
 /*
-			<button id="blind_desktop" label="Desktops" style="font-weight:bold" onClick="dtstock_popup.open(self)" />
-			<button id="blind_notebook" label="Notebooks" style="font-weight:bold" onClick="nbstock_popup.open(self)" />
-			<button id="blind_monitor" label="Monitor" style="font-weight:bold" onClick="mtstock_popup.open(self)" />
-			<button id="blind_ram" label="RAM" style="font-weight:bold" onClick="ramstock_popup.open(self)" />
-			<button id="blind_hdd" label="HDD" style="font-weight:bold" onClick="hddstock_popup.open(self)" />
+showRentableItems(digdesktop_holder,"dtmodels_lb","DT","");
+showRentableItems(dignotebook_holder,"nbmodels_lb","NB","");
+showRentableItems(digmonitor_holder,"mtmodels_lb","MT","");
+showRentableItems(digram_holder,"rams_lb","","RAM");
+showRentableItems(dighdd_holder,"hdds_lb","","HDD");
+
+<button id="blind_desktop" label="Desktops" style="font-weight:bold" onClick="dtstock_popup.open(self)" />
+<button id="blind_notebook" label="Notebooks" style="font-weight:bold" onClick="nbstock_popup.open(self)" />
+<button id="blind_monitor" label="Monitor" style="font-weight:bold" onClick="mtstock_popup.open(self)" />
+<button id="blind_ram" label="RAM" style="font-weight:bold" onClick="ramstock_popup.open(self)" />
+<button id="blind_hdd" label="HDD" style="font-weight:bold" onClick="hddstock_popup.open(self)" />
 <popup id="dtstock_popup">
 	<div id="digdesktop_holder" width="400px" />
 </popup>

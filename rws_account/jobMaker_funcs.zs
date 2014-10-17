@@ -3,6 +3,28 @@ import org.victor.*;
 
 glob_icomponents_counter = 1; // use globally to set items components ID
 
+void toggleButts(String itype, boolean iwhat)
+{
+	if(itype.equals("submitjob_b") || itype.equals("all"))
+	{
+		submitjob_b.setDisabled(iwhat);
+	}
+
+	if(itype.equals("pickjob_b") || itype.equals("all"))
+	{
+		pickjob_b.setDisabled(iwhat);
+	}
+
+	if(itype.equals("workarea_butts") || itype.equals("all"))
+	{
+		Object[] ob = { ji_insert_b, ji_remove_b, ji_calc_b, ji_save_b, asscust_b, updatejob_b, improc_b, impso_b, impquote_b };
+		for(i=0; i<ob.length; i++)
+		{
+			ob[i].setDisabled(iwhat);
+		}
+	}
+}
+
 void showRentableItems(Div iholder, String lbid, String istockcat, String ipname)
 {
 Object[] stklist_headers = {
@@ -19,8 +41,7 @@ Object[] stklist_headers = {
 
 	r = sqlhand.rws_gpSqlGetRows(sqlstm);
 	if(r.size() == 0) return;
-	newlb.setRows(10);
-	newlb.setMold("paging");
+	newlb.setRows(10); newlb.setMold("paging");
 	//newlb.addEventListener("onSelect", new jobsClick());
 	ArrayList kabom = new ArrayList();
 	for(d : r)
@@ -50,8 +71,7 @@ Object[] stklist_headers =
 
 	screcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(screcs.size() == 0) return;
-	newlb.setRows(10);
-	newlb.setMold("paging");
+	newlb.setRows(10); newlb.setMold("paging");
 	//newlb.addEventListener("onSelect", new jobsClick());
 	ArrayList kabom = new ArrayList();
 	for(dpi : screcs)
@@ -77,7 +97,7 @@ void showJobMetadata(String iwhat)
 	j_contract_start, j_priority, j_contact, j_contact_tel, j_contact_email, j_deliver_address,
 	j_do_notes, j_order_type, j_debit_note, j_whoscode, j_eta, j_etd };
 
-	populateUI_Data(uiob, flds, jrec);
+	ngfun.populateUI_Data(uiob, flds, jrec);
 
 	fc6n = (jrec.get("fc6_custid") == null) ? "" : jrec.get("fc6_custid").toString();
 	j_fc6_custid.setValue(fc6n); // hidden fc6 cust-id
@@ -85,7 +105,7 @@ void showJobMetadata(String iwhat)
 	showJobItems(jrec);
 	fillDocumentsList(documents_holder,JOBS_PREFIX,iwhat);
 
-	showApprovalThing(JOBS_PREFIX + iwhat, jrec.get("jobtype"), approvers_box );
+	showApprovalThing(JN_linkcode(), jrec.get("jobtype"), approvers_box );
 
 	// Update bpm-approval things
 	appf = checkBPM_fullapproval(JOBS_PREFIX + iwhat);
@@ -181,11 +201,6 @@ class jbrowclik implements org.zkoss.zk.ui.event.EventListener
 		if(glob_sel_status.equals("SUBMIT")) toggleButts("pickjob_b",false);
 
 		showJobMetadata(glob_sel_job);
-		/*
-		alert(glob_sel_fc6 + " :: " + glob_sel_jobtype + " :: " + glob_sel_pickup + " :: " +
-		glob_sel_complete + " :: " + glob_sel_bomid + " :: " + glob_sel_picklist + " :: " +
-		glob_sel_prn + " :: " + glob_sel_status);
-		*/
 	}
 }
 jbrowcliker = new jbrowclik();
@@ -265,13 +280,10 @@ void showJobs()
 	{
 		jbid = d.get("origid").toString();
 
-		krow = new Row();
-		krow.setParent(mrows);
+		krow = new Row(); krow.setParent(mrows);
 		krow.addEventListener("onClick", jbrowcliker);
-		kdetail = new Detail();
-		kdetail.setParent(krow);
-		kdiv = new Div();
-		kdiv.setParent(kdetail);
+		kdetail = new Detail(); kdetail.setParent(krow);
+		kdiv = new Div(); kdiv.setParent(kdetail);
 		Listbox newlb = lbhand.makeVWListbox_Width(kdiv, jbshds, "jlb"+lbc.toString(), 2);
 		lbc++;
 
@@ -326,7 +338,7 @@ void checkMakeItemsGrid()
 	{
 		igrd = new Grid();
 		igrd.setId("items_grid");
-		igrd.setWidth("800px");
+		igrd.setWidth("850px");
 
 		icols = new org.zkoss.zul.Columns();
 		for(i=0;i<colws.length;i++)
@@ -452,7 +464,7 @@ Object[] grnihds =
 	{
 		kabom.add(lnc.toString() + "." );
 		kabom.add( kiboo.checkNullString(d.get("productname")) ); 
-		kabom.add( nf0.format(d.get("qty2")) );
+		kabom.add( GlobalDefs.nf0.format(d.get("qty2")) );
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		lnc++;
 		kabom.clear();

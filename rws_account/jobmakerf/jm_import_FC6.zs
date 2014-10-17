@@ -1,4 +1,5 @@
 // JobMaker: import things from FC6 funcs
+// 17/10/2014: put in
 
 // itype: 1=ROC, 2=SO
 boolean impFC6_SOROC_items(String ivn, String ijob, int itype)
@@ -105,3 +106,72 @@ void impFC6_SOROC(int itype, Object itb)
 	showJobMetadata(glob_sel_job);
 }
 
+void impRWMS_QT(String iqt)
+{
+	if(glob_sel_job.equals("")) return;
+	iqt = kiboo.replaceSingleQuotes( iqt );
+	if(iqt.equals("")) return;
+	qtr = getQuotation_rec(iqt);
+
+	// NOTE rw_quotation.qt_type must map to job-type TODO
+	String[] flds = { "customer_name", "contact_person1", "telephone", "email", "cust_address", "notes" };
+	Object[] jkl = { customername, j_contact, j_contact_tel, j_contact_email, j_deliver_address, j_do_notes };
+	ngfun.populateUI_Data(jkl, flds, qtr);
+
+	ktg = sqlhand.clobToString(qtr.get("q_items"));
+	if(ktg.equals("")) { guihand.showMessageBox("No items to import.."); return; }
+
+	idesc = sqlhand.clobToString(qtr.get("q_items")).split("~");
+	//ispec = sqlhand.clobToString(qtr.get("q_items_desc")).split("~");
+	iqty = sqlhand.clobToString(qtr.get("q_qty")).split("~");
+	iupr = sqlhand.clobToString(qtr.get("q_unitprice")).split("~");
+	//idisc = sqlhand.clobToString(qtr.get("q_discounts")).split("~");
+	iper = sqlhand.clobToString(qtr.get("q_rental_periods")).split("~");
+	irams = sqlhand.clobToString(qtr.get("q_rams")).split("~");
+	ihdd = sqlhand.clobToString(qtr.get("q_hdd")).split("~");
+	ios = sqlhand.clobToString(qtr.get("q_operatingsystem")).split("~");
+	imso = sqlhand.clobToString(qtr.get("q_office")).split("~");
+
+	if(items_holder.getFellowIfAny("items_grid") != null) items_grid.setParent(null);
+	checkMakeItemsGrid();
+	glob_icomponents_counter = 1; // reset for new grid
+	kk = "font-size:9px;font-weight:bold;";
+
+	for(i=0; i<idesc.length; i++) // imp qt items
+	{
+		try { p1 = irams[i]; } catch (Exception e) { p1 = "NONE"; }
+		try { p2 = ihdd[i]; } catch (Exception e) { p2 = "NONE"; }
+		try { p3 = ios[i]; } catch (Exception e) { p3 = "NONE"; }
+		try { p4 = imso[i]; } catch (Exception e) { p4 = "NONE"; }
+
+		jtm = idesc[i] + "\n" + p1 + "/" + p2 + "/" + p3 + "/" + p4;
+
+		// these codes knockoff from jobmaker_funcs.showJobItems()
+		cmid = glob_icomponents_counter.toString();
+		irow = gridhand.gridMakeRow("IRW" + cmid ,"","",items_rows);
+		gpMakeCheckbox(irow,"CBX" + cmid, cmid + ".", kk + "font-size:14px");
+
+		desb = gpMakeTextbox(irow,"IDE" + glob_icomponents_counter.toString(),jtm,kk,"99%");
+		desb.setMultiline(true); desb.setHeight("70px"); desb.setDroppable("true");
+		//desb.addEventListener("onDrop",new dropModelName());
+
+		gpMakeTextbox(irow,"ICL" + cmid ,"", kk,"99%"); // color
+		gpMakeTextbox(irow,"IQT" + cmid,iqty[i],kk,"99%"); // qty
+		gpMakeTextbox(irow,"IRP" + cmid,iper[i],kk,"99%"); // rental-period
+		gpMakeTextbox(irow,"IRU" + cmid,iupr[i],kk,"99%"); // rental per unit
+		gpMakeLabel(irow,"MON" + cmid,"",kk); // per month total
+		gpMakeLabel(irow,"RTO" + cmid,"",kk); // rental all total
+		glob_icomponents_counter++;
+	}
+
+	jobItems(ji_calc_b); // Do items total/rental calcs
+
+	// get fc6_id by customer-name in QT and save into rw_jobs.fc6_custid
+	cnm = kiboo.checkNullString( qtr.get("customer_name") ).trim();
+	fc6 = (cnm.equals("")) ? "" : getFocus_CustomerID(cnm);
+	j_fc6_custid.setValue(fc6); // hidden element defi in XML-form(5)
+
+	// update rw_jobs.quote_id. fc6_custid, let doFunc() handle it
+	sqlstm = "update rw_jobs set quote_id=" + iqt + " where origid=" + glob_sel_job;
+	sqlhand.gpSqlExecuter(sqlstm);
+}

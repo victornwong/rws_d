@@ -42,11 +42,7 @@ myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler(); guihand = new GuiFuncs(); luhand = new LookupFuncs();
 
 SimpleDateFormat dtf3 = new SimpleDateFormat("yyyyMMdd");
 SimpleDateFormat dtf2 = new SimpleDateFormat("yyyy-MM-dd");

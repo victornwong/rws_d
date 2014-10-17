@@ -256,13 +256,18 @@ void showQuoteMeta(String iwhat, int itype)
 	String[] flds = { "customer_name", "cust_address", "contact_person1", "telephone", "fax", "email", "origid",
 	"creditterm", "curcode", "exchangerate", "quote_discount", "notes", "qt_type", "qt_validity", "et_action","datecreated" };
 
-	populateUI_Data(uicomps, flds, qtr);
+	ngfun.populateUI_Data(uicomps, flds, qtr);
 	showQT_items(qtr);
 	calcQTItems();
 
+	fillDocumentsList(documents_holder,QUOTE_PREFIX,iwhat);
 	showJobNotes(JN_linkcode(),jobnotes_holder,"jobnotes_lb");
 	jobnotes_div.setVisible(true);
 	workarea.setVisible(true);
+
+	// 17/10/2014: load and show jobs linked to QT. Future, 1 QT can have many jobs-entry
+	kk = getJobs_byQuotation(iwhat);
+	p_job_id.setValue(kk);
 
 	if(itype == 1)
 	{
@@ -274,6 +279,22 @@ void showQuoteMeta(String iwhat, int itype)
 	if(qtr.get("qstatus").equals("COMMIT")) tt = true;
 
 	toggQuoteButts(1,tt);
+}
+
+String getJobs_byQuotation(String iqt)
+{
+	sqlstm = "select origid from rw_jobs where quote_id=" + iqt;
+	r = sqlhand.gpSqlGetRows(sqlstm);
+	retv = "";
+	if(r.size() > 0)
+	{
+		for(d : r)
+		{
+			retv += d.get("origid") + ", ";
+		}
+		try { retv = retv.substring(0,retv.length()-2); } catch (Exception e) {}
+	}
+	return retv;
 }
 
 void showQT_items(Object irec)
@@ -375,32 +396,47 @@ class qtlbclk implements org.zkoss.zk.ui.event.EventListener
 }
 qtclicker = new qtlbclk();
 
-void listQuotations()
+// itype: 1=by date and search-text if any, 2=by QT
+void listQuotations(int itype)
 {
+	last_listqt_type = itype;
 	scht = kiboo.replaceSingleQuotes(searhtxt_tb.getValue()).trim();
+	bqt = kiboo.replaceSingleQuotes(byqt_tb.getValue()).trim();
 	sdate = kiboo.getDateFromDatebox(startdate);
 	edate = kiboo.getDateFromDatebox(enddate);
-	Listbox newlb = lbhand.makeVWListbox_Width(quotes_holder, qtslb_hds, "quotations_lb", 10);
+	Listbox newlb = lbhand.makeVWListbox_Width(quotes_holder, qtslb_hds, "quotations_lb", 5);
 
 	scsql = "";
-	if(!scht.equals(""))
-		scsql = "and (customer_name like '%" + scht + "%' " + 
-		"or cast(q_items as varchar(max)) like '%" + scht + "%') ";
 
-	sqlstm = "select origid,datecreated,customer_name,username,qstatus,qt_type,qt_validity from rw_quotations " +
-	"where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' " + scsql;
+	switch(itype)
+	{
+		case 1:
+		scsql = "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' ";
+
+		if(!scht.equals(""))
+			scsql += "and (customer_name like '%" + scht + "%' " + 
+			"or cast(q_items as varchar(max)) like '%" + scht + "%') ";
+
+		break;
+
+		case 2:
+			scsql = "where origid=" + bqt;
+		break;
+	}
+
+	sqlstm = "select origid,datecreated,customer_name,username,qstatus,qt_type,qt_validity from rw_quotations " + scsql;
 
 	screcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(screcs.size() == 0) return;
-	newlb.setRows(22);
-	newlb.setMold("paging");
-	newlb.setMultiple(true);
+
+	rws = (screcs.size() < 20) ? screcs.size() : 20;
+	newlb.setRows(rws); newlb.setMold("paging"); newlb.setMultiple(true);
 	newlb.addEventListener("onSelect", qtclicker );
 	ArrayList kabom = new ArrayList();
 	String[] fl = { "origid", "datecreated", "customer_name", "qt_type", "username", "qstatus", "qt_validity" }; 
-	for(dpi : screcs)
+	for(d : screcs)
 	{
-		popuListitems_Data(kabom,fl,dpi);
+		ngfun.popuListitems_Data(kabom,fl,d);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
 	}

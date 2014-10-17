@@ -36,17 +36,14 @@ myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
-gridhand = new GridHandler();
-dmshand = new DMSFuncs();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler(); guihand = new GuiFuncs();
+luhand = new LookupFuncs(); gridhand = new GridHandler(); dmshand = new DMSFuncs();
+ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 glob_qt_rec = null; // to store selected QT record - can maybe speed-up some shit
 global_selected_customerid = global_selected_customername = global_selected_customer = "";
 glob_sel_quote = glob_sel_qstatus = glob_sel_username = "";
+last_listqt_type = 0;
 
 param_qt = Executions.getCurrent().getParameter("iqt");
 
@@ -67,14 +64,8 @@ void pickcustomer_Callback()
 
 	Object[] jkl = { q_contact_person1, q_telephone, q_fax, q_email };
 	String[] fl = { "contactyh", "telyh", "faxyh", "emailyh" };
+	ngfun.populateUI_Data(jkl,fl,custr);
 
-	populateUI_Data(jkl,fl,custr);
-/*	
-	q_contact_person1.setValue( kiboo.checkNullString(custr.get("contactyh")) );
-	q_telephone.setValue( kiboo.checkNullString(custr.get("telyh")) );
-	q_fax.setValue( kiboo.checkNullString(custr.get("faxyh")) );
-	q_email.setValue( kiboo.checkNullString(custr.get("emailyh")) );
-*/
 	global_selected_customer = global_selected_customername;
 }
 
@@ -111,7 +102,7 @@ void doFunc(Object iwhat)
 		Object[] ob = { customername, q_cust_address, q_contact_person1, q_telephone, q_fax, q_email,
 		q_creditterm, q_curcode, q_exchangerate, q_quote_discount, q_notes, q_qt_type, q_qt_validity };
 
-		dt = getString_fromUI(ob);
+		dt = ngfun.getString_fromUI(ob);
 
 		sqlstm = "update rw_quotations set customer_name='" + dt[0] + "', cust_address='" + dt[1] + "'," +
 		"contact_person1='" + dt[2] + "', telephone='" + dt[3] + "', fax='" + dt[4] + "', email='" + dt[5] + "'," +
@@ -156,7 +147,7 @@ void doFunc(Object iwhat)
 	}
 
 	if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
-	if(refresh) listQuotations();
+	if(refresh) listQuotations(last_listqt_type);
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 }
 
@@ -188,7 +179,7 @@ void adminFunc(Object iwhat)
 	}
 
 	if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
-	if(refresh) listQuotations();
+	if(refresh) listQuotations(last_listqt_type);
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 
 	adminpop.close();
@@ -243,143 +234,140 @@ void itemFunc(Object iwhat)
 </zscript>
 
 <popup id="getstkitems_pop">
-<div sclass="shadowbox" style="background:#204a87;" width="400px" >
-<grid>
-	<rows>
-		<row>
-			<label value="Desktop model" sclass="k9" />
-			<textbox id="gstkdtm_tb" sclass="k9" width="95%" />
-			<button label="Find" onClick="showStockSelection(SELECT_DESKTOP, gstkdtm_tb.getValue() )" />
-		</row>
-		<row>
-			<label value="Monitor model" sclass="k9" />
-			<textbox id="gstkmtm_tb" sclass="k9" width="95%" />
-			<button label="Find" onClick="showStockSelection(SELECT_MONITOR, gstkmtm_tb.getValue() )" />
-		</row>
-		<row>
-			<label value="Notebook model" sclass="k9" />
-			<textbox id="gstknbm_tb" sclass="k9" width="95%" />
-			<button label="Find" onClick="showStockSelection(SELECT_NOTEBOOK, gstknbm_tb.getValue() )" />
-		</row>
-		<row>
-			<label value="Parts" sclass="k9" />
-			<textbox id="gstkptm_tb" sclass="k9" width="95%" />
-			<button label="Find" onClick="showStockSelection(SELECT_PARTS, gstkptm_tb.getValue() )" />
-		</row>
-	</rows>
-</grid>
-</div>
-</popup>
-
-<popup id="impcoldcal_pop">
-<div sclass="shadowbox" style="background:#204a87;" width="400px" >
-	<combobox id="imcust_cb" sclass="k9" />
-	<button id="impcoldcall_b" sclass="k9" label="Get customer details" onClick="importColdCallDetails(imcust_cb.getValue())" />
-</div>
-</popup>
-
-<popup id="adminpop">
-<div width="400px">
-	<button id="setprdate_b" label="set ToDate" onClick="adminFunc(self)" />
-	<button id="setnewpr_b" label="set DRAFT" onClick="adminFunc(self)" />
-	<button id="delpr_b" label="DELETE" onClick="adminFunc(self)" />
-	<button id="shwappr_b"  label="show approvers" onClick="adminFunc(self)" />
-</div>
-</popup>
-
-<popup id="linkjobs_pop">
-<div sclass="shadowbox" style="background:#204a87;" width="700px" >
-	<label id="linkjob_header" style="color:#ffffff;font-weight:bold" multiline="true" />
-	<separator height="3px" />
-	<hbox>
-		<div id="jobs_holder" />
-		<button label="Assign job" style="font-weight:bold" onClick="assignJobLink(glob_sel_quote)"  />
-	</hbox>
-	<separator height="3px" />
-	<div id="jobitems_holder" />
-	<separator height="3px" />
-	<button label="Close" sclass="k9" onClick="linkjobs_pop.close()" />
-</div>
-</popup> <!-- ENDOF linkjobs_pop -->
-
-<popup id="auditlogs_pop">
-<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
-	<label style="font-size:14px;font-weight:bold;">Audit Logs</label>
-	<separator height="3px" />
-	<div id="auditlogs_holder" />
-	<separator height="3px" />
-	<button label="Ok" sclass="k9" onClick="auditlogs_pop.close()" />
-</div>
-</popup>
-
-<!-- modded title to show "supplier" -->
-<popup id="pickcustomer_popup">
-<div sclass="shadowbox" style="background:#f9b12d;">
-	<hbox>
-		<label sclass="k9">Customer</label>
-		<textbox id="searchcust_tb" sclass="k9" />
-		<button label="Find" sclass="k9" onClick="findCustomers()" />
-	</hbox>
-	<separator height="2px" />
-	<hbox>
-		<div id="foundcusts_holder" width="400px" />
-		<separator width="5px" />
-		<div width="400px" id="custfound_wa" visible="false" >
-			<label id="fcustomername" style="font-size:13px;font-weight:bold;text-decoration:underline" />
-			<separator height="2px" />
-			<label id="fcustomerdetails" multiline="true" width="99%" height="100px" style="font-weight:bold" />
-			<separator height="3px" />
-			<button label="Select this customer" sclass="k9" onClick="assignCustomer()" />
-		</div>
-	</hbox>
-	<label id="selectcustid" visible="false" />
-</div>
-</popup> <!-- ENDOF pickcustomer_popup -->
-
-<!-- update file description popup -->
-<popup id="updatefiledesc_popup">
-<groupbox width="400px">
-	<caption id="updatefiledesc_label" />
-	<label value="Description" sclass="k9" />
-	<textbox id="update_file_description" multiline="true" height="70px" width="99%" sclass="k9" />
-	<separator height="3px" />
-	<hbox>
-		<button label="Update" sclass="k9" onClick="updateFileDescription(documents_holder,QUOTE_PREFIX,glob_sel_quote)" />
-		<button label="Close" sclass="k9" onClick="updatefiledesc_popup.close()" />
-	</hbox>
-</groupbox>
-</popup>
-
-<!-- upload a file popup -->
-<popup id="uploadfile_popup">
-<groupbox>
-<caption label="Upload a file" />
+	<div sclass="shadowbox" style="background:#204a87;" width="400px" >
 	<grid>
 		<rows>
 			<row>
-				<label value="Filename" sclass="k9" />
-				<textbox id="fileupl_file_title" width="200px" sclass="k9" />
+				<label value="Desktop model" sclass="k9" />
+				<textbox id="gstkdtm_tb" sclass="k9" width="95%" />
+				<button label="Find" onClick="showStockSelection(SELECT_DESKTOP, gstkdtm_tb.getValue() )" />
 			</row>
 			<row>
-				<label value="Description" style="font-size:9px" />
-				<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" sclass="k9" />
+				<label value="Monitor model" sclass="k9" />
+				<textbox id="gstkmtm_tb" sclass="k9" width="95%" />
+				<button label="Find" onClick="showStockSelection(SELECT_MONITOR, gstkmtm_tb.getValue() )" />
+			</row>
+			<row>
+				<label value="Notebook model" sclass="k9" />
+				<textbox id="gstknbm_tb" sclass="k9" width="95%" />
+				<button label="Find" onClick="showStockSelection(SELECT_NOTEBOOK, gstknbm_tb.getValue() )" />
+			</row>
+			<row>
+				<label value="Parts" sclass="k9" />
+				<textbox id="gstkptm_tb" sclass="k9" width="95%" />
+				<button label="Find" onClick="showStockSelection(SELECT_PARTS, gstkptm_tb.getValue() )" />
 			</row>
 		</rows>
 	</grid>
-</groupbox>
-<separator height="3px" />
-<hbox>
-	<button label="Select file" onClick="uploadFile(documents_holder,QUOTE_PREFIX,glob_sel_quote)" sclass="k9" />
-	<button label="Close" onClick="uploadfile_popup.close()" sclass="k9" />
-</hbox>
+	</div>
+</popup>
+
+<popup id="impcoldcal_pop">
+	<div sclass="shadowbox" style="background:#204a87;" width="400px" >
+		<combobox id="imcust_cb" sclass="k9" />
+		<button id="impcoldcall_b" sclass="k9" label="Get customer details" onClick="importColdCallDetails(imcust_cb.getValue())" />
+	</div>
+</popup>
+
+<popup id="adminpop">
+	<div width="400px">
+		<button id="setprdate_b" label="set ToDate" onClick="adminFunc(self)" />
+		<button id="setnewpr_b" label="set DRAFT" onClick="adminFunc(self)" />
+		<button id="delpr_b" label="DELETE" onClick="adminFunc(self)" />
+		<button id="shwappr_b"  label="show approvers" onClick="adminFunc(self)" />
+	</div>
+</popup>
+
+<popup id="linkjobs_pop">
+	<div sclass="shadowbox" style="background:#204a87;" width="700px" >
+		<label id="linkjob_header" style="color:#ffffff;font-weight:bold" multiline="true" />
+		<separator height="3px" />
+		<hbox>
+			<div id="jobs_holder" />
+			<button label="Assign job" style="font-weight:bold" onClick="assignJobLink(glob_sel_quote)"  />
+		</hbox>
+		<separator height="3px" />
+		<div id="jobitems_holder" />
+		<separator height="3px" />
+		<button label="Close" sclass="k9" onClick="linkjobs_pop.close()" />
+	</div>
+</popup> <!-- ENDOF linkjobs_pop -->
+
+<popup id="auditlogs_pop">
+	<div sclass="shadowbox" style="background:#ef2929;" width="500px" >
+		<label style="font-size:14px;font-weight:bold;">Audit Logs</label>
+		<separator height="3px" />
+		<div id="auditlogs_holder" />
+		<separator height="3px" />
+		<button label="Ok" sclass="k9" onClick="auditlogs_pop.close()" />
+	</div>
+</popup>
+
+<popup id="pickcustomer_popup"> <!-- modded title to show "supplier" -->
+	<div sclass="shadowbox" style="background:#f9b12d;">
+		<hbox>
+			<label sclass="k9">Customer</label>
+			<textbox id="searchcust_tb" sclass="k9" />
+			<button label="Find" sclass="k9" onClick="findCustomers()" />
+		</hbox>
+		<separator height="2px" />
+		<hbox>
+			<div id="foundcusts_holder" width="400px" />
+			<separator width="5px" />
+			<div width="400px" id="custfound_wa" visible="false" >
+				<label id="fcustomername" style="font-size:13px;font-weight:bold;text-decoration:underline" />
+				<separator height="2px" />
+				<label id="fcustomerdetails" multiline="true" width="99%" height="100px" style="font-weight:bold" />
+				<separator height="3px" />
+				<button label="Select this customer" sclass="k9" onClick="assignCustomer()" />
+			</div>
+		</hbox>
+		<label id="selectcustid" visible="false" />
+	</div>
+</popup> <!-- ENDOF pickcustomer_popup -->
+
+<popup id="updatefiledesc_popup"> <!-- update file description popup -->
+	<groupbox width="400px">
+		<caption id="updatefiledesc_label" />
+		<label value="Description" sclass="k9" />
+		<textbox id="update_file_description" multiline="true" height="70px" width="99%" sclass="k9" />
+		<separator height="3px" />
+		<hbox>
+			<button label="Update" sclass="k9" onClick="updateFileDescription(documents_holder,QUOTE_PREFIX,glob_sel_quote)" />
+			<button label="Close" sclass="k9" onClick="updatefiledesc_popup.close()" />
+		</hbox>
+	</groupbox>
+</popup>
+
+<popup id="uploadfile_popup"> <!-- upload a file popup -->
+	<groupbox>
+	<caption label="Upload a file" />
+		<grid>
+			<rows>
+				<row>
+					<label value="Filename" sclass="k9" />
+					<textbox id="fileupl_file_title" width="200px" sclass="k9" />
+				</row>
+				<row>
+					<label value="Description" sclass="k9" />
+					<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" sclass="k9" />
+				</row>
+			</rows>
+		</grid>
+	</groupbox>
+	<separator height="3px" />
+	<hbox>
+		<button label="Select file" onClick="uploadFile(documents_holder,QUOTE_PREFIX,glob_sel_quote)" sclass="k9" />
+		<button label="Close" onClick="uploadfile_popup.close()" sclass="k9" />
+	</hbox>
 </popup>
 
 <popup id="viewjob_popup">
-<div sclass="shadowbox" style="background:#204a87;" width="600px" >
-	<label id="vj_jobid_label" style="font-size:18;font-weight:bold;color:#ffffff" />
-	<separator height="2px" />
-	<div id="vj_jobitems_holder" />
-</div>
+	<div sclass="shadowbox" style="background:#204a87;" width="600px" >
+		<label id="vj_jobid_label" style="font-size:18;font-weight:bold;color:#ffffff" />
+		<separator height="2px" />
+		<div id="vj_jobitems_holder" />
+	</div>
 </popup>
 
 <style src="/real-world.css" />
@@ -405,8 +393,10 @@ testing
 	<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
 	<label value="End date" sclass="k9b" />
 	<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
-	<textbox id="searhtxt_tb" width="200px" style="font-size:9px" />
-	<button label="Load/Search" sclass="k9" onClick="listQuotations()" />
+	<textbox id="searhtxt_tb" width="200px" sclass="k9" />
+	<button label="Load/Search" sclass="k9" onClick="listQuotations(1)" />
+	<textbox id="byqt_tb" width="70px" sclass="k9" />
+	<button label="by QT" sclass="k9" onClick="listQuotations(2)" />
 
 	<separator width="10px" />
 	<button id="admin_bb" label="ADMIN" style="font-size:9px;color:#ff0000" visible="false" onClick="adminpop.open(self)" />
@@ -428,98 +418,130 @@ testing
 </hbox>
 </div>
 
-<separator height="2px" />
-<div id="workarea" sclass="shadowbox" style="background:#06333a" visible="false" >
-<vbox>
-	<grid>
-		<rows>
-			<row style="background:#97b83a" >
-				<label value="QT#" class="subhead1" />
-				<label id="q_origid" style="font-size:14px;font-weight:bold" />
-				<hbox>
-					<label value="Dated: " />
-					<label id="q_datecreated" />
-				</hbox>
-				<label value="JobID" />
-				<label id="p_job_id" style="font-weight:bold" />
-			</row>
-			<row spans="1,3,1" >
-				<label value="Customer" sclass="k9" />
-				<textbox id="customername" width="99%" style="font-weight:bold" />
-				<hbox>
-					<button id="asssupp_b" label="Get customer" sclass="k9mo" onClick="pickcustomer_popup.open(self)" />
-					<button id="impccallm_b" label="Import from cold-call" sclass="k9mo" onClick="impcoldcal_pop.open(self)" />
-				</hbox>
-			</row>
-		</rows>
-	</grid>
+	<div id="workarea" sclass="shadowbox" style="background:#06333a" visible="false" >
+		<tabbox>
+			<tabs>
+				<tab label="Quote Metadata" />
+				<tab label="Items" />
+				<tab label="Documents" />
+				<tab label="Approval" />
+			</tabs>
+			<tabpanels>
+				<tabpanel> <!-- quote metadata -->
+					<grid>
+						<rows>
+							<row style="background:#97b83a" >
+								<label value="QT#" class="subhead1" />
+								<label id="q_origid" style="font-size:14px;font-weight:bold" />
+								<hbox>
+									<label value="Dated: " />
+									<label id="q_datecreated" />
+								</hbox>
+								<label value="JobID" />
+								<label id="p_job_id" style="font-weight:bold" />
+							</row>
+							<row spans="1,3,1" >
+								<label value="Customer" sclass="k9" />
+								<textbox id="customername" width="99%" style="font-weight:bold" />
+								<hbox>
+									<button id="asssupp_b" label="Get customer" sclass="k9mo" onClick="pickcustomer_popup.open(self)" />
+									<button id="impccallm_b" label="Import from cold-call" sclass="k9mo" onClick="impcoldcal_pop.open(self)" />
+								</hbox>
+							</row>
+						</rows>
+					</grid>
+					<separator height="3px" />
 
-	<hbox>
-		<vbox>
-			<div id="qtform_holder" width="700px" />
-			<button id="updqt_b" label="Update quote meta" sclass="k9mo" onClick="doFunc(self)" />
-		</vbox>
+					<hbox>
+						<vbox>
+							<div id="qtform_holder" width="700px" />
+							<button id="updqt_b" label="Update quote meta" sclass="k9mo" onClick="doFunc(self)" />
+						</vbox>
 
-		<div sclass="shadowbox" style="background:#2e3436;" width="400px" id="jobnotes_div" >
-			<label sclass="subhead1" value="JOB NOTES" />
-			<separator height="3px" />
-			<div id="jobnotes_holder" />
-			<separator height="2px" />
-			<hbox>
-				<button id="deletejobn_b" label="Delete" sclass="k9mo" onClick="jobNoteFunc(self,JN_linkcode())" />
-			</hbox>
-			<separator height="2px" />
-			<div id="jobnotes_entry_holder">
-				<grid>
-					<rows>
-						<row visible="false">
-							<label value="To" sclass="k9" />
-							<textbox id="jn_towho" width="99%" style="font-weight:bold" />
-						</row>
-						<row>
-							<label value="Subject" sclass="k9" />
-							<textbox id="jn_subject" width="99%" style="font-weight:bold" />
-						</row>
-						<row>
-							<label value="Notes" sclass="k9" />
-							<textbox id="jn_msgbody" width="99%" multiline="true" height="60px" />
-						</row>
-					</rows>
-				</grid>
-				<separator height="2px" />
-				<button id="postjobn_b" label="Post" style="font-weight:bold" onClick="jobNoteFunc(self,JN_linkcode())" />
-				<button id="clearjobn_b" label="Clear" style="font-weight:bold" onClick="jobNoteFunc(self,JN_linkcode())" />
-			</div>
-		</div>
-	</hbox>
-</vbox>
-<separator height="5px" />
-<vbox>
-	<div style="background:#628821;padding:2px">
-	<label sclass="subhead1">Quote Items</label>
-	</div>
-	<hbox>
-		<button id="newqtitm_b" sclass="k9" label="New item" onClick="itemFunc(self)" />
-		<button id="remqtitm_b" sclass="k9" label="Remove" onClick="itemFunc(self)" />
-		<button id="calcqtitems_b" sclass="k9" label="CALC" style="font-weight:bold" onClick="itemFunc(self)" />
-		<button id="saveitems_b" sclass="k9" label="SAVE" style="font-weight:bold" onClick="itemFunc(self)" />
-		<button label="Get stock-item" sclass="k9" onClick="getstkitems_pop.open(self)" />
-	</hbox>
-	<div id="qtitems_holder" width="900px" />
+						<div sclass="shadowbox" style="background:#2e3436;" width="400px" id="jobnotes_div" >
+							<label sclass="subhead1" value="JOB NOTES" />
+							<separator height="3px" />
+							<div id="jobnotes_holder" />
+							<separator height="2px" />
+							<hbox>
+								<button id="deletejobn_b" label="Delete" sclass="k9mo" onClick="jobNoteFunc(self,JN_linkcode())" />
+							</hbox>
+							<separator height="2px" />
+							<div id="jobnotes_entry_holder">
+								<grid>
+									<rows>
+										<row visible="false">
+											<label value="To" sclass="k9" />
+											<textbox id="jn_towho" width="99%" style="font-weight:bold" />
+										</row>
+										<row>
+											<label value="Subject" sclass="k9" />
+											<textbox id="jn_subject" width="99%" style="font-weight:bold" />
+										</row>
+										<row>
+											<label value="Notes" sclass="k9" />
+											<textbox id="jn_msgbody" width="99%" multiline="true" height="60px" />
+										</row>
+									</rows>
+								</grid>
+								<separator height="2px" />
+								<button id="postjobn_b" label="Post" style="font-weight:bold" onClick="jobNoteFunc(self,JN_linkcode())" />
+								<button id="clearjobn_b" label="Clear" style="font-weight:bold" onClick="jobNoteFunc(self,JN_linkcode())" />
+							</div>
+						</div>
+					</hbox>
 
-	<hbox>
-		<separator width="700px" />
-		<label sclass="subhead1" value="Total:" />
-		<separator width="10px" />
-		<label id="grandtotal_lbl" style="color:#ffffff" sclass="subhead2" />
-	</hbox>
+				</tabpanel>
+				<tabpanel> <!-- items -->
+					<vbox>
+						<div style="background:#628821;padding:2px">
+						<label sclass="subhead1">Quote Items</label>
+						</div>
+						<hbox>
+							<button id="newqtitm_b" sclass="k9" label="New item" onClick="itemFunc(self)" />
+							<button id="remqtitm_b" sclass="k9" label="Remove" onClick="itemFunc(self)" />
+							<button id="calcqtitems_b" sclass="k9" label="CALC" style="font-weight:bold" onClick="itemFunc(self)" />
+							<button id="saveitems_b" sclass="k9" label="SAVE" style="font-weight:bold" onClick="itemFunc(self)" />
+							<button label="Get stock-item" sclass="k9" onClick="getstkitems_pop.open(self)" />
+						</hbox>
+						<div id="qtitems_holder" width="900px" />
 
-</vbox> <!-- ENDOF quote-items vbox -->
+						<hbox>
+							<separator width="700px" />
+							<label sclass="subhead1" value="Total:" />
+							<separator width="10px" />
+							<label id="grandtotal_lbl" style="color:#ffffff" sclass="subhead2" />
+						</hbox>
+					</vbox> <!-- ENDOF quote-items vbox -->
+				</tabpanel>
 
-</div> <!-- ENDOF workarea -->
+				<tabpanel> <!-- documents -->
+					<div sclass="shadowbox" style="background:#555753;" width="600px" >
+						<label sclass="subhead1">ATTACHMENT / DOCUMENTS</label>
+						<separator height="3px" />
+						<hbox>
+							<button id="uploaddoc_btn" label="Upload file" sclass="k9"
+								onClick="showUploadPopup(QUOTE_PREFIX,glob_sel_quote)" />
+							<button id="viewdoc_btn" label="View file" sclass="k9" onClick="viewFile()" />
+							<button id="editdoc_btn" label="Update" sclass="k9" onClick="updatefiledesc_popup.open(self)" />
+							<button id="deletedoc_btn" label="Delete" sclass="k9"
+								onClick="deleteFile(documents_holder,QUOTE_PREFIX,glob_sel_quote)" />
+						</hbox>
+						<separator height="3px" />
+						<div id="documents_holder" />
+					</div>
+				</tabpanel>
 
-<div id="winsholder" />
-<div id="kasiexport" visible="false" />
+				<tabpanel> <!-- approval -->
+				Maybe soon
+				</tabpanel>
+
+			</tabpanels>
+		</tabbox>
+	</div> <!-- ENDOF workarea -->
+
+	<div id="winsholder" />
+	<div id="kasiexport" visible="false" />
 
 <zscript>
 <![CDATA[

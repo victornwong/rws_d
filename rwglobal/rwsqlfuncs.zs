@@ -463,6 +463,14 @@ Object getFocus_CustomerRec(String icustid)
 	return retval;
 }
 
+// Get FC6 customer-id/bookno by customer-name
+Object getFocus_CustomerID(String icustname)
+{
+	sqlstm = "select masterid from mr000 where name='" + icustname + "';";
+	r = sqlhand.rws_gpSqlFirstRow(sqlstm);
+	return (r == null) ? "" : r.get("masterid").toString();
+}
+
 String getFocus_CustomerName(String icustid)
 {
 	if(icustid.equals("")) return "NEW";
