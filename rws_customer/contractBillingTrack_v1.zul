@@ -16,11 +16,11 @@
 <zscript src="./contImport_funcs.zs" />
 <zscript>
 <![CDATA[
-MYTITLE = "ROC/LC Management";
+MYTITLE = "LC Management";
 MYVERSION = "v0.4.1";
 MYPANEL = "billtrkcpan";
 /*
-@Title ROC/LC billing tracking and so on
+@Title LC billing tracking and so on
 @Author Victor Wong
 @Since 16/10/2013
 
@@ -33,6 +33,7 @@ MYPANEL = "billtrkcpan";
 	sum-up in the EVF reports
 22/09/2014: huiping req to add sales_related status .. for watever
 24/09/2014: modif contbill_Assets.replaceLCAsset() to use replaceAssetAuditLog() - terse audit-log for replacements
+27/10/2014: add rw_lc_equips.assigned, user able to set assigned/un for assets
 
 */
 import java.util.*;
@@ -640,6 +641,11 @@ BUTT_WIDTH2 = "190px";
 					<separator />
 					<button label="Update HOTSWAP flag" sclass="k9" width="${BUTT_WIDTH}" onClick="updateAssetFlags(3)" />
 				</row>
+				<row style="background:#97b83a;">
+					<separator />
+					<button label="Set ASSIGNED" sclass="k9" width="${BUTT_WIDTH}" onClick="updateAssetFlags(4)" />
+					<button label="Set UNASSIGNED" sclass="k9" width="${BUTT_WIDTH}" onClick="updateAssetFlags(5)" />
+				</row>
 			</rows>
 		</grid>
 	</div>
@@ -653,6 +659,18 @@ BUTT_WIDTH2 = "190px";
 			<button label="Dig" sclass="k9" onClick="digAuditLog( digaudit_tb.getValue().trim() )" /> <!-- contbill_assets.zs -->
 		</hbox>
 		<div id="diglogs_holder" />
+	</div>
+</popup>
+
+<popup id="lilhelp_pop">
+	<div sclass="shadowbox" style="background:#86A161" width="200px">
+		<label multiline="true" sclass="k9">
+GCO/N = Goods Collection Order / Number
+Bill = Can bill or Not
+BuyO = Buyout asset
+FrmLC = imported from LC
+Asgn = assigned/unassigned asset
+		</label>
 	</div>
 </popup>
 
@@ -690,6 +708,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 		<button id="rocsetstat_b" label="Set status" sclass="k9mo" onClick="lcsetstat_pop.open(self)" />
 		<button id="shwauditlogs_b" label="LC/ROC Logs" sclass="k9mo" onClick="doFunc(self)" />
 		<button label="Dig LC/ROC Logs" sclass="k9mo" onClick="digauditlog_pop.open(self)" />
+		<button label="Check dup records" sclass="k9mo" onClick="listDupLC_records(winsholder)" />
 
 		<button id="listhotswap_b" label="List HOTSWAPS" sclass="k9" onClick="listHotswaps()" />
 		<separator width="50px" />
@@ -765,16 +784,17 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 	<tabpanel> <!-- ASSETS -->
 		<div style="background:#2e3436">
 			<hbox>
-				<button id="newasset_b" label="New asset" width="${BUTT_WIDTH}" sclass="k9mo" style="color:#909d2a" onClick="assFunc(self)" />
-				<button id="repasspop_b" label="Replace" width="${BUTT_WIDTH}" sclass="k9mo" style="color:#ff0000" onClick="assFunc(self)" />
-				<button id="remasset_b" label="Remove" width="${BUTT_WIDTH}" sclass="k9mo" style="color:#ff0000" onClick="assFunc(self)" />
+				<button id="newasset_b" label="New asset" sclass="k9mo" style="color:#909d2a" onClick="assFunc(self)" />
+				<button id="repasspop_b" label="Replace" sclass="k9mo" style="color:#ff0000" onClick="assFunc(self)" />
+				<button id="remasset_b" label="Remove" sclass="k9mo" style="color:#ff0000" onClick="assFunc(self)" />
 				<separator width="10px" />
-				<button id="chkrma_b" label="Check for RMA" width="${BUTT_WIDTH}" sclass="k9mo" onClick="checkRMA_Reps()" />
+				<button id="chkrma_b" label="Check for RMA" sclass="k9mo" onClick="checkRMA_Reps()" />
 				<button label="FC6/Contractcare related" sclass="k9mo" onClick="fcfuncs_pop.open(self)" />
 				<button label="Module funcs" sclass="k9mo" onClick="modfuncs_pop.open(self)" />
 				<button label="Report" sclass="k9mo" onClick="report_pop.open(self)" />
 				<button label="GCN related" sclass="k9mo" onClick="gcnfuncs_pop.open(self)" />
 				<button label="MPF" sclass="k9mo" onClick="mpf_pop.open(self)" />
+				<button label="HELP" sclass="k9" onClick="lilhelp_pop.open(self)" />
 			</hbox>
 		</div>
 
@@ -789,8 +809,6 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 		</hbox>
 	</tabpanel> <!-- ENDOF ASSETS -->
 
-<zscript>
-</zscript>
 	<tabpanel> <!-- ATTACHMENTS -->
 		<hbox>
 			<button id="uploaddoc_btn" label="Upload file" sclass="k9"
@@ -802,7 +820,6 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 		</hbox>
 		<separator height="3px" />
 		<div id="documents_holder" />
-
 	</tabpanel> <!-- ENDOF ATTACHMENTS -->
 
 	</tabpanels>
@@ -833,7 +850,7 @@ assigncustomer_b.addEventListener("onClick", kbuttcliker ); // in form-xml
 batchlc_b.addEventListener("onClick", kbuttcliker);
 batchlcsuck_b.addEventListener("onClick", kbuttcliker);
 
-if(useraccessobj.accesslevel == 9 || useraccessobj.username.equals("joanna"))
+if(useraccessobj.accesslevel == 9)
 {
 	admin_b.setVisible(true);
 }

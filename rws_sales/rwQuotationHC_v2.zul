@@ -21,11 +21,13 @@ MYTITLE = "RW Quotations";
 MYVERSION = "v0.2";
 MYPANEL = "rwqtodipan";
 /*
-Title		: RW Quotations new HC
-Written by	: Victor Wong
-Dated		: 31/03/2014
+@Title RW Quotations new HC
+@Author Victor Wong
+@Since 31/03/2014
 
 NOTES:
+27/10/2014: change customername to LABEL, user cannot simply type-in. Must import from FC6 or cold-call table. Req by James
+
 */
 import java.util.*;
 import java.text.*;
@@ -235,30 +237,30 @@ void itemFunc(Object iwhat)
 
 <popup id="getstkitems_pop">
 	<div sclass="shadowbox" style="background:#204a87;" width="400px" >
-	<grid>
-		<rows>
-			<row>
-				<label value="Desktop model" sclass="k9" />
-				<textbox id="gstkdtm_tb" sclass="k9" width="95%" />
-				<button label="Find" onClick="showStockSelection(SELECT_DESKTOP, gstkdtm_tb.getValue() )" />
-			</row>
-			<row>
-				<label value="Monitor model" sclass="k9" />
-				<textbox id="gstkmtm_tb" sclass="k9" width="95%" />
-				<button label="Find" onClick="showStockSelection(SELECT_MONITOR, gstkmtm_tb.getValue() )" />
-			</row>
-			<row>
-				<label value="Notebook model" sclass="k9" />
-				<textbox id="gstknbm_tb" sclass="k9" width="95%" />
-				<button label="Find" onClick="showStockSelection(SELECT_NOTEBOOK, gstknbm_tb.getValue() )" />
-			</row>
-			<row>
-				<label value="Parts" sclass="k9" />
-				<textbox id="gstkptm_tb" sclass="k9" width="95%" />
-				<button label="Find" onClick="showStockSelection(SELECT_PARTS, gstkptm_tb.getValue() )" />
-			</row>
-		</rows>
-	</grid>
+		<grid>
+			<rows>
+				<row>
+					<label value="Desktop model" sclass="k9" />
+					<textbox id="gstkdtm_tb" sclass="k9" width="95%" />
+					<button label="Find" onClick="showStockSelection(SELECT_DESKTOP, gstkdtm_tb.getValue() )" />
+				</row>
+				<row>
+					<label value="Monitor model" sclass="k9" />
+					<textbox id="gstkmtm_tb" sclass="k9" width="95%" />
+					<button label="Find" onClick="showStockSelection(SELECT_MONITOR, gstkmtm_tb.getValue() )" />
+				</row>
+				<row>
+					<label value="Notebook model" sclass="k9" />
+					<textbox id="gstknbm_tb" sclass="k9" width="95%" />
+					<button label="Find" onClick="showStockSelection(SELECT_NOTEBOOK, gstknbm_tb.getValue() )" />
+				</row>
+				<row>
+					<label value="Parts" sclass="k9" />
+					<textbox id="gstkptm_tb" sclass="k9" width="95%" />
+					<button label="Find" onClick="showStockSelection(SELECT_PARTS, gstkptm_tb.getValue() )" />
+				</row>
+			</rows>
+		</grid>
 	</div>
 </popup>
 
@@ -341,7 +343,7 @@ void itemFunc(Object iwhat)
 
 <popup id="uploadfile_popup"> <!-- upload a file popup -->
 	<groupbox>
-	<caption label="Upload a file" />
+		<caption label="Upload a file" />
 		<grid>
 			<rows>
 				<row>
@@ -386,37 +388,33 @@ testing
 </div>
 -->
 
-<div id="qtmainbox" sclass="shadowbox" style="background:#06333a">
+	<div id="qtmainbox" sclass="shadowbox" style="background:#06333a">
+		<hbox>
+			<label value="Start date" sclass="k9b" />
+			<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
+			<label value="End date" sclass="k9b" />
+			<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
+			<textbox id="searhtxt_tb" width="200px" sclass="k9" />
+			<button label="Load/Search" sclass="k9" onClick="listQuotations(1)" />
+			<textbox id="byqt_tb" width="70px" sclass="k9" />
+			<button label="by QT" sclass="k9" onClick="listQuotations(2)" />
 
-<hbox>
-	<label value="Start date" sclass="k9b" />
-	<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
-	<label value="End date" sclass="k9b" />
-	<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
-	<textbox id="searhtxt_tb" width="200px" sclass="k9" />
-	<button label="Load/Search" sclass="k9" onClick="listQuotations(1)" />
-	<textbox id="byqt_tb" width="70px" sclass="k9" />
-	<button label="by QT" sclass="k9" onClick="listQuotations(2)" />
-
-	<separator width="10px" />
-	<button id="admin_bb" label="ADMIN" style="font-size:9px;color:#ff0000" visible="false" onClick="adminpop.open(self)" />
-</hbox>
-
-<separator height="10px" bar="true" />
-
-<hbox>
-	<vbox>
-		<button id="newquote_b" label="New quotation" width="100px" sclass="k9mo" onClick="doFunc(self)" />
-		<button id="commitquote_b" label="Commit" width="100px" sclass="k9mo" onClick="doFunc(self)" />
-		<button id="cancelquote_b" label="Cancel" width="100px" sclass="k9mo" onClick="doFunc(self)" />
-		<button label="View job" style="font-weight:bold" width="100px" sclass="k9mo" onClick="viewJobWindow(p_job_id.getValue(),rwqtodipan);" />
-		<separator height="3px" />
-		<button id="printqt_b" label="Print/Export" width="100px" sclass="k9mo" onClick="doFunc(self)" />
-	</vbox>
-
-	<div id="quotes_holder" />
-</hbox>
-</div>
+			<separator width="10px" />
+			<button id="admin_bb" label="ADMIN" style="font-size:9px;color:#ff0000" visible="false" onClick="adminpop.open(self)" />
+		</hbox>
+		<separator height="10px" bar="true" />
+		<hbox>
+			<vbox>
+				<button id="newquote_b" label="New quotation" width="100px" sclass="k9mo" onClick="doFunc(self)" />
+				<button id="commitquote_b" label="Commit" width="100px" sclass="k9mo" onClick="doFunc(self)" />
+				<button id="cancelquote_b" label="Cancel" width="100px" sclass="k9mo" onClick="doFunc(self)" />
+				<button label="View job" style="font-weight:bold" width="100px" sclass="k9mo" onClick="viewJobWindow(p_job_id.getValue(),rwqtodipan);" />
+				<separator height="3px" />
+				<button id="printqt_b" label="Print/Export" width="100px" sclass="k9mo" onClick="doFunc(self)" />
+			</vbox>
+			<div id="quotes_holder" />
+		</hbox>
+	</div>
 
 	<div id="workarea" sclass="shadowbox" style="background:#06333a" visible="false" >
 		<tabbox>
@@ -442,7 +440,7 @@ testing
 							</row>
 							<row spans="1,3,1" >
 								<label value="Customer" sclass="k9" />
-								<textbox id="customername" width="99%" style="font-weight:bold" />
+								<label id="customername" width="99%" style="font-weight:bold" />
 								<hbox>
 									<button id="asssupp_b" label="Get customer" sclass="k9mo" onClick="pickcustomer_popup.open(self)" />
 									<button id="impccallm_b" label="Import from cold-call" sclass="k9mo" onClick="impcoldcal_pop.open(self)" />

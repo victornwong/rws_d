@@ -12,8 +12,8 @@
 <zscript src="genSOF_v1.zs" />
 <zscript>
 <![CDATA[
-MYTITLE = "Customer Support (like Techcare)";
-MYVERSION = "v0.3.2";
+MYTITLE = "Customer Support / Helpdesk-tickets";
+MYVERSION = "v0.3.3";
 MYPANEL = "custsupp1";
 /*
 @Title Customer support / help-tickets
@@ -26,6 +26,7 @@ NOTES:
 21/08/2014: update UI and show GCO-no in list
 29/08/2014: start coding the LC assets replacement controls
 18/09/2014: vanita req , add extra field to classify ticket RMA,REMARKETING,AUDIT,DEPLOYMENT
+27/10/2014: button to source asset details from FC6
 
 */
 import java.util.*;
@@ -38,10 +39,8 @@ myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
-kiboo = new Generals(); sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler(); guihand = new GuiFuncs();
-luhand = new LookupFuncs(); dmshand = new DMSFuncs();
-gridhand = new GridHandler();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler(); guihand = new GuiFuncs();
+luhand = new LookupFuncs(); dmshand = new DMSFuncs(); gridhand = new GridHandler();
 NGfuncs ngfun = new NGfuncs(); RWMS_sql rwsqlfun = new RWMS_sql();
 
 glob_selected_ticket = glob_ticket_status = "";
@@ -219,12 +218,10 @@ void doFunc(Object iwhat)
 		sqlstm = "update rw_helptickets set tstatus='" + CASECANCEL_STR + "' where origid=" + glob_selected_ticket;
 		refreshtickets = true;
 
-		// log this cancellation
 		msgt = "CANCEL: " + canrs ;
-		add_RWAuditLog(lnkc,"CANCELTICK", msgt, useraccessobj.username);
+		add_RWAuditLog(lnkc,"CANCELTICK", msgt, useraccessobj.username); // log this cancellation
 
-		// hide workarea and clear glob vars
-		glob_selected_ticket = "";
+		glob_selected_ticket = ""; // hide workarea and clear glob vars
 		glob_ticket_status = "";
 		workarea.setVisible(false);
 		workbutts.setVisible(false);
@@ -466,6 +463,7 @@ void chargeItems(Object iwhat)
 void checkdupAssetsInSV(String iwhat)
 {
 	iwhat = kiboo.replaceSingleQuotes(iwhat.trim());
+	if(iwhat.equals("")) return;
 	sqlstm = "select origid,calldatetime from rw_helptickets where asset_tag like '%" + iwhat + "%'";
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() == 0)
@@ -580,66 +578,63 @@ ACTIVATY_BOXWIDTH = "500px";
 	</vbox>
 </popup>
 
-<!-- update file description popup -->
-<popup id="updatefiledesc_popup">
-<groupbox width="400px">
-	<caption id="updatefiledesc_label" />
-	<label value="Description" sclass="k9" />
-	<textbox id="update_file_description" multiline="true" height="70px" width="99%" sclass="k9" />
-	<separator height="3px" />
-	<hbox>
-		<button label="Update" sclass="k9" onClick="updateFileDescription(documents_holder,TICKETSV_PREFIX,glob_selected_ticket)" />
-		<button label="Close" sclass="k9" onClick="updatefiledesc_popup.close()" />
-	</hbox>
-</groupbox>
-
+<popup id="updatefiledesc_popup"> <!-- update file description popup -->
+	<groupbox width="400px">
+		<caption id="updatefiledesc_label" />
+		<label value="Description" sclass="k9" />
+		<textbox id="update_file_description" multiline="true" height="70px" width="99%" sclass="k9" />
+		<separator height="3px" />
+		<hbox>
+			<button label="Update" sclass="k9" onClick="updateFileDescription(documents_holder,TICKETSV_PREFIX,glob_selected_ticket)" />
+			<button label="Close" sclass="k9" onClick="updatefiledesc_popup.close()" />
+		</hbox>
+	</groupbox>
 </popup>
 
-<!-- upload a file popup -->
-<popup id="uploadfile_popup">
-<groupbox>
-<caption label="Upload a file" />
-	<grid>
-		<rows>
-			<row>
-				<label value="Filename" sclass="k9" />
-				<textbox id="fileupl_file_title" width="200px" sclass="k9" />
-			</row>
-			<row>
-				<label value="Description" sclass="k9" />
-				<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" sclass="k9" />
-			</row>
-		</rows>
-	</grid>
-</groupbox>
-<separator height="3px" />
-<hbox>
-	<button label="Select file" onClick="uploadFile(documents_holder,TICKETSV_PREFIX,glob_selected_ticket)" sclass="k9" />
-	<button label="Close" onClick="uploadfile_popup.close()"  sclass="k9" />
-</hbox>
+<popup id="uploadfile_popup"> <!-- upload a file popup -->
+	<groupbox>
+	<caption label="Upload a file" />
+		<grid>
+			<rows>
+				<row>
+					<label value="Filename" sclass="k9" />
+					<textbox id="fileupl_file_title" width="200px" sclass="k9" />
+				</row>
+				<row>
+					<label value="Description" sclass="k9" />
+					<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" sclass="k9" />
+				</row>
+			</rows>
+		</grid>
+	</groupbox>
+	<separator height="3px" />
+	<hbox>
+		<button label="Select file" onClick="uploadFile(documents_holder,TICKETSV_PREFIX,glob_selected_ticket)" sclass="k9" />
+		<button label="Close" onClick="uploadfile_popup.close()"  sclass="k9" />
+	</hbox>
 </popup>
 
 <popup id="pickcustomer_popup">
-<div sclass="shadowbox" style="background:#f9b12d;">
-	<hbox>
-		<label sclass="k9">Customer name</label>
-		<textbox id="searchcust_tb" sclass="k9" />
-		<button label="Find" sclass="k9" onClick="findCustomers()" />
-	</hbox>
-	<separator height="2px" />
-	<hbox>
-		<div id="foundcusts_holder" width="400px" />
-		<separator width="5px" />
-		<div width="400px" id="custfound_wa" visible="false" >
-			<label id="fcustomername" style="font-size:13px;font-weight:bold;text-decoration:underline" />
-			<separator height="2px" />
-			<label id="fcustomerdetails" multiline="true" width="99%" height="100px" style="font-weight:bold" />
-			<separator height="3px" />
-			<button label="Select this customer" sclass="k9" onClick="assignCustomer()" />
-		</div>
-	</hbox>
-	<label id="selectcustid" visible="false" />
-</div>
+	<div sclass="shadowbox" style="background:#f9b12d;">
+		<hbox>
+			<label sclass="k9">Customer name</label>
+			<textbox id="searchcust_tb" sclass="k9" />
+			<button label="Find" sclass="k9" onClick="findCustomers()" />
+		</hbox>
+		<separator height="2px" />
+		<hbox>
+			<div id="foundcusts_holder" width="400px" />
+			<separator width="5px" />
+			<div width="400px" id="custfound_wa" visible="false" >
+				<label id="fcustomername" style="font-size:13px;font-weight:bold;text-decoration:underline" />
+				<separator height="2px" />
+				<label id="fcustomerdetails" multiline="true" width="99%" height="100px" style="font-weight:bold" />
+				<separator height="3px" />
+				<button label="Select this customer" sclass="k9" onClick="assignCustomer()" />
+			</div>
+		</hbox>
+		<label id="selectcustid" visible="false" />
+	</div>
 </popup> <!-- ENDOF pickcustomer_popup -->
 
 <style src="/real-world.css" />
@@ -655,330 +650,326 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
 <panelchildren style="background:#556081">
 
-<!-- load/search div -->
-<div sclass="shadowbox" style="background:#3465a4;">
-
-<hbox>
-	<label value="Start" sclass="k9b" />
-	<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
-	<label value="End" sclass="k9b" />
-	<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
-
-	<textbox id="searhtxt_tb" sclass="k9" />
-	<button label="Search/load" sclass="k9" onClick="showTickets(1)" />
-	<textbox id="csvtxt_tb" sclass="k9" width="50px" />
-	<button label="by CSV" sclass="k9" onClick="showTickets(2)" />
-
-	<textbox id="asschk_tb" sclass="k9" />
-	<button label="Check dup asset-tag" sclass="k9" onClick="checkdupAssetsInSV(asschk_tb.getValue())" />
-
-</hbox>
-
-<!--
-<button id="contasschk_b" label="Contract/Asset check"
-	onClick="lc_asset_tag.setValue(t_asset_tag.getValue());contractass_pop.open(self)" />
--->
-
-</div> <!-- ENDOF load/search div -->
-
-<separator height="5px" />
-
-<div sclass="shadowbox" style="background:#E1AB14">
-	<hbox>
-		<button id="newreq_b" label="New case ticket" sclass="k9" onClick="doFunc(self)" />
-		<button id="opentog_b" label="Open case" sclass="k9" onClick="doFunc(self)" />
-		<button id="closetog_b" label="Close case" sclass="k9" onClick="custrate_pop.open(self)" />
-		<button id="emailnoti_b" label="Send notification" sclass="k9" onClick="doFunc(self)" />
-		<button id="viewsof_b" label="View SOF" sclass="k9" onClick="doFunc(self)" />
-		<button id="canceltick_b" label="CANCEL ticket" sclass="k9" onClick="checkOpenCancel()" />
-		<button id="chgtkstat_b" label="Set NEW" sclass="k9" onClick="adminFunc(self)" visible="false" />
-		<button id="admin_b" label="Admin" visible="false" style="color:#cc0000" onClick="adminpopup.open(self)" />
-	</hbox>
-	<separator height="3px" />
-	<div id="tickets_holder" />
-</div> <!-- requests listbox area -->
-
-<separator height="5px" />
-
-<div sclass="shadowbox" style="background:#758C17" id="workarea" visible="false" >
-
-<hbox>
-	<grid width="650px">
-		<rows>
-			<row style="background:#2e3436" id="tickmeta_hd1" >
-				<label value="Ticket ID" style="font-size:14px;color:#eeeeee" />
-				<label id="t_origid" style="color:#eeeeee" />
-				<label value="Priority" sclass="k9b" />
-				<label id="hd_priority" style="color:#eeeeee" />
-				<label value="Status" sclass="k9b" />
-				<label id="hd_tstatus" style="color:#eeeeee" />
-			</row>
-			<row spans="1,5" style="background:#2e3436" id="tickmeta_hd2" >
-				<label value="Customer" sclass="k9b" />
-				<!-- <textbox id="customername" sclass="k9" width="99%" /> -->
-				<label id="customername" style="color:#eeeeee" />
-			</row>
-		</rows>
-	</grid>
-
-	<div id="workbutts" visible="false">
+	<div sclass="shadowbox" style="background:#3465a4;"> <!-- load/search div -->
 		<hbox>
-			<button id="selcustomer_b" label="Select customer" sclass="k9" onClick="pickcustomer_popup.open(newreq_b)" />
-			<button id="updatet_b" label="Update ticket" style="font-weight:bold" onClick="doFunc(self)" />
-			<!-- <button id="localrma_b" label="Local RMA" sclass="k9" onClick="doFunc(self)" /> -->
-			<button label="OS RMA" sclass="k9" disabled="true" />
-			<button label="Notify OS" sclass="k9" disabled="true" />
+			<label value="Start" sclass="k9b" />
+			<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
+			<label value="End" sclass="k9b" />
+			<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
+			<textbox id="searhtxt_tb" sclass="k9" />
+			<button label="Search/load" sclass="k9" onClick="showTickets(1)" />
+			<textbox id="csvtxt_tb" sclass="k9" width="50px" />
+			<button label="by CSV" sclass="k9" onClick="showTickets(2)" />
+			<textbox id="asschk_tb" sclass="k9" />
+			<button label="Check dup asset-tag" sclass="k9" onClick="checkdupAssetsInSV(asschk_tb.getValue())" />
 		</hbox>
-	</div> <!-- ENDOF workbutts -->
-</hbox>
 
-<separator height="5px" />
+	<!--
+	<button id="contasschk_b" label="Contract/Asset check"
+		onClick="lc_asset_tag.setValue(t_asset_tag.getValue());contractass_pop.open(self)" />
+	-->
+	</div> <!-- ENDOF load/search div -->
+	<separator height="5px" />
 
-<tabbox>
-	<tabs>
-		<tab id="tab1" label="CASE TICKET DETAILS" />
-		<tab id="tab2" label="ACTIVITY" />
-		<tab id="tab3" label="CHARGES" />
-		<tab id="tab4" label="OUTSOURCE" />
-		<tab id="tab5" label="ATTACHMENTS" />
-	</tabs>
-	<tabpanels>
-
-	<tabpanel> <!-- SUPPORT TICKET METADATA -->
-		<grid width="${BOXWIDTH}">
-		<rows>
-			<row>
-				<label value="Caller" sclass="k9" />
-				<textbox id="t_cust_caller" sclass="k9" width="99%" />
-				<label value="Tel/HP" sclass="k9" />
-				<textbox id="t_cust_caller_phone" sclass="k9" width="99%" />
-			</row>
-			<row>
-				<label value="Designation" sclass="k9" />
-				<textbox id="t_cust_caller_des" sclass="k9" width="99%" />
-				<label value="Email" sclass="k9" />
-				<textbox id="t_cust_caller_email" sclass="k9" width="99%" />
-			</row>
-			<row spans="1,3">
-				<label value="Customer location" sclass="k9" />
-				<textbox id="t_cust_location" multiline="true" width="99%" height="80px" sclass="k9" />
-			</row>
-		</rows>
-		</grid>
-	</tabpanel> <!-- ENDOF SUPPORT TICKET METADATA -->
-
-	<tabpanel> <!-- ACTIVITY -->
+	<div sclass="shadowbox" style="background:#769335">
 		<hbox>
-			<div>
-				<grid width="${ACTIVATY_BOXWIDTH}">
-				<rows>
-					<row spans="4" style="background:#fcaf3e" >
-						<vbox>
-							<div id="equip_rma_holder" />
-							<button id="vequiprma_b" visible="false" label="RMA details" sclass="k9" onClick="doFunc(self)" />
-						</vbox>
-					</row>
-					<row>
-						<label value="Asset Tag" sclass="k9" />
-						<textbox id="t_asset_tag" width="99%" sclass="k9" />
-						<label value="S/Num" sclass="k9" />
-						<textbox id="t_serial_no" width="99%" sclass="k9" />
-					</row>
-					<row spans="1,3">
-						<label value="Product name" sclass="k9" />
-						<textbox id="t_product_name" width="99%" sclass="k9" />
-					</row>
-					<row spans="4" style="background:#2e3436">
-						<vbox>
-						<separator height="5px" />
-						<label style="color:#eeeeee">Activity Logs</label>
-						</vbox>
-					</row>
-				</rows>
-				</grid>
-				<separator height="2px" />
-				<div id="ticksactivs_holder" width="${ACTIVATY_BOXWIDTH}" />
-				<separator height="2px" />
-				<grid width="${ACTIVATY_BOXWIDTH}">
-				<rows>
-					<row>
-						<label value="Assign to" sclass="k9" />
-						<textbox id="t_assign_to" width="99%" sclass="k9" />
-						<label value="Priority" sclass="k9" />
-						<listbox id="t_priority" mold="select" sclass="k9" />
-						<label value="Classfication" sclass="k9" />
-						<listbox id="t_ticketclass" mold="select" sclass="k9" />
-					</row>
-					<row spans="1,5">
-						<label value="Problem" sclass="k9" />
-						<textbox id="t_problem" multiline="true" width="99%" height="60px" sclass="k9" />
-					</row>
-					<row spans="1,5">
-						<label value="Action" sclass="k9" />
-						<textbox id="t_action" multiline="true" width="99%" height="60px" sclass="k9" />
-					</row>
-					<row>
-						<label value="Resolve by" sclass="k9" />
-						<textbox id="t_resolved_by" width="99%" sclass="k9" />
-						<label value="Resolve date" sclass="k9" />
-						<datebox id="t_resolved_on" format="yyyy-MM-dd" style="font-size:9px" onCreate="self.value=new Date()" />
-						<label value="Resolve type" sclass="k9" />
-						<!-- <textbox id="t_resolve_type" width="99%" sclass="k9" /> -->
-						<listbox id="t_resolve_type" mold="select" sclass="k9" rows="1" />
-					</row>
-					<row spans="1,5">
-						<label value="Resolution" sclass="k9" />
-						<textbox id="t_resolution" multiline="true" width="99%" height="50px" sclass="k9" />
-					</row>
-					<row spans="6">
-						<button id="upreso_b" label="Update resolution" sclass="k9" onClick="doFunc(self)" />
-					</row>
-				</rows>
-				</grid>
-			</div>
-
-			<div sclass="shadowbox" style="background:#2B3B58">
-				<label sclass="subhead1" value="LC Assets Replacement Track" />
-				<div style="background:#D11A54;padding:3px">
-					<hbox>
-						<button id="rplcsave_b" label="Save for GCO" sclass="k9mo" onClick="lcreplaceDo(self.getId())" />
-						<button id="rpclrgco_b" label="Clear from cache" sclass="k9mo" onClick="lcreplaceDo(self.getId())" />
-					</hbox>
-				</div>
-				<separator height="3px" />
-				<div id="lcreps_holder" />
-				<separator height="5px" />
-				<grid>
-					<rows>
-						<row style="background:#2B3B58">
-							<label value="LC.Id" sclass="k9b" />
-							<textbox id="v_lc_id" sclass="k9" />
-							<label value="I.Asset" sclass="k9b" />
-							<textbox id="v_in_assettag" sclass="k9" />
-							<label value="Replace" sclass="k9b" />
-							<textbox id="v_out_assettag" sclass="k9" />
-						</row>
-						<row style="background:#2B3B58" spans="1,5">
-							<label value="A.Date" sclass="k9b" />
-							<datebox id="v_act_date" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
-						</row>
-						<row style="background:#2B3B58" spans="1,5">
-							<label value="Action" sclass="k9b" />
-							<textbox id="v_action" sclass="k9" multiline="true" width="99%" height="70px" />
-						</row>
-					</rows>
-				</grid>
-				<hbox>
-					<button id="updlcrep_b" label="Save/Update" sclass="k9mo" onClick="lcrepDo(self.getId(),global_selected_customerid)" />
-					<button id="clrlcrep_b" label="Clear" sclass="k9mo" onClick="lcrepDo(self.getId(),global_selected_customerid)" />
-					<button id="remlcrep_b" label="REMOVE" style="font-size:9px;color:#ff0000" onClick="lcrepDo(self.getId(),global_selected_customerid)" />
-				</hbox>
-			</div>
-
+			<button id="newreq_b" label="New case ticket" sclass="k9" onClick="doFunc(self)" />
+			<button id="opentog_b" label="Open case" sclass="k9" onClick="doFunc(self)" />
+			<button id="closetog_b" label="Close case" sclass="k9" onClick="custrate_pop.open(self)" />
+			<button id="emailnoti_b" label="Send notification" sclass="k9" onClick="doFunc(self)" />
+			<button id="viewsof_b" label="View SOF" sclass="k9" onClick="doFunc(self)" />
+			<button id="canceltick_b" label="CANCEL ticket" sclass="k9" onClick="checkOpenCancel()" />
+			<button id="chgtkstat_b" label="Set NEW" sclass="k9" onClick="adminFunc(self)" visible="false" />
+			<button id="admin_b" label="Admin" visible="false" style="color:#cc0000" onClick="adminpopup.open(self)" />
 		</hbox>
-	</tabpanel> <!-- ENDOF ACTIVITY -->
-
-	<tabpanel> <!-- CHARGES -->
 		<separator height="3px" />
+		<div id="tickets_holder" />
+	</div> <!-- requests listbox area -->
+	<separator height="5px" />
+
+	<div sclass="shadowbox" style="background:#769335" id="workarea" visible="false" >
 		<hbox>
-			<label value="Chargeable?" sclass="k9b" />
-			<listbox id="t_chargeable" mold="select" sclass="k9" />
-			<separator width="10px" />
-			<button id="notichargequote_b" label="Request items price" sclass="k9" onClick="chargeItems(self)" />
-			<!-- <button id="confirmquote_b" label="Update and confirm quote" sclass="k9" onClick="chargeItems(self)" disabled="true" /> -->
+			<grid width="650px">
+				<rows>
+					<row style="background:#2e3436" id="tickmeta_hd1" >
+						<label value="Ticket ID" style="font-size:14px;color:#eeeeee" />
+						<label id="t_origid" style="color:#eeeeee" />
+						<label value="Priority" sclass="k9b" />
+						<label id="hd_priority" style="color:#eeeeee" />
+						<label value="Status" sclass="k9b" />
+						<label id="hd_tstatus" style="color:#eeeeee" />
+					</row>
+					<row spans="1,5" style="background:#2e3436" id="tickmeta_hd2" >
+						<label value="Customer" sclass="k9b" />
+						<!-- <textbox id="customername" sclass="k9" width="99%" /> -->
+						<label id="customername" style="color:#eeeeee" />
+					</row>
+					<row spans="6" style="background:#2e3436" id="workbutts" visible="false">
+						<hbox>
+							<button id="selcustomer_b" label="Select customer" sclass="k9mo" onClick="pickcustomer_popup.open(newreq_b)" />
+							<button id="updatet_b" label="Update ticket" sclass="k9mo" onClick="doFunc(self)" />
+							<button label="OS RMA" sclass="k9" disabled="true" />
+							<button label="Notify OS" sclass="k9" disabled="true" />
+							<!-- <button id="localrma_b" label="Local RMA" sclass="k9" onClick="doFunc(self)" /> -->
+						</hbox>
+					</row>
+				</rows>
+			</grid>
+
+			<div>
+			</div> <!-- ENDOF workbutts -->
 		</hbox>
 		<separator height="5px" />
-		<grid id="chargeitems_grid" width="${BOXWIDTH}">
-			<columns>
-				<column label="Item/Service Description" sclass="k9" />
-				<column label="Unit(RM)" width="70px" sclass="k9" />
-				<column label="Qty" width="50px" sclass="k9" />
-				<column label="Total" width="70px" sclass="k9" />
-			</columns>
-			<rows>
-				<row>
-					<textbox id="c_item_1" sclass="k9" width="99%" />
-					<textbox id="c_unitprice_1" sclass="k9" width="99%" />
-					<textbox id="c_qty_1" sclass="k9" width="99%" />
-					<label id="c_total_1" sclass="k9" />
-				</row>
-				<row>
-					<textbox id="c_item_2" sclass="k9" width="99%" />
-					<textbox id="c_unitprice_2" sclass="k9" width="99%" />
-					<textbox id="c_qty_2" sclass="k9" width="99%" />
-					<label id="c_total_2" sclass="k9" />
-				</row>
-				<row>
-					<textbox id="c_item_3" sclass="k9" width="99%" />
-					<textbox id="c_unitprice_3" sclass="k9" width="99%" />
-					<textbox id="c_qty_3" sclass="k9" width="99%" />
-					<label id="c_total_3" sclass="k9" />
-				</row>
-				<row>
-					<textbox id="c_item_4" sclass="k9" width="99%" />
-					<textbox id="c_unitprice_4" sclass="k9" width="99%" />
-					<textbox id="c_qty_4" sclass="k9" width="99%" />
-					<label id="c_total_4" sclass="k9" />
-				</row>
-				<row>
-					<label />
-					<label />
-					<label value="G.Total" />
-					<label id="c_grandtotal" />
-				</row>
-			</rows>
-		</grid>
-		<separator height="2px" />
-		<hbox>
-			<button id="updchrg_b" label="Update charge-items" sclass="k9" onClick="chargeItems(self)" />
-			<separator width="50px" />
-			<button id="recalc_b" label="Recalc" sclass="k9" onClick="chargeItems(self)" />
-		</hbox>
-	</tabpanel>
 
-	<tabpanel> <!-- OUTSOURCE -->
-		<grid width="${BOXWIDTH}">
-		<rows>
-			<row spans="4" style="background:#3465a4">
-				<label style="color:#eeeeee">OUTSOURCE</label>
-			</row>
-			<row>
-				<label value="OS ID" sclass="k9" />
-				<listbox id="t_os_id" mold="select" sclass="k9" />
-				<label value="OS User" sclass="k9" />
-				<label id="t_os_user" width="99%" sclass="k9" />
-			</row>
-			<row>
-				<label value="Pickup date" sclass="k9" />
-				<!-- <datebox id="t_os_pickup" format="yyyy-MM-dd" sclass="k9" onCreate="self.value = new Date()" /> -->
-				<label id="t_os_pickup" />
-				<label value="Resolve date" sclass="k9" />
-				<!-- <datebox id="t_os_resolve" format="yyyy-MM-dd" sclass="k9" onCreate="self.value = new Date()" /> -->
-				<label id="t_os_resolve" />
-			</row>
-			<row spans="1,3">
-				<label sclass="k9">OS resolution notes</label>
-				<label id="t_os_resolution" multiline="true" sclass="k9" />
-			</row>
-		</rows>
-		</grid>
-	</tabpanel> <!-- ENDOF OUTSOURCE -->
+		<tabbox>
+			<tabs>
+				<tab id="tab1" label="CASE TICKET DETAILS" />
+				<tab id="tab2" label="ACTIVITY" />
+				<tab id="tab3" label="CHARGES" />
+				<tab id="tab4" label="OUTSOURCE" />
+				<tab id="tab5" label="ATTACHMENTS" />
+			</tabs>
+			<tabpanels>
 
-	<tabpanel> <!-- ATTACHMENTS -->
-		<hbox>
-			<button id="uploaddoc_btn" label="Upload file" sclass="k9" onClick="showUploadPopup(TICKETSV_PREFIX,glob_selected_ticket)" />
-			<button id="viewdoc_btn" label="View file" sclass="k9" onClick="viewFile()" />
-			<button id="editdoc_btn" label="Update" sclass="k9" onClick="updatefiledesc_popup.open(editdoc_btn)" />
-			<button id="deletedoc_btn" label="Delete" sclass="k9" onClick="deleteFile(documents_holder,TICKETSV_PREFIX,glob_selected_ticket)" />
-		</hbox>
-		<separator height="3px" />
-		<div id="documents_holder" width="${BOXWIDTH}" />
-	</tabpanel> <!-- ENDOF ATTACHMENTS -->
+				<tabpanel> <!-- SUPPORT TICKET METADATA -->
+					<grid width="${BOXWIDTH}">
+					<rows>
+						<row>
+							<label value="Caller" sclass="k9" />
+							<textbox id="t_cust_caller" sclass="k9" width="99%" />
+							<label value="Tel/HP" sclass="k9" />
+							<textbox id="t_cust_caller_phone" sclass="k9" width="99%" />
+						</row>
+						<row>
+							<label value="Designation" sclass="k9" />
+							<textbox id="t_cust_caller_des" sclass="k9" width="99%" />
+							<label value="Email" sclass="k9" />
+							<textbox id="t_cust_caller_email" sclass="k9" width="99%" />
+						</row>
+						<row spans="1,3">
+							<label value="Customer location" sclass="k9" />
+							<textbox id="t_cust_location" multiline="true" width="99%" height="80px" sclass="k9" />
+						</row>
+					</rows>
+					</grid>
+				</tabpanel> <!-- ENDOF SUPPORT TICKET METADATA -->
 
-	</tabpanels>
-</tabbox>
+				<tabpanel> <!-- ACTIVITY -->
+					<hbox>
+						<div>
+							<grid width="${ACTIVATY_BOXWIDTH}">
+								<rows>
+									<row spans="4" style="background:#fcaf3e" >
+										<vbox>
+											<div id="equip_rma_holder" />
+											<button id="vequiprma_b" visible="false" label="RMA details" sclass="k9" onClick="doFunc(self)" />
+										</vbox>
+									</row>
+									<row>
+										<label value="Asset Tag" sclass="k9" />
+										<textbox id="t_asset_tag" width="99%" sclass="k9" />
+										<label value="S/Num" sclass="k9" />
+										<textbox id="t_serial_no" width="99%" sclass="k9" />
+									</row>
+									<row spans="1,3">
+										<label value="Product name" sclass="k9" />
+										<textbox id="t_product_name" width="99%" sclass="k9" />
+									</row>
+									<row spans="4">
+										<hbox>
+											<button label="Get name/serial from FC6" sclass="k9" onClick="sourceAsset_Details_FC6()" />
+										</hbox>
+									</row>
+									<row spans="4" style="background:#2e3436">
+										<vbox>
+											<separator height="3px" />
+											<label style="color:#eeeeee" value="Activity Logs" />
+										</vbox>
+									</row>
+								</rows>
+							</grid>
+							<separator height="2px" />
+							<div id="ticksactivs_holder" width="${ACTIVATY_BOXWIDTH}" />
+							<separator height="2px" />
+							<grid width="${ACTIVATY_BOXWIDTH}">
+								<rows>
+									<row>
+										<label value="Assign to" sclass="k9" />
+										<textbox id="t_assign_to" width="99%" sclass="k9" />
+										<label value="Priority" sclass="k9" />
+										<listbox id="t_priority" mold="select" sclass="k9" />
+										<label value="Classfication" sclass="k9" />
+										<listbox id="t_ticketclass" mold="select" sclass="k9" />
+									</row>
+									<row spans="1,5">
+										<label value="Problem" sclass="k9" />
+										<textbox id="t_problem" multiline="true" width="99%" height="60px" sclass="k9" />
+									</row>
+									<row spans="1,5">
+										<label value="Action" sclass="k9" />
+										<textbox id="t_action" multiline="true" width="99%" height="60px" sclass="k9" />
+									</row>
+									<row>
+										<label value="Resolve by" sclass="k9" />
+										<textbox id="t_resolved_by" width="99%" sclass="k9" />
+										<label value="Resolve date" sclass="k9" />
+										<datebox id="t_resolved_on" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
+										<label value="Resolve type" sclass="k9" />
+										<!-- <textbox id="t_resolve_type" width="99%" sclass="k9" /> -->
+										<listbox id="t_resolve_type" mold="select" sclass="k9" rows="1" />
+									</row>
+									<row spans="1,5">
+										<label value="Resolution" sclass="k9" />
+										<textbox id="t_resolution" multiline="true" width="99%" height="50px" sclass="k9" />
+									</row>
+									<row spans="6">
+										<button id="upreso_b" label="Update resolution" sclass="k9" onClick="doFunc(self)" />
+									</row>
+								</rows>
+							</grid>
+						</div>
 
-</div> <!-- ENDOF workarea -->
+						<div sclass="shadowbox" style="background:#2B3B58">
+							<label sclass="subhead1" value="LC Assets Replacement Track" />
+							<div style="background:#D11A54;padding:3px">
+								<hbox>
+									<button id="rplcsave_b" label="Save for GCO" sclass="k9mo" onClick="lcreplaceDo(self.getId())" />
+									<button id="rpclrgco_b" label="Clear from cache" sclass="k9mo" onClick="lcreplaceDo(self.getId())" />
+								</hbox>
+							</div>
+							<separator height="3px" />
+							<div id="lcreps_holder" />
+							<separator height="5px" />
+							<grid>
+								<rows>
+									<row style="background:#2B3B58">
+										<label value="LC.Id" sclass="k9b" />
+										<textbox id="v_lc_id" sclass="k9" />
+										<label value="I.Asset" sclass="k9b" />
+										<textbox id="v_in_assettag" sclass="k9" />
+										<label value="Replace" sclass="k9b" />
+										<textbox id="v_out_assettag" sclass="k9" />
+									</row>
+									<row style="background:#2B3B58" spans="1,5">
+										<label value="A.Date" sclass="k9b" />
+										<datebox id="v_act_date" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
+									</row>
+									<row style="background:#2B3B58" spans="1,5">
+										<label value="Action" sclass="k9b" />
+										<textbox id="v_action" sclass="k9" multiline="true" width="99%" height="70px" />
+									</row>
+								</rows>
+							</grid>
+							<hbox>
+								<button id="updlcrep_b" label="Save/Update" sclass="k9mo" onClick="lcrepDo(self.getId(),global_selected_customerid)" />
+								<button id="clrlcrep_b" label="Clear" sclass="k9mo" onClick="lcrepDo(self.getId(),global_selected_customerid)" />
+								<button id="remlcrep_b" label="REMOVE" style="font-size:9px;color:#ff0000" onClick="lcrepDo(self.getId(),global_selected_customerid)" />
+							</hbox>
+						</div>
+
+					</hbox>
+				</tabpanel> <!-- ENDOF ACTIVITY -->
+
+				<tabpanel> <!-- CHARGES -->
+					<separator height="3px" />
+					<hbox>
+						<label value="Chargeable?" sclass="k9b" />
+						<listbox id="t_chargeable" mold="select" sclass="k9" />
+						<separator width="10px" />
+						<button id="notichargequote_b" label="Request items price" sclass="k9" onClick="chargeItems(self)" />
+						<!-- <button id="confirmquote_b" label="Update and confirm quote" sclass="k9" onClick="chargeItems(self)" disabled="true" /> -->
+					</hbox>
+					<separator height="5px" />
+					<grid id="chargeitems_grid" width="${BOXWIDTH}">
+						<columns>
+							<column label="Item/Service Description" sclass="k9" />
+							<column label="Unit(RM)" width="70px" sclass="k9" />
+							<column label="Qty" width="50px" sclass="k9" />
+							<column label="Total" width="70px" sclass="k9" />
+						</columns>
+						<rows>
+							<row>
+								<textbox id="c_item_1" sclass="k9" width="99%" />
+								<textbox id="c_unitprice_1" sclass="k9" width="99%" />
+								<textbox id="c_qty_1" sclass="k9" width="99%" />
+								<label id="c_total_1" sclass="k9" />
+							</row>
+							<row>
+								<textbox id="c_item_2" sclass="k9" width="99%" />
+								<textbox id="c_unitprice_2" sclass="k9" width="99%" />
+								<textbox id="c_qty_2" sclass="k9" width="99%" />
+								<label id="c_total_2" sclass="k9" />
+							</row>
+							<row>
+								<textbox id="c_item_3" sclass="k9" width="99%" />
+								<textbox id="c_unitprice_3" sclass="k9" width="99%" />
+								<textbox id="c_qty_3" sclass="k9" width="99%" />
+								<label id="c_total_3" sclass="k9" />
+							</row>
+							<row>
+								<textbox id="c_item_4" sclass="k9" width="99%" />
+								<textbox id="c_unitprice_4" sclass="k9" width="99%" />
+								<textbox id="c_qty_4" sclass="k9" width="99%" />
+								<label id="c_total_4" sclass="k9" />
+							</row>
+							<row>
+								<label />
+								<label />
+								<label value="G.Total" />
+								<label id="c_grandtotal" />
+							</row>
+						</rows>
+					</grid>
+					<separator height="2px" />
+					<hbox>
+						<button id="updchrg_b" label="Update charge-items" sclass="k9" onClick="chargeItems(self)" />
+						<separator width="50px" />
+						<button id="recalc_b" label="Recalc" sclass="k9" onClick="chargeItems(self)" />
+					</hbox>
+				</tabpanel>
+
+				<tabpanel> <!-- OUTSOURCE -->
+					<grid width="${BOXWIDTH}">
+					<rows>
+						<row spans="4" style="background:#3465a4">
+							<label style="color:#eeeeee">OUTSOURCE</label>
+						</row>
+						<row>
+							<label value="OS ID" sclass="k9" />
+							<listbox id="t_os_id" mold="select" sclass="k9" />
+							<label value="OS User" sclass="k9" />
+							<label id="t_os_user" width="99%" sclass="k9" />
+						</row>
+						<row>
+							<label value="Pickup date" sclass="k9" />
+							<!-- <datebox id="t_os_pickup" format="yyyy-MM-dd" sclass="k9" onCreate="self.value = new Date()" /> -->
+							<label id="t_os_pickup" />
+							<label value="Resolve date" sclass="k9" />
+							<!-- <datebox id="t_os_resolve" format="yyyy-MM-dd" sclass="k9" onCreate="self.value = new Date()" /> -->
+							<label id="t_os_resolve" />
+						</row>
+						<row spans="1,3">
+							<label sclass="k9">OS resolution notes</label>
+							<label id="t_os_resolution" multiline="true" sclass="k9" />
+						</row>
+					</rows>
+					</grid>
+				</tabpanel> <!-- ENDOF OUTSOURCE -->
+
+				<tabpanel> <!-- ATTACHMENTS -->
+					<hbox>
+						<button id="uploaddoc_btn" label="Upload file" sclass="k9" onClick="showUploadPopup(TICKETSV_PREFIX,glob_selected_ticket)" />
+						<button id="viewdoc_btn" label="View file" sclass="k9" onClick="viewFile()" />
+						<button id="editdoc_btn" label="Update" sclass="k9" onClick="updatefiledesc_popup.open(editdoc_btn)" />
+						<button id="deletedoc_btn" label="Delete" sclass="k9" onClick="deleteFile(documents_holder,TICKETSV_PREFIX,glob_selected_ticket)" />
+					</hbox>
+					<separator height="3px" />
+					<div id="documents_holder" width="${BOXWIDTH}" />
+				</tabpanel> <!-- ENDOF ATTACHMENTS -->
+
+			</tabpanels>
+		</tabbox>
+	</div> <!-- ENDOF workarea -->
 
 <label id="debugmsg" multiline="true" />
 

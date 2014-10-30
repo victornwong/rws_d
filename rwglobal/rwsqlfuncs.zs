@@ -831,3 +831,9 @@ Object getJobPicklist_byParentJob(String iwhat)
 	String sqlstm = "select * from rw_jobpicklist where parent_job=" + iwhat;
 	return sqlhand.gpSqlFirstRow(sqlstm);
 }
+
+Object getAssignment_rec(String iwhat)
+{
+	sqlstm = "select * from rw_assignment where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
+}

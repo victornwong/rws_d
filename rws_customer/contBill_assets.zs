@@ -31,17 +31,18 @@ Object[] asslb_hds =
 	new listboxHeaderWidthObj("Brand",true,""),
 	new listboxHeaderWidthObj("Model",true,""),
 	new listboxHeaderWidthObj("Type",true,""),
-	new listboxHeaderWidthObj("GCO/N",true,"40px"),
+	new listboxHeaderWidthObj("GCO/N",true,"40px"), // 5
 	new listboxHeaderWidthObj("Bill",true,"40px"),
 	new listboxHeaderWidthObj("BuyO",true,"40px"),
 	new listboxHeaderWidthObj("FrmLC",true,"70px"),
 	new listboxHeaderWidthObj("Qty",true,"40px"),
+	new listboxHeaderWidthObj("Asgn",true,"40px"), // 10
 	new listboxHeaderWidthObj("origid",false,""),
 };
 
 ASSLB_TYPE_IDX = 4;
 ASSLB_GCO_IDX = 5;
-ASSLB_ORIGID_IDX = 10;
+ASSLB_ORIGID_IDX = 11;
 
 class assClick implements org.zkoss.zk.ui.event.EventListener
 {
@@ -59,7 +60,7 @@ assclicko = new assClick();
 void showAssets(String iwhat)
 {
 	Listbox newlb = lbhand.makeVWListbox_Width(lcasset_holder, asslb_hds, "lcassets_lb", 20);
-	sqlstm = "select origid,asset_tag,brand,model,type,serial_no,gcn_id,billable,buyout,impfromlc,hotswap,qty from rw_lc_equips " +
+	sqlstm = "select origid,asset_tag,brand,model,type,serial_no,gcn_id,billable,buyout,impfromlc,hotswap,qty,assigned from rw_lc_equips " +
 	"where lc_parent=" + iwhat + " order by asset_tag";
 
 	asrs = sqlhand.gpSqlGetRows(sqlstm);
@@ -67,7 +68,8 @@ void showAssets(String iwhat)
 	newlb.setMold("paging"); newlb.setMultiple(true); newlb.setCheckmark(true);
 	newlb.addEventListener("onSelect", assclicko);
 	ArrayList kabom = new ArrayList();
-	String[] fl = { "asset_tag", "serial_no", "brand", "model", "type", "gcn_id", "billable", "buyout", "impfromlc", "qty", "origid" };
+	String[] fl = { "asset_tag", "serial_no", "brand", "model", "type", "gcn_id", "billable",
+	"buyout", "impfromlc", "qty", "assigned", "origid" };
 	for(d : asrs)
 	{
 		ngfun.popuListitems_Data(kabom,fl,d);
@@ -832,6 +834,7 @@ void massUpdateRental(String iwh)
 // 12/06/2014: req by Nurul to update if asset billable -- special for MISC Berhad
 // 16/06/2014: req by Nurul to have a BUYOUT flag
 // itype: 1=billable, 2=buyout, 3=hotswap(10/09/2014 req by farah)
+// 27/10/2014: itype: 4,5 = set asset assigned/unassigned
 void updateAssetFlags(int itype)
 {
 	try { if(lcassets_lb.getSelectedCount() == 0) return; } catch (Exception e) { return; }
@@ -860,6 +863,14 @@ void updateAssetFlags(int itype)
 			case 3:
 				flagstr = "hotswap=1-hotswap";
 				msgtext = "Dussshhh.. HOTSWAP flag toggled.";
+				break;
+			case 4: // assigned-flag
+				flagstr = "assigned=1";
+				msgtext = "Kapowww.. assigned-flag set";
+				break;
+			case 5: // unassigned flag
+				flagstr = "assigned=0";
+				msgtext = "Kadommm.. assigned-flag cleared";
 				break;
 		}
 

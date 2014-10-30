@@ -293,9 +293,7 @@ void exportAssetsList(String iwhat, int itype)
 	if(iwhat.equals("")) return;
 	if(expass_div.getFellowIfAny("expassframe") != null) expassframe.setParent(null);
 	Iframe newiframe = new Iframe();
-	newiframe.setId("expassframe");
-	newiframe.setWidth("100%");
-	newiframe.setHeight("600px");
+	newiframe.setId("expassframe"); newiframe.setWidth("100%"); newiframe.setHeight("600px");
 	cnm = glob_sel_customer.replaceAll(" ","%20");
 	ort = i_order_type.getValue().trim().replaceAll(" ","%20");
 
@@ -327,4 +325,37 @@ void exportAssetsList(String iwhat, int itype)
 	newiframe.setParent(expass_div);
 	expasspop.open(newasset_b);
 }
+
+// 28/10/2014: list dups LC records
+void listDupLC_records(Div iwinholder)
+{
+Object[] dlrhds =
+{
+	new listboxHeaderWidthObj("LC",true,"50px"),
+	//new listboxHeaderWidthObj("Customer",true,""),
+	new listboxHeaderWidthObj("Dups",true,"40px"),
+};
+
+	mwin = vMakeWindow(iwinholder,"Duplicate LC records","0","center","500px","");
+	kdiv = new Div();
+	kdiv.setParent(mwin);
+
+	Listbox newlb = lbhand.makeVWListbox_Width(kdiv, dlrhds, "dplc_lb", 3);
+
+	sqlstm = "select distinct lc_id, count(lc_id) as dupscount from rw_lc_records " +
+	"group by lc_id having count(lc_id) > 1 order by lc_id;";
+
+	r = sqlhand.gpSqlGetRows(sqlstm);
+	if(r.size() == 0) return;
+	newlb.setMold("paging"); newlb.setRows(21);
+	ArrayList kabom = new ArrayList();
+	String[] fl = { "lc_id", "dupscount" };
+	for(d : r)
+	{
+		ngfun.popuListitems_Data(kabom,fl,d);
+		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+		kabom.clear();
+	}
+}
+
 

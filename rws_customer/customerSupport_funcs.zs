@@ -1,3 +1,6 @@
+import org.victor.*;
+// customer support module supp funcs
+/*
 import java.util.*;
 import java.text.*;
 import java.lang.Float;
@@ -9,9 +12,29 @@ import javax.activation.*;
 import groovy.sql.Sql;
 import org.zkoss.zk.ui.*;
 import org.zkoss.zk.zutl.*;
+*/
 
-import org.victor.*;
-// customer support module supp funcs
+// Get inventory details from data-view partsall_0
+Object getFC6_inventory(String iatg)
+{
+	sqlstm = "select * from partsall_0 where assettag='" + iatg + "';";
+	return sqlhand.rws_gpSqlFirstRow(sqlstm);
+}
+
+// 27/10/2014: source asset-detail from FC6 - to populate t_product_name
+void sourceAsset_Details_FC6()
+{
+	atg = kiboo.replaceSingleQuotes( t_asset_tag.getValue().trim() );
+	if(atg.equals("")) return;
+	r = getFC6_inventory(atg);
+	if(r == null)
+	{
+		guihand.showMessageBox("ERR: cannot access inventory database..");
+		return;
+	}
+	t_product_name.setValue( kiboo.checkNullString(r.get("Name")) );
+	t_serial_no.setValue( kiboo.checkNullString(r.get("serial")) );
+}
 
 // Actual email SOF to customer. uses funcs in emailfuncs.zs
 // TODO get Faiz to create a new

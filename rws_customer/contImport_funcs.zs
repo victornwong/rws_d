@@ -253,7 +253,7 @@ Object[] ido_hds =
 	new listboxHeaderWidthObj("hddsizeyh",false,""),
 	new listboxHeaderWidthObj("ramsizeyh",false,""),
 	new listboxHeaderWidthObj("DO",true,"60px"),
-	new listboxHeaderWidthObj("deliverytoyh",false,""),
+	new listboxHeaderWidthObj("Dlvr",false,""),
 };
 
 void show_FC_DO(Object iwher, int itype, Div iassholder, String ilbid )
@@ -303,8 +303,11 @@ void show_FC_DO(Object iwher, int itype, Div iassholder, String ilbid )
 		idon = kiboo.replaceSingleQuotes( flexfc6do_tb.getValue().trim() );
 		if(idon.equals("")) return;
 
+		/*
 		rwn = i_rwno.getValue().replaceAll("RWI:","").trim();
 		if(rwn.indexOf("RW") == -1) rwn = "RW" + rwn;
+
+		// "left join u001c di on di.extraid = d.extraheaderoff " +
 
 		sqlstm2 = "select top 1 ri.deliverytoyh from data d " +
 		"left join u001b ri on ri.extraid=d.extraheaderoff " +
@@ -312,6 +315,14 @@ void show_FC_DO(Object iwher, int itype, Div iassholder, String ilbid )
 
 		drc = sqlhand.rws_gpSqlFirstRow(sqlstm2);
 		do_deliveryto = kiboo.checkNullString(drc.get("deliverytoyh")).trim();
+		*/
+	
+		sqlstm2 = "select top 1 ri.deliveryaddressyh from data d " +
+		"left join u001c ri on ri.extraid=d.extraheaderoff " +
+		"where d.voucherno='" + idon + "' and d.vouchertype=6144;";
+
+		drc = sqlhand.rws_gpSqlFirstRow(sqlstm2);
+		do_deliveryto = kiboo.checkNullString(drc.get("deliveryaddressyh")).trim();
 
 		// TODO check DO really belongs to customer
 		sqlstm += "and d.voucherno='" + idon + "';";
@@ -327,7 +338,7 @@ void show_FC_DO(Object iwher, int itype, Div iassholder, String ilbid )
 	ArrayList kabom = new ArrayList();
 	for(d : prds)
 	{
-		popuListitems_Data(kabom, flds, d);
+		ngfun.popuListitems_Data(kabom, flds, d);
 		kabom.add(do_deliveryto);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();

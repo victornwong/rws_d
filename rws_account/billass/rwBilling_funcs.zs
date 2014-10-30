@@ -75,6 +75,7 @@ Object[] asslb_hds =
 	new listboxHeaderWidthObj("Model",true,""),
 	new listboxHeaderWidthObj("Type",true,""),
 	new listboxHeaderWidthObj("GCO",true,"50px"),
+	new listboxHeaderWidthObj("ASGN",true,"40px"),
 	new listboxHeaderWidthObj("origid",false,""),
 };
 	lcr = getLCNew_rec(iwhat);
@@ -124,17 +125,15 @@ String[] flns = {
 
 	lid = kiboo.makeRandomId("yy");
 	Listbox newlb = lbhand.makeVWListbox_Width(mdv, asslb_hds, lid, 20);
-	sqlstm = "select origid,asset_tag,brand,model,type,serial_no,gcn_id from rw_lc_equips " +
+	sqlstm = "select origid,asset_tag,brand,model,type,serial_no,gcn_id,assigned from rw_lc_equips " +
 	"where lc_parent=" + iwhat + " order by asset_tag";
 
 	asrs = sqlhand.gpSqlGetRows(sqlstm);
 	if(asrs.size() == 0) return;
 	newlb.setMold("paging");
-	//newlb.setMultiple(true);
-	//newlb.setCheckmark(true);
-	//newlb.addEventListener("onSelect", assclicko);
+	//newlb.setMultiple(true); newlb.setCheckmark(true); newlb.addEventListener("onSelect", assclicko);
 	ArrayList kabom = new ArrayList();
-	String[] fl = { "asset_tag", "serial_no", "brand", "model", "type", "gcn_id", "origid" };
+	String[] fl = { "asset_tag", "serial_no", "brand", "model", "type", "gcn_id", "assigned", "origid" };
 	ks = "font-size:9px";
 	for(d : asrs)
 	{
