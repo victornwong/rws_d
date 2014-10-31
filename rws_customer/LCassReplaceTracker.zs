@@ -132,6 +132,31 @@ void showLCAss_RepTrack(Object itkr, Div idiv, String lbid)
 	}
 }
 
+// Use in LC manager
+void showLCAss_RepTrack_2(Object itkr, Div idiv, String lbid, String ifc6)
+{
+	last_trk_lbid = lbid; last_trk_rec = itkr; last_lb_holder = idiv;
+
+	Listbox newlb = lbhand.makeVWListbox_Width(idiv, lcasrephds, lbid, 3);
+	//fc6 = itkr.get("fc6_custid");
+	//if(fc6 == null) return;
+
+	sqlstm = "select *, (select status from rw_goodscollection where CONVERT(varchar(10),origid)=rlr.gco_id) as gstat from rw_lc_replacements rlr where fc6_custid='" + ifc6 + "' order by origid desc";
+	rcs = sqlhand.gpSqlGetRows(sqlstm);
+	if(rcs.size() == 0) return;
+	newlb.setRows(21); newlb.setMold("paging");
+	newlb.setMultiple(true); newlb.setCheckmark(true);
+	newlb.addEventListener("onSelect", lcassrepcliker);
+	ArrayList kabom = new ArrayList();
+	String[] fl = { "lc_id","origid","in_assettag","out_assettag","username","rstatus","gco_id","gstat", "action","act_date" };
+	for(d : rcs)
+	{
+		ngfun.popuListitems_Data(kabom,fl,d);
+		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+		kabom.clear();
+	}
+}
+
 // general purpose to check if LC-replacement LB got selections and etc..
 Component checkLCRep_LB_things()
 {

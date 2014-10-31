@@ -342,8 +342,8 @@ void checkOpenCancel()
 
 void trysendmail()
 {
-genServiceOrderFormPdf(glob_selected_ticket);
-return;
+	genServiceOrderFormPdf(glob_selected_ticket);
+	return;
 
 	templatefn = session.getWebApp().getRealPath("rwimg/service_order_v1.pdf");
 	//pixfn = session.getWebApp().getRealPath("alsimg/alstechnichem_logo_smaller.jpg");
@@ -984,7 +984,7 @@ if(useraccessobj.accesslevel == 9)
 	chgtkstat_b.setVisible(true);
 }
 
-if(useraccessobj.username.equals(""))
+if(useraccessobj.username.equals("vanita"))
 {
 	chgtkstat_b.setVisible(true);
 }

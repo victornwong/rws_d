@@ -14,10 +14,11 @@
 <zscript src="./contBill_DO.zs" />
 <zscript src="./contBill_RMA.zs" />
 <zscript src="./contImport_funcs.zs" />
+<zscript src="./LCassReplaceTracker.zs" />
 <zscript>
 <![CDATA[
 MYTITLE = "LC Management";
-MYVERSION = "v0.4.1";
+MYVERSION = "v0.4.2";
 MYPANEL = "billtrkcpan";
 /*
 @Title LC billing tracking and so on
@@ -34,6 +35,7 @@ MYPANEL = "billtrkcpan";
 22/09/2014: huiping req to add sales_related status .. for watever
 24/09/2014: modif contbill_Assets.replaceLCAsset() to use replaceAssetAuditLog() - terse audit-log for replacements
 27/10/2014: add rw_lc_equips.assigned, user able to set assigned/un for assets
+31/10/2014: helpdesk replacement let BA update the LC record
 
 */
 import java.util.*;
@@ -528,8 +530,7 @@ BUTT_WIDTH2 = "190px";
 	</div>
 </popup> <!-- ENDOF pickcustomer_popup -->
 
-<!-- update file description popup -->
-<popup id="updatefiledesc_popup">
+<popup id="updatefiledesc_popup"> <!-- update file description popup -->
 	<groupbox width="400px">
 		<caption id="updatefiledesc_label" />
 		<label value="Description" style="font-size:9px" />
@@ -542,8 +543,7 @@ BUTT_WIDTH2 = "190px";
 	</groupbox>
 </popup>
 
-<!-- upload a file popup -->
-<popup id="uploadfile_popup">
+<popup id="uploadfile_popup"> <!-- upload a file popup -->
 	<groupbox>
 		<caption label="Upload a file" />
 			<grid>
@@ -591,6 +591,7 @@ BUTT_WIDTH2 = "190px";
 			<button label="FlexImport FC6 DO" sclass="k9" width="${BUTT_WIDTH}" onClick="fleximportfc6_pop.open(newasset_b)" />
 			<button label="Sedut Contractcare" sclass="k9" width="${BUTT_WIDTH}" onClick="popOp_suckContractcare(self)" />
 			<button id="getfc6assdet_b" label="TryGet FC6 asset-info" width="${BUTT_WIDTH}" sclass="k9" onClick="assFunc(self)" />
+			<button id="sdtdoaddr_b" label="Sedut DO muntah address" width="${BUTT_WIDTH}" sclass="k9" onClick="assFunc(self)" />
 		</vbox>
 	</div>
 </popup>
@@ -674,6 +675,46 @@ Asgn = assigned/unassigned asset
 	</div>
 </popup>
 
+<popup id="rmareplace_pop">
+	<div sclass="shadowbox" style="background:#2B3B58" width="700px">
+		<label sclass="subhead1" value="LC Assets Replacement Track" />
+		<div style="background:#D11A54;padding:3px">
+			<hbox>
+				<button id="rplcsave_b" label="Save for GCO" sclass="k9mo" onClick="lcreplaceDo(self.getId())" />
+				<button id="rpclrgco_b" label="Clear from cache" sclass="k9mo" onClick="lcreplaceDo(self.getId())" />
+			</hbox>
+		</div>
+		<separator height="3px" />
+		<div id="lcreps_holder" />
+		<separator height="5px" />
+		<grid>
+			<rows>
+				<row style="background:#2B3B58">
+					<label value="LC.Id" sclass="k9b" />
+					<textbox id="v_lc_id" sclass="k9" />
+					<label value="I.Asset" sclass="k9b" />
+					<textbox id="v_in_assettag" sclass="k9" />
+					<label value="Replace" sclass="k9b" />
+					<textbox id="v_out_assettag" sclass="k9" />
+				</row>
+				<row style="background:#2B3B58" spans="1,5">
+					<label value="A.Date" sclass="k9b" />
+					<datebox id="v_act_date" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
+				</row>
+				<row style="background:#2B3B58" spans="1,5">
+					<label value="Action" sclass="k9b" />
+					<textbox id="v_action" sclass="k9" multiline="true" width="99%" height="70px" />
+				</row>
+			</rows>
+		</grid>
+		<hbox>
+			<button id="updlcrep_b" label="Save/Update" sclass="k9mo" onClick="lcrepDo(self.getId(),global_selected_customerid)" />
+			<button id="clrlcrep_b" label="Clear" sclass="k9mo" onClick="lcrepDo(self.getId(),global_selected_customerid)" />
+			<button id="remlcrep_b" label="REMOVE" style="font-size:9px;color:#ff0000" onClick="lcrepDo(self.getId(),global_selected_customerid)" />
+		</hbox>
+	</div>
+</popup>
+
 <style src="/real-world.css" />
 <style>
 .GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
@@ -709,7 +750,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 		<button id="shwauditlogs_b" label="LC/ROC Logs" sclass="k9mo" onClick="doFunc(self)" />
 		<button label="Dig LC/ROC Logs" sclass="k9mo" onClick="digauditlog_pop.open(self)" />
 		<button label="Check dup records" sclass="k9mo" onClick="listDupLC_records(winsholder)" />
-
+		<button id="chkreplacement_b" label="Check helpdesk replacements" sclass="k9mo" onClick="assFunc(self)" />
 		<button id="listhotswap_b" label="List HOTSWAPS" sclass="k9" onClick="listHotswaps()" />
 		<separator width="50px" />
 		<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#ff0000" visible="false" onClick="adminpop.open(self)" />
@@ -792,7 +833,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 				<button label="FC6/Contractcare related" sclass="k9mo" onClick="fcfuncs_pop.open(self)" />
 				<button label="Module funcs" sclass="k9mo" onClick="modfuncs_pop.open(self)" />
 				<button label="Report" sclass="k9mo" onClick="report_pop.open(self)" />
-				<button label="GCN related" sclass="k9mo" onClick="gcnfuncs_pop.open(self)" />
+				<button label="GCO related" sclass="k9mo" onClick="gcnfuncs_pop.open(self)" />
 				<button label="MPF" sclass="k9mo" onClick="mpf_pop.open(self)" />
 				<button label="HELP" sclass="k9" onClick="lilhelp_pop.open(self)" />
 			</hbox>

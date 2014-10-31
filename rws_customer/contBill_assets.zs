@@ -10,16 +10,17 @@ void showAssetMetadata(String iwhat)
 	Object[] metflds = {
 	m_asset_tag,m_brand,m_model,m_battery,m_hdd,m_hdd2,m_hdd3,m_hdd4,m_ram,m_ram2,m_ram3,m_ram4,
 	m_gfxcard,m_mouse,m_keyboard,m_monitor,m_poweradaptor,coa1,coa2,coa3,coa4,m_misc,m_cust_location,
-	m_type,osversion,offapps,m_serial_no, m_rm_month, m_qty
+	m_type,osversion,offapps,m_serial_no, m_rm_month, m_qty, m_do_no
 	};
 
 	String[] metfnms = {
 	"asset_tag","brand","model","battery","hdd","hdd2","hdd3","hdd4","ram","ram2","ram3","ram4",
 	"gfxcard","mouse","keyboard","monitor","poweradaptor","coa1","coa2","coa3","coa4",
 	"remarks","cust_location",
-	"type","osversion","offapps","serial_no", "RM_Month", "qty"
+	"type","osversion","offapps","serial_no", "RM_Month", "qty", "do_no"
 	};
 	
+	ngfun.clearUI_Field(metflds);
 	ngfun.populateUI_Data(metflds, metfnms, rc);
 	assbom_holder.setVisible(true);
 }
@@ -123,7 +124,7 @@ void assFunc(Object iwhat)
 		m_asset_tag, m_brand, m_model, m_battery, m_hdd, m_hdd2, m_hdd3, m_hdd4,
 		m_ram, m_ram2, m_ram3, m_ram4, m_gfxcard, m_mouse, m_keyboard, m_monitor,
 		coa1, coa2, coa3, coa4, osversion, offapps, m_misc,
-		m_type, m_cust_location, m_poweradaptor, m_serial_no, m_rm_month, m_qty
+		m_type, m_cust_location, m_poweradaptor, m_serial_no, m_rm_month, m_qty, m_do_no
 		};
 
 		inpdat = ngfun.getString_fromUI(inpflds);
@@ -137,7 +138,7 @@ void assFunc(Object iwhat)
 		"coa1='" + inpdat[16] + "', coa2='" + inpdat[17] + "', coa3='" + inpdat[18] + "', coa4='" + inpdat[19] + "'," +
 		"osversion='" + inpdat[20] + "', offapps='" + inpdat[21] + "', remarks='" + inpdat[22] + "', type='" + inpdat[23] + "'," + 
 		"cust_location='" + inpdat[24] + "', poweradaptor='" + inpdat[25] + "', serial_no='" + inpdat[26] + "', rm_month=" + inpdat[27] +
-		", qty=" + inpdat[28] + " where origid=" + glob_selected_ass;
+		", qty=" + inpdat[28] + ", do_no='" + inpdat[29] + "' where origid=" + glob_selected_ass;
 
 		refresh_wass = true;
 	}
@@ -286,7 +287,6 @@ void assFunc(Object iwhat)
 
 // sedutmuntah_b
 
-
 	if(itype.equals("cleargcntrans_b")) // 08/04/2014: clear transient-GCO recs
 	{
 		if(glob_sel_lc_str.equals("")) return;
@@ -297,9 +297,47 @@ void assFunc(Object iwhat)
 		msgtext = "Puifff";
 	}
 
+	if(itype.equals("sdtdoaddr_b")) // 31/10/2014: import from FC6 DO's delivery address for asset location
+	{
+		try { if(lcassets_lb.getSelectedCount() == 0) return; } catch (Exception e) { return; }
+		for(d : lcassets_lb.getSelectedItems())
+		{
+			atg = lbhand.getListcellItemLabel(d,0);
+			sqlstm += update_AssetLocation_byDOAddress(glob_selected_lc, atg);
+		}
+		msgtext = "Asset-location imported from DO delivery address..";
+	}
+
+	if(itype.equals("chkreplacement_b")) // 31/10/2014: check helpdesk entered replacements
+	{
+		if(glob_lcmeta_rec == null) return;
+		f6 = glob_lcmeta_rec.get("fc6_custid");
+		showLCAss_RepTrack_2(null,lcreps_holder,"lcreps_lb",f6);
+		rmareplace_pop.open(iwhat);
+	}
+
 	if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
 	if(refresh_wass) showAssets(glob_selected_lc);
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
+}
+
+// 31/10/2014: update asset-location from DO delivery address - req by huiping
+String update_AssetLocation_byDOAddress(String ilc, String iatg)
+{
+	retv = "";
+
+	sqlstm = "select top 1 k.deliveryaddressyh from Focus5012.dbo.data d2 left join Focus5012.dbo.u001c k on k.extraid = d2.extraheaderoff " +
+	"where d2.vouchertype=6144 and d2.voucherno=(select do_no from rw_lc_equips where lc_parent=" + ilc + " and asset_tag='" + iatg + "');";
+
+	r = sqlhand.gpSqlFirstRow(sqlstm);
+
+	if(r != null)
+	{
+		dla = r.get("deliveryaddressyh");
+		if(dla.equals("")) return retv;
+		retv = "update rw_lc_equips set cust_location='" + dla + "' where lc_parent=" + ilc + " and asset_tag='" + iatg + "';";
+	}
+	return retv;
 }
 
 void copyAssetsFromLC(String idest, String isrc)
@@ -462,18 +500,18 @@ void replaceLCAsset()
 	{ r_asset_tag, r_brand, r_model, r_battery, r_hdd, r_hdd2, r_hdd3, r_hdd4,
 	r_ram, r_ram2, r_ram3, r_ram4, r_gfxcard, r_mouse, r_keyboard, r_monitor,
 	r_coa1, r_coa2, r_coa3, r_coa4, r_osversion, r_offapps, r_misc,
-	r_type, r_cust_location, r_poweradaptor, r_serial_no
+	r_type, r_cust_location, r_poweradaptor, r_serial_no, r_do_no
 	};
 
-	inpdat = ngfun.getString_fromUI(inpflds);
+	dt = ngfun.getString_fromUI(inpflds);
 
-	sqlstm = "update rw_lc_equips set asset_tag='" + inpdat[0] + "', brand='" + inpdat[1] + "', model='" + inpdat[2] +"'," +
-	"battery='" + inpdat[3] + "', hdd='" + inpdat[4] + "', hdd2='" + inpdat[5] + "', hdd3='" + inpdat[6] + "', hdd4='" + inpdat[7] + "'," +
-	"ram='" + inpdat[8] + "', ram2='" + inpdat[9] + "', ram3='" + inpdat[10] + "', ram4='" + inpdat[11] + "'," +
-	"gfxcard='" + inpdat[12] + "', mouse='" + inpdat[13] + "', keyboard='" + inpdat[14] + "', monitor='" + inpdat[15] + "'," +
-	"coa1='" + inpdat[16] + "', coa2='" + inpdat[17] + "', coa3='" + inpdat[18] + "', coa4='" + inpdat[19] + "'," +
-	"osversion='" + inpdat[20] + "', offapps='" + inpdat[21] + "', remarks='" + inpdat[22] + "', type='" + inpdat[23] + "'," + 
-	"cust_location='" + inpdat[24] + "', poweradaptor='" + inpdat[25] + "', serial_no='" + inpdat[26] + "' where origid=" + glob_selected_ass;
+	sqlstm = "update rw_lc_equips set asset_tag='" + dt[0] + "', brand='" + dt[1] + "', model='" + dt[2] +"'," +
+	"battery='" + dt[3] + "', hdd='" + dt[4] + "', hdd2='" + dt[5] + "', hdd3='" + dt[6] + "', hdd4='" + dt[7] + "'," +
+	"ram='" + dt[8] + "', ram2='" + dt[9] + "', ram3='" + dt[10] + "', ram4='" + dt[11] + "'," +
+	"gfxcard='" + dt[12] + "', mouse='" + dt[13] + "', keyboard='" + dt[14] + "', monitor='" + dt[15] + "'," +
+	"coa1='" + dt[16] + "', coa2='" + dt[17] + "', coa3='" + dt[18] + "', coa4='" + dt[19] + "'," +
+	"osversion='" + dt[20] + "', offapps='" + dt[21] + "', remarks='" + dt[22] + "', type='" + dt[23] + "'," + 
+	"cust_location='" + dt[24] + "', poweradaptor='" + dt[25] + "', serial_no='" + dt[26] + "', do_no='" + dt[27] + "' where origid=" + glob_selected_ass;
 
 	sqlhand.gpSqlExecuter(sqlstm);
 	showAssets(glob_selected_lc);
