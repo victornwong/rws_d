@@ -285,8 +285,6 @@ void assFunc(Object iwhat)
 		}
 	}
 
-// sedutmuntah_b
-
 	if(itype.equals("cleargcntrans_b")) // 08/04/2014: clear transient-GCO recs
 	{
 		if(glob_sel_lc_str.equals("")) return;
@@ -313,6 +311,12 @@ void assFunc(Object iwhat)
 		if(glob_lcmeta_rec == null) return;
 		f6 = glob_lcmeta_rec.get("fc6_custid");
 		showLCAss_RepTrack_2(null,lcreps_holder,"lcreps_lb",f6);
+		rmareplace_pop.open(iwhat);
+	}
+
+	if(itype.equals("chkreplall_b")) // 04/11/2014: check all non-updated replacements by helpdesk
+	{
+		showLCAss_RepTrack_2(null,lcreps_holder,"lcreps_lb","");
 		rmareplace_pop.open(iwhat);
 	}
 
@@ -640,7 +644,8 @@ void impRWI_Extra()
 	"r.ordertypeyh, r.remarksyh, r.insttypeyh, " +
 	"(select sum(amount1) from data where voucherno='" + lcn + "') as contractamt, " +
 	"convert(datetime, dbo.ConvertFocusDate(u.contractstartyh), 112) as cstart, " +
-	"convert(datetime, dbo.ConvertFocusDate(u.contractendyh), 112) as cend " +
+	"convert(datetime, dbo.ConvertFocusDate(u.contractendyh), 112) as cend, " +
+	"case r.insttypeyh when 'monthly' then cast(round(u.totaldiffdaysyh/30,0) as int) else cast( (round(u.totaldiffdaysyh/30,0)/4) as int) end as rperiod " +
 	"from data d " +
 	"left join u011b u on u.extraid = d.extraoff " +
 	"left join u001b r on r.extraid = d.extraheaderoff " +
@@ -650,7 +655,7 @@ void impRWI_Extra()
 	drc = sqlhand.rws_gpSqlFirstRow(sqlstm);
 	if(drc == null) return;
 
-	String[] fl = { "name", "bookno", "cstart", "cend", "rocnoyh", "noofinstallmentyh",
+	String[] fl = { "name", "bookno", "cstart", "cend", "rocnoyh", "rperiod",
 	"remarksyh", "ordertypeyh", "insttypeyh", "contractamt", "vdate" };
 
 	Object[] ob = { customername, l_fc6_custid, i_lstartdate, i_lenddate, i_rocno, i_period,
@@ -898,10 +903,16 @@ void updateAssetFlags(int itype)
 				flagstr = "buyout=1-buyout";
 				msgtext = "Piffff... BUYOUT flag toggled.";
 				break;
+				
 			case 3:
-				flagstr = "hotswap=1-hotswap";
+				flagstr = "hotswap=1";
 				msgtext = "Dussshhh.. HOTSWAP flag toggled.";
 				break;
+			case 6:
+				flagstr = "hotswap=0";
+				msgtext = "Dussshhh.. HOTSWAP flag toggled.";
+				break;
+
 			case 4: // assigned-flag
 				flagstr = "assigned=1";
 				msgtext = "Kapowww.. assigned-flag set";

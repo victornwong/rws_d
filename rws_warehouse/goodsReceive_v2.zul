@@ -178,7 +178,8 @@ void grnFunc(String itype)
 			hidereset_workarea();
 			add_RWAuditLog(JN_linkcode(),"", "Commit GRN", useraccessobj.username);
 			// TODO send notif email to procurement
-			// gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, "victor@rentwise.com","RE: TESTING gmailsend","Just testing..");
+			emsg = "RE: New GRN committed" + glob_sel_grn;
+			gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, "victor@rentwise.com", emsg, "Do check items are received in good order.");
 		}
 		else
 		{
@@ -280,8 +281,10 @@ void adminFunc(String itype)
 
 // Inject stock items and qtys, only item with pre-def product-name will work
 // use palletid 4=UNKNOWN (TODO chg to "WH PALLET" id for fc5012)
+// IMPORTANT chg pallet-loca to AUDIT . GRN->AUDIT process, F30 palletid = 4, F12=4452
 void updateInventory_GRNItems()
 {
+	AUDIT_PALLET_ID = "4452";
 	try
 	{
 		log_assettags = "";
@@ -302,7 +305,7 @@ void updateInventory_GRNItems()
 			if(!itm.equals("")) // only entry with item-name
 			{
 				log_assettags += atg + "(" + snm + " / " + qty + "), ";
-// IMPORTANT chg pallet-loca to AUDIT . GRN->AUDIT process
+
 				sqlstm += "if not exists(select 1 from mr001 where code2='" + atg + "')" +
 				"begin " +
 				"set @maxid = (select max(masterid)+1 from mr001);" +
@@ -314,7 +317,7 @@ void updateInventory_GRNItems()
 				"'" + itm + " - " + atg + "','" + snm + "','" + atg + "', " +
 				"0,-1,131,0,@maxid,0,0," + tdate + ",0xe332e,0); " +
 
-				"insert into u0001 (extraid,productnameyh,palletnoyh,shipmentcodeyh) values (@maxid,@prodid,4,'" + shpc + "'); " +
+				"insert into u0001 (extraid,productnameyh,palletnoyh,shipmentcodeyh) values (@maxid,@prodid," + AUDIT_PALLET_ID + ",'" + shpc + "'); " +
 
 				"insert into ibals (code,date_,dep,qiss,qrec,val,qty2) " +
 				"values (@maxid," + tdate + ",0,0," + qty + ",0,0); " +
@@ -329,7 +332,8 @@ void updateInventory_GRNItems()
 				"end;";
 			}
 		}
-		f30_gpSqlExecuter(sqlstm);
+		//f30_gpSqlExecuter(sqlstm);
+		sqlhand.rws_gpSqlExecuter(sqlstm);
 		lgstr = "Update inventory : " + log_assettags;
 		add_RWAuditLog(JN_linkcode(),"", lgstr, useraccessobj.username);
 
@@ -376,9 +380,8 @@ void minusAddFocus_Stock(int itype, int qty)
 				}
 			}
 		}
-
-		f30_gpSqlExecuter(sqlstm);
-
+		sqlhand.rws_gpSqlExecuter(sqlstm);
+		//f30_gpSqlExecuter(sqlstm);
 	} catch (Exception e) {}	
 }
 
@@ -395,8 +398,7 @@ void minusAddFocus_Stock(int itype, int qty)
 	</div>
 </popup>
 
-<!-- update file description popup -->
-<popup id="updatefiledesc_popup">
+<popup id="updatefiledesc_popup"> <!-- update file description popup -->
 	<groupbox width="400px">
 		<caption id="updatefiledesc_label" />
 		<label value="Description" class="k9" />
@@ -409,8 +411,7 @@ void minusAddFocus_Stock(int itype, int qty)
 	</groupbox>
 </popup>
 
-<!-- upload a file popup -->
-<popup id="uploadfile_popup">
+<popup id="uploadfile_popup"> <!-- upload a file popup -->
 	<groupbox>
 	<caption label="Upload a file" />
 		<grid>
@@ -455,14 +456,16 @@ void minusAddFocus_Stock(int itype, int qty)
 
 <popup id="adminpop">
 	<div sclass="shadowbox" style="background:#E2241C" width="300px">
-		<button id="setdraftgrn_b" label="Set DRAFT" sclass="k9mo" onClick="adminFunc(self.getId())" />
-		<button id="settodate_b" label="Set todate" sclass="k9mo" onClick="adminFunc(self.getId())" />
-		<button id="delgrn_b" label="DELETE GRN" sclass="k9mo" onClick="adminFunc(self.getId())" />
-		<hbox>
-			<textbox id="a_minus_stock" sclass="k9" value="1" />
-			<button id="minustock_b" label="-stock" sclass="k9mo" onClick="adminFunc(self.getId())" />
-			<button id="addstock_b" label="+stock" sclass="k9mo" onClick="adminFunc(self.getId())" />
-		</hbox>
+		<vbox>
+			<button id="setdraftgrn_b" label="Set DRAFT" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			<button id="settodate_b" label="Set todate" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			<button id="delgrn_b" label="DELETE GRN" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			<hbox>
+				<textbox id="a_minus_stock" sclass="k9" value="1" />
+				<button id="minustock_b" label="-stock" sclass="k9mo" onClick="adminFunc(self.getId())" />
+				<button id="addstock_b" label="+stock" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			</hbox>
+		</vbox>
 	</div>
 </popup>
 
@@ -620,7 +623,7 @@ have to change fillUp_scanned_assets() accordingly
 						<button id="remall_b" label="Remove ALL" sclass="k9mo" onClick="itemFunc(self.getId())" />
 						<button id="sourcedets_b" label="Source details" sclass="k9mo" onClick="itemFunc(self.getId())" />
 						<button id="selprod_b" label="Select product name" sclass="k9mo" onClick="selecProduct_pop.open(self)" />
-						<button label="Import GCO" sclass="k9mo" onClick="impGCO_pop.open(self)" />
+						<button id="mainbutt_impgco" label="Import GCO" sclass="k9mo" onClick="impGCO_pop.open(self)" />
 						<button id="saveitems_b" label="SAVE" sclass="k9mo" onClick="itemFunc(self.getId())" />
 					</hbox>
 					<label sclass="k9mo" style="color:#ffffff">

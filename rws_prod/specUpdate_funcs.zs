@@ -3,7 +3,7 @@ import org.victor.*;
 
 Object glob_focus6_grades = null;
 
-void toggButts(boolean iwhat)
+void toggButts_specupdate(boolean iwhat)
 {
 	savespecs_b.setDisabled(iwhat);
 	sourcepecs_b.setDisabled(iwhat);
@@ -56,7 +56,7 @@ org.zkoss.zul.Row makeItemRow_specup(Component irows, String iname, String iatg,
 			for(d : glob_focus6_grades)
 			{
 				kabom[0] = d.get("grade");
-				lbhand.insertListItems(klb,kabom,"false","");
+				if(kabom[0] != null) lbhand.insertListItems(klb,kabom,"false","");
 			}
 			klb.setSelectedIndex(0);
 		}
@@ -73,6 +73,7 @@ void showGRN_things(String iwhat) // knockoff from goodsrecv_funcs.showGRN_meta(
 	if(r == null) return;
 
 	if(glob_focus6_grades == null) glob_focus6_grades = getFocus_StockGrades(); // reload if null
+
 /*
 	String[] fl = { "ourpo", "vendor", "vendor_do", "vendor_inv", "shipmentcode", "grn_remarks","origid" };
 	Object[] jkl = { g_ourpo, g_vendor, g_vendor_do, g_vendor_inv, g_shipmentcode, g_grn_remarks, g_origid };
@@ -96,10 +97,11 @@ void showGRN_things(String iwhat) // knockoff from goodsrecv_funcs.showGRN_meta(
 		p2 = ""; try { p2 = atgs[i]; } catch (Exception e) {}
 		p3 = ""; try { p3 = srls[i]; } catch (Exception e) {}
 		p4 = ""; try { p4 = qtys[i]; } catch (Exception e) {}
+
 		nrw = makeItemRow_specup(grn_rows,p1,p2,p3,p4,r.get("status"));
 
 		js = null;
-		try { js = specs[i].split("\n"); } catch (Exception e) { js = null; }
+		if(specs[i] != null) js = specs[i].split("\n");
 
 		ki = nrw.getChildren().toArray();
 
@@ -118,6 +120,7 @@ void showGRN_things(String iwhat) // knockoff from goodsrecv_funcs.showGRN_meta(
 
 			} catch (java.lang.ArrayIndexOutOfBoundsException e) {}
 		}
+
 	}
 	//grnmeta_holder.setVisible(true);
 	//grnitems_workarea.setVisible(true);
@@ -153,8 +156,8 @@ boolean postSpecs()
 				sqlstm += fql + " where extraid=(select eoff from mr001 where code2='" + atg + "');";
 			}
 		}
-
-		f30_gpSqlExecuter(sqlstm); // TODO chg to main sqlhand
+		sqlhand.rws_gpSqlExecuter(sqlstm);
+		//f30_gpSqlExecuter(sqlstm);
 
 		return true;
 

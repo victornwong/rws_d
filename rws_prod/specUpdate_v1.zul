@@ -108,7 +108,7 @@ grn_show_meta = false; // used in goodsrecv_funcs.grnclicker to show grn-metadat
 void grn_Selected_Callback() // call-back in goodsrecv_funcs.grnclicker
 {
 	showGRN_things(glob_sel_grn);
-	toggButts( (glob_sel_auditstat.equals("POST")) ? true : false );
+	toggButts_specupdate( (glob_sel_auditstat.equals("POST")) ? true : false );
 }
 
 String JN_linkcode()
@@ -174,7 +174,7 @@ void itemFunc(String itype)
 			msgtext = "OK: Specs posted..";
 			// update the rw_grn.audit* fields accordingly
 			sqlstm = "update rw_grn set audit_date='" + todaydate + "', audit_stat='POST', audit_user='" + unm + "' where origid=" + glob_sel_grn;
-			toggButts(true); // disable 'em butts
+			toggButts_specupdate(true); // disable 'em butts
 			add_RWAuditLog(JN_linkcode(),"", "Posted specs-update", useraccessobj.username);
 		}
 	}
@@ -320,8 +320,10 @@ void adminFunc(String itype)
 </popup>
 
 <popup id="adminpop">
-	<div sclass="shadowbox" style="background:#E2241C" width="300px">
-		<button id="clearaudit_b" label="Clear specs-post" sclass="k9mo" onClick="adminFunc(self.getId())" />
+	<div sclass="shadowbox" style="background:#E2241C">
+		<vbox>
+			<button id="clearaudit_b" label="Clear specs-post" sclass="k9mo" onClick="adminFunc(self.getId())" />
+		</vbox>
 	</div>
 </popup>
 

@@ -219,7 +219,7 @@ void reallyTransferItemsToProd()
 	if(Messagebox.show("All the picked assets will be transferred to PROD", "Are you sure?",
 		Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
 
-	kpal = kiboo.replaceSingleQuotes( admpalletinp_tb.getValue().trim() ); // get pallet name from hidden tb. Only admin can see it.
+	kpal = kiboo.replaceSingleQuotes( admpalletinp_tb.getValue().trim() ); // get pallet name from hidden tb. Only admin can see/change it.
 
 	sqlstm = "select top 1 masterid from mr003 where name='" + kpal + "';";
 	r = f30_gpSqlFirstRow(sqlstm);
@@ -259,7 +259,6 @@ void reallyTransferItemsToProd()
 
 		guihand.showMessageBox("OK: Assets transferred to PROD..");
 	}
-	
 }
 
 ]]>
@@ -293,12 +292,13 @@ void reallyTransferItemsToProd()
 </popup>
 
 <popup id="adminPop">
-	<div style="background:#EE1010;padding:3px" width="350px">
-		<button id="admclrpckup_b" label="Clear pickup" sclass="k9mo" onClick="js_adminDo(self.getId())" />
-		<button id="admclrcommit_b" label="Clear commit" sclass="k9mo" onClick="js_adminDo(self.getId())" />
-		<button id="admclrack_b" label="Clear WH ack" sclass="k9mo" onClick="js_adminDo(self.getId())" />
+	<div style="background:#EE1010;padding:3px">
+		<vbox>
+			<button id="admclrpckup_b" label="Clear pickup" sclass="k9mo" onClick="js_adminDo(self.getId())" />
+			<button id="admclrack_b" label="Clear WH ack" sclass="k9mo" onClick="js_adminDo(self.getId())" />
+		</vbox>
 	</div>
-</popup> <!-- ENDOF adminPop -->
+</popup>
 
 <style src="/real-world.css" />
 
@@ -318,8 +318,12 @@ void reallyTransferItemsToProd()
 		<button label="Load/Find" sclass="k9mo" onClick="showJobs(1)" />
 		<textbox id="jobid_tb" width="50px" sclass="k9" />
 		<button label="by job" sclass="k9mo" onClick="showJobs(2)" />
+		<textbox id="picklist_tb" width="50px" sclass="k9" />
+		<button label="by pick-list" sclass="k9mo" onClick="showJobs(3)" />
 
 		<button id="prnpickedass_b" label="Print picked asset-tags" sclass="k9mo" onClick="pl_DoFunc(self.getId())" />
+		<button id="admclrcommit_b" label="Set pick-list draft" sclass="k9mo" style="color:#D61D1D" onClick="js_adminDo(self.getId())" visible="false" />
+
 		<separator width="10px" />
 
 		<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#D60D0D" onClick="adminPop.open(self)" visible="false" />
@@ -391,11 +395,14 @@ void reallyTransferItemsToProd()
 <zscript>
 <![CDATA[
 
+// TODO only allow certain users to click "set pick-list draft"
+
 if(useraccessobj.accesslevel == 9)
 {
 	admin_b.setVisible(true);
-	jobid_tb.setValue("1369");
+	jobid_tb.setValue("1585");
 	admpalletinp_tb.setVisible(true); // let admin change to pallet.. shortcut
+	admclrcommit_b.setVisible(true);
 }
 
 ]]>

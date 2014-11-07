@@ -3,6 +3,7 @@
 <zk>
 <zscript src="../rwglobal/rwglobaldefs.zs" />
 <zscript src="../rwglobal/rwsqlfuncs.zs" />
+<zscript src="../rwglobal/emailfuncs.zs" />
 <zscript src="./jobsheet/jobsheet_funcs.zs" />
 <zscript>
 <![CDATA[
@@ -56,8 +57,7 @@ class itmdoubleclik implements org.zkoss.zk.ui.event.EventListener
 			for(i=0;i<jk.length;i++)
 			{
 				ki = jk[i].getChildren().toArray();
-				if(ki[0].isChecked())
-					ki[2].setValue(ifnd);
+				if(ki[0].isChecked()) ki[2].setValue(ifnd);
 			}
 		} catch (Exception e) {}
 	}
@@ -134,6 +134,12 @@ void pl_DoFunc(String itype) // pick-list functions dispenser
 		sqlstm = "update rw_jobpicklist set pstatus='COMMIT', commitdate='" + todaydate + "', commitby='" + unm + "' where origid=" + glob_sel_jobsheet;
 		refresh_joblist = hideworkarea = true;
 		toggButts(true);
+
+		subj = "RE: Job pick-list submitted - " + glob_sel_jobsheet;
+		emsg = "Job items pick-list submitted for job " + glob_sel_job + ". Do process ASAP";
+
+		gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username,
+			"victor@rentwise.com", subj, emsg );
 	}
 
 	if(itype.equals("chkstock_b")) // check stock ticked items
@@ -168,9 +174,11 @@ void pl_DoFunc(String itype) // pick-list functions dispenser
 </zscript>
 
 <popup id="adminPop">
-	<div style="background:#EE1010;padding:3px" width="350px">
-		<button id="admclrpckup_b" label="Clear pickup" sclass="k9mo" onClick="js_adminDo(self.getId())" />
-		<button id="admclrcommit_b" label="Clear commit" sclass="k9mo" onClick="js_adminDo(self.getId())" />
+	<div style="background:#EE1010;padding:3px">
+		<vbox>
+			<button id="admclrpckup_b" label="Clear pickup" sclass="k9mo" onClick="js_adminDo(self.getId())" />
+			<button id="admclrcommit_b" label="Clear commit" sclass="k9mo" onClick="js_adminDo(self.getId())" />
+		</vbox>
 	</div>
 </popup> <!-- ENDOF adminPop -->
 
@@ -202,7 +210,9 @@ void pl_DoFunc(String itype) // pick-list functions dispenser
 	<separator height="3px" />
 
 	<vbox id="workarea" visible="false">
-		<label id="jobtitle_lb" sclass="subhead1" />
+		<div sclass="shadowbox" style="background:#CB533A">
+			<label id="jobtitle_lb" sclass="subhead1" />
+		</div>
 		<hbox>
 			<div sclass="shadowbox" style="background:#1D69A5">
 				<vbox>
@@ -248,9 +258,8 @@ void pl_DoFunc(String itype) // pick-list functions dispenser
 		</hbox>
 	</vbox>
 
-<label id="debug" multiline="true" style="color:#ffffff" />
-
-<div id="winsholder" visible="false" />
+	<label id="debug" multiline="true" style="color:#ffffff" />
+	<div id="winsholder" visible="false" />
 
 <zscript>
 <![CDATA[
@@ -259,7 +268,7 @@ void pl_DoFunc(String itype) // pick-list functions dispenser
 if(useraccessobj.accesslevel == 9)
 {
 	admin_b.setVisible(true);
-	jobid_tb.setValue("1369");
+	jobid_tb.setValue("1585");
 }
 
 ]]>

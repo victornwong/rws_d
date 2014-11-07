@@ -185,4 +185,16 @@ void viewJobWindow(String ijid, Component ipanel)
 	"jb=" + ijid, useraccessobj);
 }
 
+void viewJobWindow_2(String ijid, Component ipanel)
+{
+	if(ijid.equals(""))
+	{
+		vj_jobid_label.setValue("NOTHING TO SHOW");
+		if(vj_jobitems_holder.getFellowIfAny("vjobitems_grid") != null) vjobitems_grid.setParent(null);
+		return;
+	}
+	if(ipanel !=  null) ipanel.setOpen(false);
+	activateModule(mainPlayground,"workbox","rws_account/jobMaker_v2.zul",kiboo.makeRandomId("vbm"),
+	"jb=" + ijid, useraccessobj);
+}
 

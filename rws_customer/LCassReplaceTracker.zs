@@ -3,8 +3,9 @@
 @Author Victor Wong
 @Since 29/08/2014
 */
-lcrp_selected = lcrp_selected_user = last_trk_lbid = "";
+lcrp_selected = lcrp_selected_user = last_trk_lbid = last_fc6_code = "";
 last_lb_holder = last_trk_rec = null;
+lc_manager_flag = 0; // set 1 in contractbillingtrack.zul, when refresh LB will check this flag
 
 Object getLCReplace_track_rec(String iwhat)
 {
@@ -20,11 +21,10 @@ void lcrepDo(String itype, String ifc6)
 	unm = useraccessobj.username;
 	Object[] jkl = { v_lc_id, v_in_assettag, v_out_assettag, v_action, v_act_date};
 
-	if( ifc6 == null ) return;
-	if( ifc6.equals("")) return;
-
 	if(itype.equals("updlcrep_b"))
 	{
+		if( ifc6 == null ) return;
+		if( ifc6.equals("")) return;
 		dt = ngfun.getString_fromUI(jkl);
 
 		if(lcrp_selected.equals("")) // new insert
@@ -42,6 +42,7 @@ void lcrepDo(String itype, String ifc6)
 
 	if(itype.equals("remlcrep_b")) // delete LC-replacement track
 	{
+		alert("mememe");
 		if(lcrp_selected.equals("")) return;
 		if(!lcrp_selected_user.equals(unm)) msgtext = "Sorry, you're not the owner of this record";
 		else
@@ -53,6 +54,12 @@ void lcrepDo(String itype, String ifc6)
 		}
 	}
 
+	if(itype.equals("updrec_b")) // rw_lc_replacements.record_up , for BA to mark replacements done in LC-rec
+	{
+		if(lcrp_selected.equals("")) return;
+		sqlstm = "update rw_lc_replacements set record_up=1, update_user='" + unm + "' where origid=" + lcrp_selected;
+	}
+
 	if(itype.equals("clrlcrep_b"))
 	{
 		ngfun.clearUI_Field(jkl);
@@ -62,7 +69,10 @@ void lcrepDo(String itype, String ifc6)
 	if(!sqlstm.equals(""))
 	{
 		sqlhand.gpSqlExecuter(sqlstm);
-		showLCAss_RepTrack(last_trk_rec,last_lb_holder,last_trk_lbid);
+		if(lc_manager_flag == 1)
+			showLCAss_RepTrack_2(last_trk_rec, last_lb_holder, last_trk_lbid, last_fc6_code);
+		else
+			showLCAss_RepTrack(last_trk_rec,last_lb_holder,last_trk_lbid);
 	}
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 }
@@ -83,7 +93,7 @@ Object[] lcasrephds =
 	new listboxHeaderWidthObj("I.Asset",true,"60px"),
 	new listboxHeaderWidthObj("Replace",true,"60px"),
 	new listboxHeaderWidthObj("User",true,"60px"),
-	new listboxHeaderWidthObj("Stat",true,"40px"), // to be updated by BA
+	new listboxHeaderWidthObj("RECUp",true,"40px"), // 5 to be updated by BA
 	new listboxHeaderWidthObj("GCO",true,"40px"),
 	new listboxHeaderWidthObj("G.Stat",true,"50px"),
 	new listboxHeaderWidthObj("Act",true,""),
@@ -119,11 +129,11 @@ void showLCAss_RepTrack(Object itkr, Div idiv, String lbid)
 	sqlstm = "select *, (select status from rw_goodscollection where CONVERT(varchar(10),origid)=rlr.gco_id) as gstat from rw_lc_replacements rlr where fc6_custid='" + fc6 + "' order by origid desc";
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() == 0) return;
-	newlb.setRows(21); newlb.setMold("paging");
+	newlb.setRows(20); newlb.setMold("paging");
 	newlb.setMultiple(true); newlb.setCheckmark(true);
 	newlb.addEventListener("onSelect", lcassrepcliker);
 	ArrayList kabom = new ArrayList();
-	String[] fl = { "lc_id","origid","in_assettag","out_assettag","username","rstatus","gco_id","gstat", "action","act_date" };
+	String[] fl = { "lc_id","origid","in_assettag","out_assettag","username","record_up","gco_id","gstat", "action","act_date" };
 	for(d : rcs)
 	{
 		ngfun.popuListitems_Data(kabom,fl,d);
@@ -135,20 +145,27 @@ void showLCAss_RepTrack(Object itkr, Div idiv, String lbid)
 // Use in LC manager
 void showLCAss_RepTrack_2(Object itkr, Div idiv, String lbid, String ifc6)
 {
-	last_trk_lbid = lbid; last_trk_rec = itkr; last_lb_holder = idiv;
+	last_trk_lbid = lbid; last_trk_rec = itkr; last_lb_holder = idiv; last_fc6_code = ifc6;
 
 	Listbox newlb = lbhand.makeVWListbox_Width(idiv, lcasrephds, lbid, 3);
 	//fc6 = itkr.get("fc6_custid");
 	//if(fc6 == null) return;
 
-	sqlstm = "select *, (select status from rw_goodscollection where CONVERT(varchar(10),origid)=rlr.gco_id) as gstat from rw_lc_replacements rlr where fc6_custid='" + ifc6 + "' order by origid desc";
+	sqlstm = "select *, (select status from rw_goodscollection where CONVERT(varchar(10),origid)=rlr.gco_id) as gstat from rw_lc_replacements rlr ";
+	if(!ifc6.equals(""))
+		sqlstm += "where fc6_custid='" + ifc6 + "' ";
+	else // if no fc6 code, list non-updated replacements
+		sqlstm += "where (record_up is null or record_up=0) ";
+
+	sqlstm += "order by origid desc";
+
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() == 0) return;
-	newlb.setRows(21); newlb.setMold("paging");
+	newlb.setRows(20); newlb.setMold("paging");
 	newlb.setMultiple(true); newlb.setCheckmark(true);
 	newlb.addEventListener("onSelect", lcassrepcliker);
 	ArrayList kabom = new ArrayList();
-	String[] fl = { "lc_id","origid","in_assettag","out_assettag","username","rstatus","gco_id","gstat", "action","act_date" };
+	String[] fl = { "lc_id","origid","in_assettag","out_assettag","username","record_up","gco_id","gstat", "action","act_date" };
 	for(d : rcs)
 	{
 		ngfun.popuListitems_Data(kabom,fl,d);
@@ -188,8 +205,10 @@ void lcreplaceDo(String itype)
 		{
 			if(gcni.equals("") || gcni.equals("0")) // gcn-id must be blank to be saved in transient-table
 			{
+				kk = "";
+				try { kk = glob_selected_ticket; } catch (Exception e) {}
 				sqlstm += "insert into rw_gcn_transient (lc_id,serial_no,asset_tag,item_desc,fc6_custid,csv_id) values " +
-				"('" + lci + "','','" + atg + "','','" + global_selected_customerid + "','" + glob_selected_ticket + "');";
+				"('" + lci + "','','" + atg + "','','" + global_selected_customerid + "','" + kk + "');";
 			}
 		}
 

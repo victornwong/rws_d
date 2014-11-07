@@ -155,6 +155,8 @@ void showLCMetadata(String iwhat)
 	showAssets(iwhat); // list assets link to this LC
 	fillDocumentsList(documents_holder,LC_PREFIX,iwhat);
 
+	global_selected_customerid = lcr.get("fc6_custid");
+
 	// reset/hide some stuff when new LC selected - avoid brought-over from previous selection
 	glob_selected_ass = glob_selected_asstag = "";
 	glob_sel_assetrec = null;
@@ -172,12 +174,13 @@ Object[] lclb_hds =
 	new listboxHeaderWidthObj("RW#",true,"70px"),
 	new listboxHeaderWidthObj("ROC#",true,"60px"),
 	new listboxHeaderWidthObj("Customer",true,""),
-	new listboxHeaderWidthObj("A.Qty",true,"50px"),
+	new listboxHeaderWidthObj("A.Qty",true,"40px"), // 5
+	new listboxHeaderWidthObj("GCO",true,"40px"),
 	new listboxHeaderWidthObj("S.Date",true,"60px"),
 	new listboxHeaderWidthObj("E.Date",true,"60px"),
 	new listboxHeaderWidthObj("Period",true,"60px"),
 	new listboxHeaderWidthObj("Instalm",true,"60px"),
-	new listboxHeaderWidthObj("Status",true,"80px"),
+	new listboxHeaderWidthObj("Status",true,"80px"), // 10
 	new listboxHeaderWidthObj("User",true,"90px"),
 	new listboxHeaderWidthObj("Ord.Type",true,""),
 };
@@ -213,36 +216,38 @@ void listROCLC(int itype)
 
 	last_list_type = itype;
 	sct = kiboo.replaceSingleQuotes(search_txt.getValue().trim());
-	//sdate = kiboo.getDateFromDatebox(startdate);
-	//edate = kiboo.getDateFromDatebox(enddate);
+	lcsdate = kiboo.getDateFromDatebox(lcend_startdate);
+	lcedate = kiboo.getDateFromDatebox(lcend_enddate);
 
-	sqlstm = "select lc.origid, lc.lc_id, lc.rocno, lc.customer_name,lc.period,lc.lstartdate,lc.lenddate,lc.lstatus, lc.super_reminder, " +
-	"(select count(origid) from rw_lc_equips where lc_parent=lc.origid) as aqty, lc.inst_type, lc.rwno, " + 
+	sqlstm = "select top 600 lc.origid, lc.lc_id, lc.rocno, lc.customer_name,lc.period,lc.lstartdate,lc.lenddate,lc.lstatus, lc.super_reminder, " +
+	"(select count(origid) from rw_lc_equips where lc_parent=lc.origid) as aqty, lc.inst_type, lc.rwno, " +
+	"(select count(lce1.gcn_id) from rw_lc_equips lce1 " +
+	"where lce1.lc_parent=lc.origid and (lce1.gcn_id is not null or lce1.gcn_id<>0)) as gcocount," +
 	"lc.order_type, lc.username from rw_lc_records lc ";
 
 	switch(itype)
 	{
 		case 1 : // find LC by customer-name
 			if(sct.equals("")) return;
-
 			sqlstm += "where (lc.customer_name like '%" + sct + "%' or " +
 			"lc.order_type like '%" + sct + "%' or lc.remarks like '%" + sct + "%' or " +
 			"lc.rwno like '%" + sct + "%' or lc.lc_id like '%" + sct + "%') " +
 			"order by lc.rwno";
-
 			glob_commasep = "";
 			break;
+
 		case 2 : // by LC end date
 			sqlstm += "where lc.lenddate between '" + sdate + "' and '" + edate + "' " +
 			"and (lc.lstatus='active' or lstatus is null) " +
 			"order by lc.rwno";
-
 			glob_commasep = "";
 			break;
 
-		case 3 : // load latest 40 entered
-			sqlstm = "select top 40 lc.origid, lc.lc_id, lc.rocno, lc.customer_name,lc.period,lc.lstartdate,lc.lenddate,lc.lstatus, lc.super_reminder," +
-			"(select count(origid) from rw_lc_equips where lc_parent=lc.origid) as aqty, lc.inst_type, lc.rwno, " + 
+		case 3 : // load latest entered
+			sqlstm = "select top 28 lc.origid, lc.lc_id, lc.rocno, lc.customer_name,lc.period,lc.lstartdate,lc.lenddate,lc.lstatus, lc.super_reminder," +
+			"(select count(origid) from rw_lc_equips where lc_parent=lc.origid) as aqty, lc.inst_type, lc.rwno, " +
+			"(select count(lce1.gcn_id) from rw_lc_equips lce1 " +
+			"where lce1.lc_parent=lc.origid and (lce1.gcn_id is not null or lce1.gcn_id<>0)) as gcocount," +
 			"lc.order_type, lc.username from rw_lc_records lc " +
 			"order by lc.origid desc";
 			glob_commasep = "";
@@ -252,6 +257,11 @@ void listROCLC(int itype)
 			search_txt.setValue("");
 			sqlstm += "where lc.lc_id in (" + glob_commasep + ");";
 			break;
+
+		case 5: // list by LC end-date range
+			sqlstm += "where lc.lenddate between '" + lcsdate + " 00:00:00' and '" + lcedate + " 23:59:00' " +
+			"and lc.lstatus in ('extension','active','refresh') order by lc.customer_name, lc.lenddate";
+			break;
 	}
 	
 	lcrecs = sqlhand.gpSqlGetRows(sqlstm);
@@ -259,7 +269,7 @@ void listROCLC(int itype)
 	newlb.setRows(20); newlb.setMold("paging");
 	newlb.addEventListener("onSelect", lclcblicker);
 	ArrayList kabom = new ArrayList();
-	String[] fl = { "origid", "lc_id", "rwno", "rocno", "customer_name", "aqty", "lstartdate", "lenddate", "period",
+	String[] fl = { "origid", "lc_id", "rwno", "rocno", "customer_name", "aqty", "gcocount", "lstartdate", "lenddate", "period",
 	"inst_type", "lstatus", "username", "order_type" };
 	for(dpi : lcrecs)
 	{

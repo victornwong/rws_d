@@ -5,9 +5,23 @@ import org.victor.*;
 String[] scanitems_colws = { "30px", "",          "180px",     "100px", "40px" };
 String[] scanitems_collb = { "",     "Item name", "Asset tag", "Serial","Qty" };
 
-// TODO Focus5012 got more fields - bluetooth etc
 Object getExisting_inventoryRec(String iatg)
 {
+	/*
+	sqlstm = "SELECT top 1 m.masterid, p.Name, m.Code2 AS AssetTag, m.Code AS serial, b.QtyBal AS Qty, u.ShipmentCodeYH AS ShipmentCode, u.GradeYH AS grade, pl.Name AS pallet, " +
+	"pl.MasterId AS plmasterid, u.BrandYH AS Brand, u.ItemTypeYH AS Item, u.ModelYH AS Model, u.ProcessorYH AS Processor, u.MonitorSizeYH AS MonitorSize, " +
+	"u.MonitorTypeYH AS MonitorType, u.ColourYH AS colour, u.CasingYH AS casing, u.COA1YH AS COA, u.COA2YH AS COA2, u.RAMSizeYH AS RAM, " +
+	"u.HDDSizeYH AS HDD, u.CD1YH AS Cdrom1, u.CD2YH AS CDrom2, u.CommentsYH AS Comment " +
+	"FROM dbo.mr001 AS m INNER JOIN " +
+	"dbo.u0001 AS u ON m.Eoff = u.ExtraId INNER JOIN " +
+	"dbo.mr008 AS p ON u.ProductNameYH = p.MasterId INNER JOIN " +
+	"dbo.itembal AS b ON m.MasterId = b.code INNER JOIN " +
+	"dbo.mr003 AS pl ON u.PalletNoYH = pl.MasterId " +
+	"where m.Code2='" + iatg + "';";
+	return f30_gpSqlFirstRow(sqlstm);
+	*/
+
+	// TODO Focus5012 got more fields - bluetooth etc
 	sqlstm = "SELECT top 1 m.masterid, p.Name, m.Code2 AS AssetTag, m.Code AS serial, b.QtyBal AS Qty, u.ShipmentCodeYH AS ShipmentCode, u.GradeYH AS grade, pl.Name AS pallet, " +
 	"pl.MasterId AS plmasterid, u.BrandYH AS Brand, u.ItemTypeYH AS Item, u.ModelYH AS Model, u.ProcessorYH AS Processor, u.MonitorSizeYH AS MonitorSize, " +
 	"u.MonitorTypeYH AS MonitorType, u.ColourYH AS colour, u.CasingYH AS casing, u.COA1YH AS COA, u.COA2YH AS COA2, u.RAMSizeYH AS RAM, " +
@@ -19,7 +33,7 @@ Object getExisting_inventoryRec(String iatg)
 	"dbo.mr003 AS pl ON u.PalletNoYH = pl.MasterId " +
 	"where m.Code2='" + iatg + "';";
 
-	return f30_gpSqlFirstRow(sqlstm);
+	return sqlhand.rws_gpSqlFirstRow(sqlstm);
 }
 
 void hidereset_workarea()
@@ -61,21 +75,18 @@ void makeItemRow(Component irows, String iname, String iatg, String isn, String 
 // itype: 1=ticked, 2=all
 void itemsRemovalfunc(int itype)
 {
-		try
+	try
+	{
+		jk = grn_rows.getChildren().toArray();
+		for(i=0;i<jk.length;i++)
 		{
-			jk = grn_rows.getChildren().toArray();
-			for(i=0;i<jk.length;i++)
-			{
-				toremove = false;
-				ki = jk[i].getChildren().toArray();
-				if(ki[0].isChecked() && itype == 1)
-					toremove = true;
-
-				if(itype == 2) toremove = true;
-
-				if(toremove) jk[i].setParent(null);
-			}
-		} catch (Exception e) {}
+			toremove = false;
+			ki = jk[i].getChildren().toArray();
+			if(ki[0].isChecked() && itype == 1) toremove = true;
+			if(itype == 2) toremove = true;
+			if(toremove) jk[i].setParent(null);
+		}
+	} catch (Exception e) {}
 }
 
 class prdnsdblick implements org.zkoss.zk.ui.event.EventListener
@@ -117,8 +128,8 @@ void searchProductName_FC(String sct)
 	Listbox newlb = lbhand.makeVWListbox_Width(selprods_holder, pnhds, "prodname_lb", 3);
 	sct = sct.replace(" ","%");
 	sqlstm = "select top 50 name,masterid from mr008 where name like '%" + sct + "%' order by masterid desc";
-	//r = sqlhand.rws_gpSqlGetRows(sqlstm);
-	r = f30_gpSqlGetRows(sqlstm);
+	r = sqlhand.rws_gpSqlGetRows(sqlstm);
+	//r = f30_gpSqlGetRows(sqlstm);
 	if(r.size() == 0) return;
 	newlb.setMold("paging"); newlb.setRows(20);
 	ArrayList kabom = new ArrayList();
@@ -236,6 +247,21 @@ void showGRN_meta(String iwhat)
 	grnmeta_holder.setVisible(true);
 	grnitems_workarea.setVisible(true);
 
+	bx = (!glob_sel_stat.equals("DRAFT")) ? true : false;
+	toggButts(bx);
+}
+
+void toggButts(boolean iwhat)
+{
+	Object[] jkl = { updgrn_b, fillupitems_b, clrticks_b, additem_b, remitem_b, remall_b,
+		sourcedets_b, selprod_b, mainbutt_impgco, saveitems_b };
+
+	for(i=0; i<jkl.length; i++)
+	{
+		jkl[i].setDisabled(iwhat);
+	}
+
+	//ngfun.disableUI_obj(jkl,iwhat);
 }
 
 Object[] grnhds =

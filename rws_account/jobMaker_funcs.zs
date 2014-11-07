@@ -17,7 +17,8 @@ void toggleButts(String itype, boolean iwhat)
 
 	if(itype.equals("workarea_butts") || itype.equals("all"))
 	{
-		Object[] ob = { ji_insert_b, ji_remove_b, ji_calc_b, ji_save_b, asscust_b, updatejob_b, improc_b, impso_b, impquote_b };
+		Object[] ob = { ji_insert_b, ji_remove_b, ji_calc_b, ji_save_b, asscust_b,
+			updatejob_b, improc_b, impso_b, impquote_b, impcsv_b };
 		for(i=0; i<ob.length; i++)
 		{
 			ob[i].setDisabled(iwhat);

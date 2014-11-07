@@ -39,13 +39,9 @@ myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
-gridhand = new GridHandler();
-dmshand = new DMSFuncs();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler(); guihand = new GuiFuncs();
+luhand = new LookupFuncs(); gridhand = new GridHandler(); dmshand = new DMSFuncs();
+ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 Object glob_pr_rec = null; // to store sql-rec -- see if can speed up some things..
 global_selected_customerid = ""; // set in fc6_CustomerSelector.zs
@@ -53,6 +49,7 @@ global_selected_customername = ""; // use this one as supplier_name instead
 global_selected_customer = glob_sel_prversion = ""; // PR version
 glob_icomponents_counter = 1;
 glob_sel_prid = glob_sel_prstatus = "";
+last_listpr_type = 0;
 
 String JN_linkcode()
 {
@@ -180,7 +177,7 @@ void doFunc(Object iwhat)
 	}
 
 	if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
-	if(refresh) showPRList();
+	if(refresh) showPRList(last_listpr_type);
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 }
 
@@ -239,7 +236,7 @@ void adminFunc(Object iwhat)
 	}
 
 	if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
-	if(refresh) showPRList();
+	if(refresh) showPRList(last_listpr_type);
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 
 	adminpop.close();
@@ -502,12 +499,12 @@ void reportFunc(Object iwhat)
 	<datebox id="enddate" format="yyyy-MM-dd" sclass="k9" onCreate="kiboo.setTodayDatebox(self)" />
 	<label value="Search" sclass="k9b" />
 	<textbox id="searhtxt_tb" width="200px" sclass="k9" />
-	<button label="Load/Search" sclass="k9mo" onClick="showPRList()" />
+	<button label="Load/Search" sclass="k9mo" onClick="showPRList(1)" />
 	<separator width="8px" />
 	<label value="PR No." sclass="k9b" />
 	<textbox id="searchprno_tb" />
 	<separator width="8px" />
-	<button label="By PR" sclass="k9" onClick="showPRList()" />
+	<button label="By PR" sclass="k9" onClick="showPRList(2)" />
 </hbox>
 <separator bar="true" />
 <hbox>
@@ -688,7 +685,6 @@ void popuSupplierCombo(Object tcombo)
 	gridhand.makeComboitem(tcombo, kiboo.convertArrayListToStringArray(kabom) );
 }
 
-showPRList();
 prmetaform = dynamicForm(prmetaform_holder, "prmetaform_grid", "15");
 p_creditterm.setSelectedIndex(1); // default to COD
 

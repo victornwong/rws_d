@@ -217,10 +217,11 @@ class gdcolOnC implements org.zkoss.zk.ui.event.EventListener
 {
 	public void onEvent(Event event) throws UiException
 	{
-		if(!glob_sel_gco.equals("") && !glob_sel_status.equals("COMPLETE") ) saveCollectItems(glob_sel_gco); // save previous GCO if any
+		//if(!glob_sel_gco.equals("") && !glob_sel_status.equals("COMPLETE") ) saveCollectItems(glob_sel_gco); // save previous GCO if any
 
 		glob_sel_gcoli = event.getReference();
 		glob_sel_gco = lbhand.getListcellItemLabel(glob_sel_gcoli,0);
+		glob_sel_gco_user = lbhand.getListcellItemLabel(glob_sel_gcoli,5);
 		glob_sel_status = lbhand.getListcellItemLabel(glob_sel_gcoli, stt_field);
 		glob_sel_adt = lbhand.getListcellItemLabel(glob_sel_gcoli, adt_field);
 		glob_sel_tgrn = lbhand.getListcellItemLabel(glob_sel_gcoli, tgrn_posi);
@@ -230,7 +231,6 @@ class gdcolOnC implements org.zkoss.zk.ui.event.EventListener
 }
 gdcliker = new gdcolOnC();
 
-// itype: 0=def, 2=by GCO, 3=by date+transporter, 4=by asset-tags, 5=by user
 void showGoodsCollection(int itype)
 {
 	last_list_type = itype;
@@ -241,20 +241,36 @@ void showGoodsCollection(int itype)
 	sdate = kiboo.getDateFromDatebox(startdate);
 	edate = kiboo.getDateFromDatebox(enddate);
 	bunm = byuser_lb.getSelectedItem().getLabel();
+	bstt = bystat_lb.getSelectedItem().getLabel();
 
 	Listbox newlb = lbhand.makeVWListbox_Width(collections_holder, gdcols_headers, "goodscol_lb", 5);
 
 	scsql = "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' ";
 	if(!scht.equals("")) scsql += " and customer_name like '%" + scht + "%' ";
 
-	if(itype == 2) scsql = "where origid=" + gcoi;
-	if(itype == 3) scsql = "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' and transporter='" + bytp + "' ";
-	if(itype == 4)
+	switch(itype)
 	{
-		if(!st.equals(""))
-		scsql = "where convert(nvarchar(max),items_code) like '%" + st + "%' or convert(nvarchar(max),items_desc) like '%" + st + "%' or convert(nvarchar(max),items_sn) like '%" + st + "%' ";
+		case 2: // by GCO
+			scsql = "where origid=" + gcoi;
+			break;
+		case 3: // by date+transporter
+			scsql += "and transporter='" + bytp + "' ";
+			break;
+		case 4: // by asset-tags
+			if(!st.equals(""))
+			scsql = "where convert(nvarchar(max),items_code) like '%" + st + "%' or convert(nvarchar(max),items_desc) like '%" + st +
+			"%' or convert(nvarchar(max),items_sn) like '%" + st + "%' ";
+			break;
+		case 5: // by user
+			scsql += "and username='" + bunm + "' ";
+			break;
+		case 6: // by status
+			scsql += "and gc.status='" + bstt + "' ";
+			break;
+		case 7: // by user and status
+			scsql += "and username='" + bunm + "' and gc.status='" + bstt + "' ";
+			break;
 	}
-	if(itype == 5) scsql = "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' and username='" + bunm + "' ";
 
 	sqlstm = "select gc.origid, gc.datecreated, gc.username, gc.customer_name, gc.status, gc.pickupdate, gc.completedate, gc.lc_id," +
 	"gc.ackdate, gc.transporter, gc.tempgrn, gc.sv_no, gc.qc_id, gc.logregion, " +
@@ -303,9 +319,7 @@ void showGoodsCollection(int itype)
 
 	screcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(screcs.size() == 0) return;
-
-	newlb.setRows(22);
-	newlb.setMold("paging");
+	newlb.setRows(21); newlb.setMold("paging");
 	newlb.addEventListener("onSelect", gdcliker );
 	ArrayList kabom = new ArrayList();
 
@@ -335,11 +349,19 @@ void showGoodsCollection(int itype)
 		if(d.get("adtchecker").equals("ADTNA")) sty += "background:#FAEF55;color:#000000;";
 		if(d.get("adtchecker").equals("ADTERR") || d.get("adtchecker").equals("ADTOD")) sty += "background:#F70C37;color:#ffffff;font-weight:bold";
 
+		kss = "";
+		if(!sty.equals("font-size:9px;")) kss = "font-size:9px;text-decoration:underline;";
+
 		ngfun.popuListitems_Data2(kabom,fl,d);
-		ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false",sty);
+		ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false",kss);
 
 		adts = getDOLinkToJob( 5, d.get("origid").toString() );
 		lbhand.setListcellItemLabel(ki,adt_field,adts);
+		for(i=1;i<4;i++)
+		{
+			setListcell_Style(ki,i,sty); // rwsqlfuncs.zs
+		}
+
 		mns = ""; // get MRNs if any..
 		//try { mns = grnToMRN_str(d.get("tempgrn")); } catch (Exception e) {}
 		lbhand.setListcellItemLabel(ki,mrn_posi,mns);
@@ -370,8 +392,7 @@ void saveCollectItems(String iwhat)
 
 		if(c1[4].isChecked()) colcount++;
 
-		// 28/10/2013: use to update rw_lc_equips
-		if(!c1[1].getValue().equals(""))
+		if(!c1[1].getValue().equals("")) // 28/10/2013: use to update rw_lc_equips
 			astgs += "'" + kiboo.replaceSingleQuotes( c1[1].getValue().trim() ) + "',";
 	}
 
@@ -384,9 +405,10 @@ void saveCollectItems(String iwhat)
 	try { ifrmlc = ifrmlc.substring(0,ifrmlc.length()-1); } catch (Exception e) {}
 
 	jstat = "";
+	lnkc = COLLECTION_PREFIX + iwhat;
+	eml = getUser_email(glob_sel_gco_user);
 
-	// Check GCN/O status by counting items == colcount(ticked item)
-	if(!glob_sel_status.equals("NEW") && colcount != 0)
+	if(!glob_sel_status.equals("NEW") && colcount != 0) // Check GCO status by counting items == colcount(ticked item)
 	{
 		totl = cds.length;
 		if(colcount == totl)
@@ -394,15 +416,27 @@ void saveCollectItems(String iwhat)
 			jstat = ", status='COMPLETE', completedate='" + todaydate + "'";
 			glob_sel_status = "COMPLETE";
 
-			add_RWAuditLog(COLLECTION_PREFIX + iwhat, "", "COMPLETED collection", useraccessobj.username);
+			add_RWAuditLog(lnkc, "", "COMPLETED collection", useraccessobj.username);
 
-			// TODO send notif email when GCO totally completed and update rw_lc_equips/rw_lc_records
+			if(eml != null)
+			{
+				subj = "RE: GCO collection COMPLETED - " + lnkc;
+				emsg = "Do take the necessary action ASAP.";
+				gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, eml, subj, emsg);
+			}
 		}
 
 		if(colcount < totl)
 		{
 			jstat = ", status='PARTIAL'";
 			glob_sel_status = "PARTIAL";
+
+			if(eml != null)
+			{
+				subj = "RE: GCO collection PARTIAL - " + lnkc;
+				emsg = "Do take the necessary action ASAP.";
+				gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, eml, subj, emsg);
+			}
 		}
 		refresh = true;
 	}
@@ -454,7 +488,6 @@ void updLC_GCO_links()
 			}
 		}
 	}
-	//alert(sqlstm);
 	sqlhand.gpSqlExecuter(sqlstm);
 	guihand.showMessageBox("LC assets GCO-id cleared..");
 }

@@ -45,12 +45,6 @@ String getJob_linkDO(int ijb)
 	return retv;
 }
 
-Object getnewDO_rec(String iwhat)
-{
-	sqlstm = "select * from deliveryordermaster where id=" + iwhat;
-	return sqlhand.gpSqlFirstRow(sqlstm);
-}
-
 void saveDO_items(String ido)
 {
 	try
@@ -376,7 +370,8 @@ void postInventory_DO()
 		kabom.add(tg);
 
 		sqlstm = "select name,qty,pallet,serial,item from partsall_0 where assettag='" + tg + "';";
-		qr = f30_gpSqlFirstRow(sqlstm);
+		//qr = f30_gpSqlFirstRow(sqlstm);
+		qr = sqlhand.rws_gpSqlFirstRow(sqlstm);
 		p1 = p2 = p3 = p4 = p5 = "";
 		if(qr != null)
 		{
@@ -484,7 +479,8 @@ void superDOInventoryUpdater(int itype)
 	try { wps = wps.substring(0,wps.length()-2); } catch (Exception e) {}
 	add_RWAuditLog(JN_linkcode(), "", lgstr + wps, useraccessobj.username);
 
-	f30_gpSqlExecuter(sqlstm); // TODO - chg to main sql-handler
+	//f30_gpSqlExecuter(sqlstm); // TODO - chg to main sql-handler
+	sqlhand.rws_gpSqlExecuter(sqlstm);
 }
 
 // UI things in main

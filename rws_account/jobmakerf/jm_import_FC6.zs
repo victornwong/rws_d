@@ -8,17 +8,19 @@ boolean impFC6_SOROC_items(String ivn, String ijob, int itype)
 	if(kk.equals("")) return false;
 
 	vtype = "5635"; // ROC
+	exttb = "u011b";
 	switch(itype)
 	{
 		case 2:
 			vtype = "5632";
+			exttb = "u0117";
 			break;
 	}
 
 	sqlstm = "select ro.name as product_name, u.spec1yh, u.spec2yh, iy.gross,iy.stockvalue, cast((iy.quantity*-1) as int) as unitqty, iy.rate as perunit, " +
 	"iy.input1 as rentperiod, iy.output2 as mthtotal from data d " +
 	"left join mr008 ro on ro.masterid = d.tags6 left join indta iy on iy.salesid = d.salesoff " +
-	"left join u011b u on u.extraid = d.extraoff " +
+	"left join " + exttb + " u on u.extraid = d.extraoff " +
 	"where d.vouchertype=" + vtype + " and d.voucherno='" + kk + "' order by d.bodyid";
 
 	trs = sqlhand.rws_gpSqlGetRows(sqlstm);
@@ -47,27 +49,60 @@ boolean impFC6_SOROC_items(String ivn, String ijob, int itype)
 // 17/07/2014: prob with eta/etd, need to put some checks and modifs
 boolean impFC6_SOROC_record(String ivn, String ijob, int itype)
 {
-	kk = kiboo.replaceSingleQuotes( ivn.trim() );
-	if(kk.equals("")) return false;
+	ivn = kiboo.replaceSingleQuotes( ivn.trim() );
+	if(ivn.equals("")) return false;
 
+	sqlstm = "";
 	vtype = "5635"; // ROC
+	exttb = "u001b";
+	otype = "li.ordertypeyh";
+
 	switch(itype)
 	{
-		case 2:
+		/*
+		case 1: // ROC
+			sqlstm = "select distinct d.voucherno, d.bookno, " +
+			"ac.name as customer_name, aci.telyh, aci.contactyh, aci.emailyh, li.customerrefyh, li.opsnoteyh as deliverynotes, " +
+			"li.remarksyh, li.ordertypeyh, li.deliverytoyh, " +
+			"case li.etdyh when 0 then null else convert(datetime, dbo.ConvertFocusDate(li.etdyh), 112) end as etd, " +
+			"case li.etayh when 0 then null else convert(datetime, dbo.ConvertFocusDate(li.etayh), 112) end as eta " +
+			"from data d left join mr000 ac on ac.masterid = d.bookno " +
+			"left join u0000 aci on aci.extraid=ac.masterid " +
+			"left join u001b li on li.extraid = d.extraheaderoff " +
+			"left join header hh on hh.headerid = d.headeroff " +
+			"where d.vouchertype=5635 and d.voucherno='" + ivn + "'";
+			break;
+		*/
+
+		case 2: // SO
 			vtype = "5632";
+			exttb = "u0017";
+			otype = "'USED' as ordertypeyh";
+/*
+			sqlstm = "select distinct d.voucherno, d.bookno, " +
+			"ac.name as customer_name, aci.telyh, aci.contactyh, aci.emailyh, li.customerrefyh, li.opsnoteyh as deliverynotes, " +
+			"li.remarksyh, 'USED' as ordertypeyh, li.delivertoyh as deliverytoyh, " +
+			"case li.etdyh when 0 then null else convert(datetime, dbo.ConvertFocusDate(li.etdyh), 112) end as etd, " +
+			"case li.etayh when 0 then null else convert(datetime, dbo.ConvertFocusDate(li.etayh), 112) end as eta " +
+			"from data d left join mr000 ac on ac.masterid = d.bookno " +
+			"left join u0000 aci on aci.extraid=ac.masterid " +
+			"left join u0017 li on li.extraid = d.extraheaderoff " +
+			"left join header hh on hh.headerid = d.headeroff " +
+			"where d.vouchertype=5632 and d.voucherno='" + ivn + "'";
+*/
 			break;
 	}
 
 	sqlstm = "select distinct d.voucherno, d.bookno, " +
 	"ac.name as customer_name, aci.telyh, aci.contactyh, aci.emailyh, li.customerrefyh, li.opsnoteyh as deliverynotes, " +
-	"li.remarksyh, li.ordertypeyh, li.deliverytoyh, " +
+	"li.remarksyh, " + otype + ", li.delivertoyh as deliverytoyh, " +
 	"case li.etdyh when 0 then null else convert(datetime, dbo.ConvertFocusDate(li.etdyh), 112) end as etd, " +
 	"case li.etayh when 0 then null else convert(datetime, dbo.ConvertFocusDate(li.etayh), 112) end as eta " +
 	"from data d left join mr000 ac on ac.masterid = d.bookno " +
 	"left join u0000 aci on aci.extraid=ac.masterid " +
-	"left join u001b li on li.extraid = d.extraheaderoff " +
+	"left join " + exttb + " li on li.extraid = d.extraheaderoff " +
 	"left join header hh on hh.headerid = d.headeroff " +
-	"where d.vouchertype=" + vtype + " and d.voucherno='" + kk + "'";
+	"where d.vouchertype=" + vtype + " and d.voucherno='" + ivn + "'";
 
 	r = sqlhand.rws_gpSqlFirstRow(sqlstm);
 	if(r == null) return false;
@@ -104,6 +139,55 @@ void impFC6_SOROC(int itype, Object itb)
 
 	showJobs();
 	showJobMetadata(glob_sel_job);
+}
+
+void impRWMS_CSV(String isv)
+{
+	if(glob_sel_job.equals("")) return;
+	isv = kiboo.replaceSingleQuotes(isv);
+	if(isv.equals("")) return;
+
+	r = getHelpTicket_rec(isv);
+	if(r == null)
+	{
+		guihand.showMessageBox("ERR: cannot load customer service-ticket!!");
+		return;
+	}
+
+	String[] flds = { "cust_name", "cust_caller", "cust_caller_phone", "cust_caller_email", "cust_location", "action", "fc6_custid" };
+	Object[] jkl = { customername, j_contact, j_contact_tel, j_contact_email, j_deliver_address, j_do_notes, j_fc6_custid };
+	ngfun.populateUI_Data(jkl, flds, r);
+
+	lbhand.matchListboxItems(j_jobtype,"RMA"); // auto select RMA job-type
+
+	if(items_holder.getFellowIfAny("items_grid") != null) items_grid.setParent(null);
+	checkMakeItemsGrid();
+	glob_icomponents_counter = 1; // reset for new grid
+	kk = "font-size:9px;font-weight:bold;";
+
+	// these codes knockoff from jobmaker_funcs.showJobItems() - 06/11/2014: only 1 asset-tag imported from CSV
+	cmid = glob_icomponents_counter.toString();
+	irow = gridhand.gridMakeRow("IRW" + cmid ,"","",items_rows);
+	gpMakeCheckbox(irow,"CBX" + cmid, cmid + ".", kk + "font-size:14px");
+
+	jtm = r.get("product_name") + "\n" + "(Original: " + r.get("asset_tag") + " SN: " + r.get("serial_no") + ")\n" +
+	r.get("problem") + "\n" + r.get("action") + "\n" + r.get("resolve_type");
+
+	desb = gpMakeTextbox(irow,"IDE" + glob_icomponents_counter.toString(),jtm,kk,"99%");
+	desb.setMultiline(true); desb.setHeight("70px"); desb.setDroppable("true");
+	//desb.addEventListener("onDrop",new dropModelName());
+
+	gpMakeTextbox(irow,"ICL" + cmid ,"", kk,"99%"); // color
+	gpMakeTextbox(irow,"IQT" + cmid,"1",kk,"99%"); // qty
+	gpMakeTextbox(irow,"IRP" + cmid,"0",kk,"99%"); // rental-period
+	gpMakeTextbox(irow,"IRU" + cmid,"0",kk,"99%"); // rental per unit
+	gpMakeLabel(irow,"MON" + cmid,"",kk); // per month total
+	gpMakeLabel(irow,"RTO" + cmid,"",kk); // rental all total
+
+	glob_icomponents_counter++;
+
+	doFunc(updatejob_b); // save things
+	jobItems(ji_save_b);
 }
 
 void impRWMS_QT(String iqt)

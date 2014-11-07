@@ -93,7 +93,7 @@ void checkPR_Approval(String iwhat)
 		sqlstm = "update purchaserequisition set pr_status='" + appst + "', approvedate='" + todaydate + "' where origid=" + iwhat;
 
 	if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
-	showPRList();
+	showPRList(last_listpr_type);
 }
 
 void showPRMetadata(String iwhat)
@@ -108,7 +108,7 @@ void showPRMetadata(String iwhat)
 
 	prc = getPR_rec(iwhat);
 	glob_pr_rec = prc; // 28/11/2013: store globally for later
-	populateUI_Data(ob, fs, prc);
+	ngfun.populateUI_Data(ob, fs, prc);
 
 	fillDocumentsList(documents_holder,PR_PREFIX,iwhat);
 	showJobNotes(JN_linkcode(),jobnotes_holder,"jobnotes_lb"); // customize accordingly here..
@@ -197,7 +197,7 @@ p_cnm = 2;
 class prlbcjlick implements org.zkoss.zk.ui.event.EventListener
 {
 	public void onEvent(Event event) throws UiException
-	{
+	{ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 		isel = event.getReference();
 		glob_sel_prid = lbhand.getListcellItemLabel(isel,0);
 		glob_sel_prstatus = lbhand.getListcellItemLabel(isel,p_stt);
@@ -206,32 +206,47 @@ class prlbcjlick implements org.zkoss.zk.ui.event.EventListener
 		showPRMetadata(glob_sel_prid);
 	}
 }
-
 prlbclicker = new prlbcjlick();
 
-void showPRList()
+void showPRList(int itype)
 {
-	scht = kiboo.replaceSingleQuotes(searhtxt_tb.getValue().trim()); // search by customer-name and so on
+	last_listpr_type = itype;
+	st = kiboo.replaceSingleQuotes(searhtxt_tb.getValue().trim()); // search by customer-name and so on
 	sprn = kiboo.replaceSingleQuotes(searchprno_tb.getValue().trim()); // search by PR no.
 	sdate = kiboo.getDateFromDatebox(startdate);
-    edate = kiboo.getDateFromDatebox(enddate);
+	edate = kiboo.getDateFromDatebox(enddate);
 
 	Listbox newlb = lbhand.makeVWListbox_Width(prlist_holder, prlb_hds, "prs_lb", 22);
-    if(!sprn.equals("")) scht = "";
-	scsql = "";
-	if(!scht.equals("")) scsql = "and suppliername like '%" + scht + "%' ";
-	whdts = "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' ";
 
-	sqlstm = "select origid,datecreated,supplier_name,username,priority,pr_status,duedate,approvedate," + 
+	sqlstm = "select top 100 origid,datecreated,supplier_name,username,priority,pr_status,duedate,approvedate," + 
 	"sup_etd,sup_actual_deldate,job_id,version,notify_pr,del_status,temp_grn, purchasecat from purchaserequisition ";
 
-	if(!scht.equals("")) sqlstm += whdts + "and supplier_name like '%" + scht + "%' ";
-	else
-	if(!sprn.equals("")) { sqlstm += "where origid=" + sprn; searchprno_tb.setValue(""); } // clear by-PR-box
-	else
-	sqlstm += whdts;
-	//debugbox.setValue(sqlstm);
-	
+	whdts = "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' ";
+
+	switch(itype)
+	{
+		case 1: // by date-range and searchtext
+			sqlstm += whdts;
+			if(!st.equals("")) sqlstm += "and supplier_name like '%" + st + "%' ";
+			break;
+
+		case 2: // by pr-no
+			try { kk = Integer.parseInt(sprn); } catch (Exception e) { return; }
+			sqlstm += "where origid=" + sprn;
+			searchprno_tb.setValue("");
+			break;
+
+		case 3: // approved PR
+			sqlstm += whdts + "and pr_status='APPROVE'";
+			break;
+
+		case 4: // non-approved
+			sqlstm += whdts + "and pr_status in ('SUBMIT','DRAFT')";
+			break;
+	}
+
+	sqlstm += " order by origid";
+
 	r = sqlhand.gpSqlGetRows(sqlstm);
 	if(r.size() == 0) return;
 	newlb.setMold("paging");
@@ -241,7 +256,7 @@ void showPRList()
 	"approvedate", "sup_etd", "sup_actual_deldate", "del_status", "temp_grn", "version", "purchasecat" };
 	for(dpi : r)
 	{
-		popuListitems_Data(kabom,fl,dpi);
+		ngfun.popuListitems_Data(kabom,fl,dpi);
 		supdeld = kiboo.checkNullDate(dpi.get("sup_actual_deldate"),"");
 		stt = kiboo.checkNullString(dpi.get("pr_status"));
 		prit = kiboo.checkNullString(dpi.get("priority"));
@@ -251,7 +266,7 @@ void showPRList()
 		if(kiboo.todayISODateString().equals(spetd) && supdeld.equals("")) styl = "background:#e58512;font-size:9px";
 
 		if(prit.equals("URGENT") || prit.equals("CRITICAL") ) styl = "font-weight:bold;color:#ffffff;background:#cc0000;font-size:9px";
-
+ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 		if(stt.equals("APPROVE"))
 		{
 			styl = "font-weight:bold;background:#73d216;font-size:9px";
@@ -287,35 +302,30 @@ void savePRItems(String iwhat)
 
 	sqlstm = "update purchaserequisition set pr_items='" + itms + "', pr_qty='" + iqty + "', pr_unitprice='" + iuprice + "' " +
 	"where origid=" + iwhat;
-
 	sqlhand.gpSqlExecuter(sqlstm);
 }
 
 void checkMakeItemsGrid()
 {
-	String[] colws = { "15px", "350px" ,"60px", "60px", "80px" };
+	String[] colws = { "15px", "350px" ,"50px", "60px", "80px" };
 	String[] colls = { "", "Item description", "Qty", "U.Price", "Sub.Total" };
 
 	if(pritems_holder.getFellowIfAny("pritems_grid") == null) // make new grid if none
 	{
-		igrd = new Grid();
-		igrd.setId("pritems_grid");
+		igrd = new Grid(); igrd.setId("pritems_grid");
 		//igrd.setWidth("800px");
 
 		icols = new org.zkoss.zul.Columns();
 		for(i=0;i<colws.length;i++)
 		{
 			ico0 = new org.zkoss.zul.Column();
-			ico0.setWidth(colws[i]);
-			ico0.setLabel(colls[i]);
-			ico0.setAlign("center");
-			ico0.setStyle("background:#97b83a");
+			ico0.setWidth(colws[i]); ico0.setLabel(colls[i]);
+			ico0.setAlign("center"); ico0.setStyle("background:#97b83a");
 			ico0.setParent(icols);
 		}
 		icols.setParent(igrd);
 		irows = new org.zkoss.zul.Rows();
-		irows.setId("pritems_rows");
-		irows.setParent(igrd);
+		irows.setId("pritems_rows"); irows.setParent(igrd);
 		igrd.setParent(pritems_holder);
 	}
 }
@@ -353,7 +363,7 @@ void removePRItems(Object irows)
 void sendNoti_newPR(String iwhat,String iwho)
 {
 	lnkc = PR_PREFIX + iwhat;
-	topeople = "satish@rentwise.com,sangeetha@rentwise.com"; // TODO HARDCODED 29/11/2013
+	topeople = "satish@rentwise.com,sangeetha@rentwise.com,laikw@rentwise.com"; // TODO HARDCODED 29/11/2013
 	//topeople = "victor@rentwise.com";
 	emailsubj = "RE: New " + lnkc + " requested by " + iwho;
 	emailmsg = "A new PR has been created. Pending procurement-division action.";

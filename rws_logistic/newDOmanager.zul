@@ -37,9 +37,9 @@ guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 RWDO_PREFIX = "RDO";
-PROD_PALLET_STR = "UNKNOWN"; // TODO, chg to PROD for fc5012. used in postInventory_DO()
+PROD_PALLET_STR = "PROD";
 OUT_PALLET = "3"; // hardcoded pallet-id - used by minusAddFocus_Stock()
-GENERAL_WH_PALLET = "4";
+GENERAL_WH_PALLET = "2525"; // 'WH PALLET' in fc5012.mr003
 
 HashMap postInventory_Map = new HashMap(); // used in those post-inventory funcs
 

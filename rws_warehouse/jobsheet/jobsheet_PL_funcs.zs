@@ -137,7 +137,7 @@ void genWH_picklist(String iwhat)
 	wfont.setFontHeightInPoints((short)8);
 	wfont.setFontName("Arial");
 
-	excelInsertString(sheet,0,1, "RWMS Job ID: " + jnum );
+	excelInsertString(sheet,0,1, "RWMS Job ID: " + jnum + " Pick-list: " + jpl.get("origid").toString() );
 	excelInsertString(sheet,1,1, "Customer: " + jrec.get("customer_name") );
 	excelInsertString(sheet,3,1, kiboo.checkNullString(jpl.get("extranotes")) );
 

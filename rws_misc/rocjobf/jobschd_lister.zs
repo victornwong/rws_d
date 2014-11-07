@@ -115,7 +115,8 @@ void showFCROCs(int itype, int dtype)
 	"left join header hh on hh.headerid = d.headeroff " +
 	"where d.vouchertype=" + vtype + " and d.flags<>0 " +
 	otherwhere +
-	"and hh.flags=0x0024 order by convert(datetime, dbo.ConvertFocusDate(li.etdyh), 112) ;";
+	//"and hh.flags=0x0024 order by convert(datetime, dbo.ConvertFocusDate(li.etdyh), 112) ;";
+	" order by convert(datetime, dbo.ConvertFocusDate(li.etdyh), 112) ;";
 
 	trs = sqlhand.rws_gpSqlGetRows(sqlstm);
 	if(trs.size() == 0) return;

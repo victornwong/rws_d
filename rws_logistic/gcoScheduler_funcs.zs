@@ -56,11 +56,12 @@ void drawBigCalendar(Datebox idate, Label imonlbl, Component idiv, String igid, 
 
 	HashMap hlit = new HashMap();	
 	rx = sqlhand.gpSqlGetRows(jsqlstm);
+
 	if(rx.size() != 0)
 	{
 		for(d : rx)
 		{
-			hlit.put(GlobalDefs.dtf2.format(d.get("rdate")), d.get("rcount") );
+			hlit.put( GlobalDefs.dtf2.format(d.get("rdate")), d.get("rcount").toString() );
 		}
 	}
 
@@ -90,10 +91,13 @@ void drawBigCalendar(Datebox idate, Label imonlbl, Component idiv, String igid, 
 		cklit = GlobalDefs.dtf2.format( cal.getTime() );
 		try
 		{
-			rcnt = hlit.get(cklit).toString();
-			rslb = new Label();
-			rslb.setParent(dtv); rslb.setStyle("font-size:9px;color:#ffffff;text-shadow: 1px 1px #000000;");
-			rslb.setValue(rcnt + " reservation(s)");
+			rcnt = hlit.get(cklit);
+			if(!rcnt.equals("null"))
+			{
+				rslb = new Label();
+				rslb.setParent(dtv); rslb.setStyle("font-size:9px;color:#ffffff;text-shadow: 1px 1px #000000;");
+				rslb.setValue(rcnt + " reservation(s)");
+			}
 		} catch (Exception e) {}
 
 		if(sday%7 == 0) // set to new row when hit "SAT"

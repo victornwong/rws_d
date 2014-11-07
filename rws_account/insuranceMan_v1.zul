@@ -32,12 +32,8 @@ myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
-dmshand = new DMSFuncs();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler(); guihand = new GuiFuncs();
+luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 
 glob_sel_voucherno = "";
 
@@ -58,16 +54,16 @@ Object getFC6_DOitems(String iwhat, String itmtype)
 
 void showRWitems(String iwhat, Object owhere)
 {
-Object[] rwitmslb_hds =
-{
-	new listboxHeaderWidthObj("No.",true,"35px"),
-	new listboxHeaderWidthObj("Item",true,""),
-	new listboxHeaderWidthObj("Spec1",true,""),
-	new listboxHeaderWidthObj("Spec2",true,""),
-	new listboxHeaderWidthObj("Qty",true,"70px"),
-	new listboxHeaderWidthObj("P/Unit",true,""),
-	new listboxHeaderWidthObj("Total",true,""),
-};
+	Object[] rwitmslb_hds =
+	{
+		new listboxHeaderWidthObj("No.",true,"35px"),
+		new listboxHeaderWidthObj("Item",true,""),
+		new listboxHeaderWidthObj("Spec1",true,""),
+		new listboxHeaderWidthObj("Spec2",true,""),
+		new listboxHeaderWidthObj("Qty",true,"70px"),
+		new listboxHeaderWidthObj("P/Unit",true,""),
+		new listboxHeaderWidthObj("Total",true,""),
+	};
 	Listbox newlb = lbhand.makeVWListbox_Width(rwitms_holder, rwitmslb_hds, "rwitems_lb", 10);
 
 	sqlstm = "select ro.name as product_name, u.spec1yh, u.spec2yh, iy.gross, iy.input0 as unitqty, " +
@@ -130,7 +126,7 @@ void showInvGotInsurance(int itype)
 {
 	scht = kiboo.replaceSingleQuotes(searhtxt_tb.getValue()).trim();
 	sdate = kiboo.getDateFromDatebox(startdate);
-    edate = kiboo.getDateFromDatebox(enddate);
+	edate = kiboo.getDateFromDatebox(enddate);
 	Listbox newlb = lbhand.makeVWListbox_Width(rwinsurholder, rwilb_hds, "rwinsurance_lb", 5);
 
 	sqlstm = "select convert(datetime, dbo.ConvertFocusDate(d.date_), 112) as vdate, d.voucherno, a.name as customer_name, " +
@@ -298,7 +294,7 @@ void showAllRiskSched()
 
 	"(select top 1 case u.contractendyh when 0 then null else convert(datetime, focus5012.dbo.ConvertFocusDate(u.contractendyh), 112) " +
 	"end from data d2 left join u011b u on u.extraid = d2.extraoff where d2.voucherno=d.voucherno ) as InsExp, " +
-/*
+
 	"dbo.grossByItemType(d.voucherno,'NB') as nb_gross, " +
 	"dbo.grossByItemType(d.voucherno,'DT') as dt_gross, " +
 	"dbo.grossByItemType(d.voucherno,'MT') as mt_gross, " +
@@ -307,7 +303,7 @@ void showAllRiskSched()
 	"dbo.qtyByItemType(d.voucherno,'DT') as dt_qty, " +
 	"dbo.qtyByItemType(d.voucherno,'MT') as mt_qty, " +
 	"dbo.qtyByItemType(d.voucherno,'SVR') as svr_qty, " +
-*/
+
 	"ri.remarksyh, d.bookno " +
 	"from data d left join mr008 ro on ro.masterid = d.tags6 " +
 	"left join mr000 a on a.masterid = d.bookno left join u001b ri on ri.extraid=d.extraheaderoff " +
@@ -349,16 +345,16 @@ void showAllRiskSched()
 
 				kabom.add( "" );
 				kabom.add( "" );
-				/*
+
 				mq = nf0.format( (d.get("nb_qty") == null) ? 0 : d.get("nb_qty") );
 				kabom.add( mq );
-				*/
-				kabom.add("NBNB");
+
+				//kabom.add("NBNB");
 
 				kabom.add( pp.get("product_name") );
 
-				//kabom.add( nf2.format( ( d.get("nb_gross") == null) ? 0 : d.get("nb_gross") ) );
-				kabom.add("NNBB");
+				kabom.add( nf2.format( ( d.get("nb_gross") == null) ? 0 : d.get("nb_gross") ) );
+				//kabom.add("NNBB");
 
 				ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 				lbhand.setListcellItemLabel(ki, INCEPTION_DATE_POS, pimpidt); // inject calc-incep-date
@@ -383,23 +379,22 @@ void showAllRiskSched()
 			for(pp : dds)
 			{
 				popuListitems_Data(kabom,fl,d);
-				/*
+
 				kabom.add( nf0.format( (d.get("dt_qty") == null) ? 0 : d.get("dt_qty") ) );
 				kabom.add( nf0.format( (d.get("mt_qty") == null) ? 0 : d.get("mt_qty") ) );
-				*/
-				kabom.add("DTDT");
-				kabom.add("MTMT");
+
+				//kabom.add("DTDT");
+				//kabom.add("MTMT");
 
 				kabom.add( "" );
 				kabom.add( pp.get("product_name") );
 
-				/*
 				kabom.add( nf2.format(
 				((d.get("dt_gross") == null) ? 0 : d.get("dt_gross")) + 
 				((d.get("mt_gross") == null) ? 0 : d.get("mt_gross"))
 				));
-				*/
-				kabom.add("DTMT");
+
+				//kabom.add("DTMT");
 				
 				ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 				lbhand.setListcellItemLabel(ki, INCEPTION_DATE_POS, pimpidt); // inject calc-incep-date
@@ -424,23 +419,23 @@ void showAllRiskSched()
 			for(pp : dds)
 			{
 				popuListitems_Data(kabom,fl,d);
-				/*
+
 				kabom.add( nf0.format( (d.get("dt_qty") == null) ? 0 : d.get("dt_qty") ) );
 				kabom.add( nf0.format( (d.get("mt_qty") == null) ? 0 : d.get("mt_qty") ) );
-				*/
-				kabom.add("");
-				kabom.add("MTMT");
+
+				//kabom.add("");
+				//kabom.add("MTMT");
 
 				kabom.add( "" );
 				kabom.add( pp.get("product_name") );
 
-				/*
+				
 				kabom.add( nf2.format(
 				((d.get("dt_gross") == null) ? 0 : d.get("dt_gross")) + 
 				((d.get("mt_gross") == null) ? 0 : d.get("mt_gross"))
 				));
-				*/
-				kabom.add("MTMT");
+				
+				//kabom.add("MTMT");
 				
 				ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 				lbhand.setListcellItemLabel(ki, INCEPTION_DATE_POS, pimpidt); // inject calc-incep-date

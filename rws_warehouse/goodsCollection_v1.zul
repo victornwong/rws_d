@@ -18,7 +18,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "Goods Collection Note / Order";
-MYVERSION = "v0.2.3";
+MYVERSION = "v0.2.4";
 MYPANEL = "goodscolpa";
 /*
 @Title Goods/assets collection management
@@ -33,6 +33,7 @@ Collection-list status : complete, partial, pending
 02/06/2014: link-up t.grn to MRN and able to view 'em both. Can export GCO list to EXCEL
 18/08/2014: remove GCO-id from LC's assets if GCO is partial and assets not collected - req Huiping (updLC_GCO_links())
 19/08/2014: list gco by username and between dates
+07/11/2014: filter to list by status
 
 */
 import java.util.*;
@@ -58,7 +59,7 @@ DecimalFormat nf2 = new DecimalFormat("#0.00");
 
 global_selected_customer = global_selected_customerid = "";
 
-glob_sel_gco = glob_sel_adt = glob_sel_status = glob_sel_tgrn = glob_sel_mrn = "";
+glob_sel_gco = glob_sel_adt = glob_sel_status = glob_sel_tgrn = glob_sel_mrn = glob_sel_gco_user = "";
 glob_sel_gcoli = null;
 last_list_type = 1;
 
@@ -360,13 +361,16 @@ BOXWIDTH = "800px";
 </zscript>
 
 <popup id="adminpopup">
-	<div width="300px">
-		<button id="setnew_b" label="set NEW" onClick="adminFunc(self)" />
-		<button id="clrtransimp_b" label="Clear transient import" onClick="adminFunc(self)" />
-		<button id="delete_b" label="DELETE" onClick="adminFunc(self)" />
-		<separator height="2px" />
-		<button id="clradt_b" label="Clear ADT" onClick="adminFunc(self)" />
-		<button id="clrcsv_b" label="Clear CSV" onClick="adminFunc(self)" />
+	<div>
+		<vbox>
+			<button id="setnew_b" label="set NEW" onClick="adminFunc(self)" />
+			<button id="clrtransimp_b" label="Clear transient import" onClick="adminFunc(self)" />
+			<button id="delete_b" label="DELETE" onClick="adminFunc(self)" />
+			<separator height="2px" />
+			<button id="clradt_b" label="Clear ADT" onClick="adminFunc(self)" />
+			<button id="clrcsv_b" label="Clear CSV" onClick="adminFunc(self)" />
+			<button label="show something" onClick="alert(useraccessobj.email)" />
+		</vbox>
 	</div>
 </popup>
 
@@ -449,53 +453,83 @@ BOXWIDTH = "800px";
 	</div>
 </popup> <!-- ENDOF pickcustomer_popup -->
 
-<!-- update file description popup -->
-<popup id="updatefiledesc_popup">
-<groupbox width="400px">
-	<caption id="updatefiledesc_label" />
-	<label value="Description" class="k9" />
-	<textbox id="update_file_description" multiline="true" height="70px" width="99%" class="k9" />
-	<separator height="3px" />
-	<hbox>
-		<button label="Update" class="k9" onClick="updateFileDescription(documents_holder,COLLECTION_PREFIX,glob_sel_gco)" />
-		<button label="Close" class="k9" onClick="updatefiledesc_popup.close()" />
-	</hbox>
-</groupbox>
+<popup id="updatefiledesc_popup"> <!-- update file description popup -->
+	<groupbox width="400px">
+		<caption id="updatefiledesc_label" />
+		<label value="Description" class="k9" />
+		<textbox id="update_file_description" multiline="true" height="70px" width="99%" class="k9" />
+		<separator height="3px" />
+		<hbox>
+			<button label="Update" class="k9" onClick="updateFileDescription(documents_holder,COLLECTION_PREFIX,glob_sel_gco)" />
+			<button label="Close" class="k9" onClick="updatefiledesc_popup.close()" />
+		</hbox>
+	</groupbox>
 </popup>
 
-<!-- upload a file popup -->
-<popup id="uploadfile_popup">
-<groupbox>
-<caption label="Upload a file" />
-	<grid>
-		<rows>
-			<row>
-				<label value="Filename" class="k9" />
-				<textbox id="fileupl_file_title" width="200px" class="k9" />
-			</row>
-			<row>
-				<label value="Description" class="k9" />
-				<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" class="k9" />
-			</row>
-		</rows>
-	</grid>
-</groupbox>
-<separator height="3px" />
-<hbox>
-	<button label="Select file" onClick="uploadFile(documents_holder,COLLECTION_PREFIX,glob_sel_gco)" class="k9" />
-	<button label="Close" onClick="uploadfile_popup.close()"  class="k9" />
-</hbox>
+<popup id="uploadfile_popup"> <!-- upload a file popup -->
+	<groupbox>
+	<caption label="Upload a file" />
+		<grid>
+			<rows>
+				<row>
+					<label value="Filename" class="k9" />
+					<textbox id="fileupl_file_title" width="200px" class="k9" />
+				</row>
+				<row>
+					<label value="Description" class="k9" />
+					<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" class="k9" />
+				</row>
+			</rows>
+		</grid>
+	</groupbox>
+	<separator height="3px" />
+	<hbox>
+		<button label="Select file" onClick="uploadFile(documents_holder,COLLECTION_PREFIX,glob_sel_gco)" class="k9" />
+		<button label="Close" onClick="uploadfile_popup.close()"  class="k9" />
+	</hbox>
 </popup>
 
 <popup id="viewadt_pop">
-<div sclass="shadowbox" style="background:#909d2a;" width="800px">
-	<label id="adthead_lbl" sclass="subhead" />
-	<separator height="3px" />
-	<div id="adtitms_holder" />
-</div>
+	<div sclass="shadowbox" style="background:#909d2a;" width="800px">
+		<label id="adthead_lbl" sclass="subhead" />
+		<separator height="3px" />
+		<div id="adtitms_holder" />
+	</div>
+</popup>
+
+<popup id="filterspop">
+	<div sclass="shadowbox" style="background:#909d2a;">
+		<grid sclass="GridLayoutNoBorder">
+			<rows>
+				<row style="background:#909d2a;">
+					<listbox id="bytransp_lb" mold="select" class="k9" width="99%" />
+					<button label="by transporter" sclass="k9" onClick="showGoodsCollection(3)" />
+				</row>
+				<row style="background:#909d2a;">
+					<listbox id="byuser_lb" mold="select" sclass="k9" width="99%" />
+					<button label="by user" sclass="k9" onClick="showGoodsCollection(5)" />
+				</row>
+				<row style="background:#909d2a;">
+					<listbox id="bystat_lb" mold="select" sclass="k9" width="99%" />
+					<button label="by status" sclass="k9" onClick="showGoodsCollection(6)" />
+				</row>
+				<row style="background:#909d2a;">
+					<separator />
+					<button label="by user + status" sclass="k9" onClick="showGoodsCollection(7)" />
+				</row>
+			</rows>
+		</grid>
+	</div>
 </popup>
 
 <style src="/real-world.css" />
+<style>
+.GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
+{
+border: none; overflow: hidden; zoom: 1;
+border-top: none; border-left: none; border-right: none; border-bottom: none;
+}
+</style>
 
 <div width="1200px">
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
@@ -508,42 +542,35 @@ BOXWIDTH = "800px";
 	<label value="End" sclass="k9b" />
 	<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
 	<textbox id="searhtxt_tb" width="100px" class="k9" />
-	<button label="Load/Search" sclass="k9" onClick="showGoodsCollection(1)" />
+	<button label="Load/Search" sclass="k9mo" onClick="showGoodsCollection(1)" />
 	<textbox id="asstga_tb" sclass="k9" width="70px" />
-	<button sclass="k9" label="by asset-tag" onClick="showGoodsCollection(4)" />
+	<button sclass="k9mo" label="by asset-tag" onClick="showGoodsCollection(4)" />
 	<textbox id="searchgco_tb" sclass="k9" width="40px" />
-	<button label="by GCO" sclass="k9" onClick="showGoodsCollection(2)" />
+	<button label="by GCO" sclass="k9mo" onClick="showGoodsCollection(2)" />
 
-	<listbox id="bytransp_lb" mold="select" class="k9" />
-	<button label="by transporter" sclass="k9" onClick="showGoodsCollection(3)" />
-
-	<listbox id="byuser_lb" mold="select" sclass="k9" />
-	<button label="by user" sclass="k9" onClick="showGoodsCollection(5)" />
-
-	<button id="admin_b" label="Admin" visible="false" style="color:#cc0000" onClick="adminpopup.open(self)" />
+	<button label="Filters" sclass="k9mo" onClick="filterspop.open(self)" />
+	<button id="admin_b" label="Admin" visible="false" sclass="k9mo" style="color:#cc0000" onClick="adminpopup.open(self)" />
 </hbox>
 </div>
 <separator height="3px" />
 
-<hbox> <!-- gcn list hbox -->
 <div sclass="shadowbox" style="background:#2e3436;" >
 	<hbox>
-		<button id="newcollection_b" sclass="k9" label="New collection" onClick="doFunc(self)" />
-		<button id="submit_b" sclass="k9" label="Submit" onClick="doFunc(self)" />
-		<button id="ackjob_b" sclass="k9" label="Acknowledge" onClick="doFunc(self)" />
-		<button id="pickup_b" sclass="k9" label="Transp.Pickup" onClick="doFunc(self)" />
-		<button id="print_b" sclass="k9" label="Print" onClick="doFunc(self)" />
+		<button id="newcollection_b" sclass="k9mo" label="New collection" onClick="doFunc(self)" />
+		<button id="submit_b" sclass="k9mo" label="Submit" onClick="doFunc(self)" />
+		<button id="ackjob_b" sclass="k9mo" label="Acknowledge" onClick="doFunc(self)" />
+		<button id="pickup_b" sclass="k9mo" label="Transp.Pickup" onClick="doFunc(self)" />
+		<button id="print_b" sclass="k9mo" label="Print" onClick="doFunc(self)" />
 		<!-- <button id="complete_b" label="Complete" onClick="doFunc(self)" /> -->
-		<button label="Export EXCEL" sclass="k9" onClick="exportGCOList()" />
+		<button label="Export EXCEL" sclass="k9mo" onClick="exportGCOList()" />
 		<separator width="20px" />
-		<button id="opadt_b" sclass="k9" label="View ADT/QC" onClick="loadADT_things(); viewadt_pop.open(glob_sel_gcoli);" />
-		<button id="vwtgrn_b" sclass="k9" label="View T.GRN" onClick="doFunc(self)" />
-		<button id="vwmrns_b" sclass="k9" label="View MRN" onClick="doFunc(self)" />
+		<button id="opadt_b" sclass="k9mo" label="View ADT/QC" onClick="loadADT_things(); viewadt_pop.open(glob_sel_gcoli);" />
+		<button id="vwtgrn_b" sclass="k9mo" label="View T.GRN" onClick="doFunc(self)" />
+		<button id="vwmrns_b" sclass="k9mo" label="View MRN" onClick="doFunc(self)" />
 	</hbox>
 	<separator height="3px" />
 	<div id="collections_holder" />
 </div>
-</hbox>
 
 <tabbox id="workarea"  visible="false">
 	<tabs>
@@ -661,8 +688,10 @@ fillListbox_uniqField("rw_goodscollection", "username", byuser_lb);
 
 luhand.populateListbox_ByLookup(g_opartner, "OUTSOURCE_PARTNERS", 2);
 luhand.populateListbox_ByLookup(g_transporter, "TRANSPORTER_COURIER", 2);
-luhand.populateListbox_ByLookup(bytransp_lb, "TRANSPORTER_COURIER", 2);
 luhand.populateListbox_ByLookup(g_logregion, "LOGISTIC_REGIONS", 2);
+
+luhand.populateListbox_ByLookup(bystat_lb, "GCO_STATUS", 2);
+luhand.populateListbox_ByLookup(bytransp_lb, "TRANSPORTER_COURIER", 2);
 
 collection_formmaker = dynamicForm(collectionform_holder, "collectionmeta_grid", "12");
 

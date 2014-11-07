@@ -62,6 +62,14 @@ void rws_fillListbox_uniqField(String itbn, String ifl, Listbox ilb)
 	ilb.setSelectedIndex(0);
 }
 
+// TODO move this to listboxhandler.java
+void setListcell_Style(Listitem ilbitem, int icolumn, String istyle)
+{
+	List prevrc = ilbitem.getChildren();
+	Listcell prevrc_2 = (Listcell)prevrc.get(icolumn); // get the second column listcell
+	prevrc_2.setStyle(istyle);
+}
+
 // GP: remove sub-div from DIV if any
 void removeSubDiv(Div idivholder)
 {
@@ -836,4 +844,17 @@ Object getAssignment_rec(String iwhat)
 {
 	sqlstm = "select * from rw_assignment where origid=" + iwhat;
 	return sqlhand.gpSqlFirstRow(sqlstm);
+}
+
+Object getnewDO_rec(String iwhat)
+{
+	sqlstm = "select * from deliveryordermaster where id=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
+}
+
+String getUser_email(String iwho)
+{
+	sqlstm = "select email from portaluser where username='" + iwho + "'";
+	r = sqlhand.gpSqlFirstRow(sqlstm);
+	return (r == null) ? null : r.get("email");
 }

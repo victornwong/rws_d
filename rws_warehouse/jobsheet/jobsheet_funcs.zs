@@ -274,7 +274,8 @@ void showJobs(int itype)
 	scht = kiboo.replaceSingleQuotes(searhtxt_tb.getValue().trim());
 	sdate = kiboo.getDateFromDatebox(startdate);
 	edate = kiboo.getDateFromDatebox(enddate);
-	jid = kiboo.replaceSingleQuotes(jobid_tb.getValue().trim());
+	jid = kiboo.replaceSingleQuotes( jobid_tb.getValue().trim() );
+	jpl = kiboo.replaceSingleQuotes( picklist_tb.getValue().trim() );
 
 	Listbox newlb = lbhand.makeVWListbox_Width(jobs_holder, jobslbhds, "jobs_lb", 3);
 
@@ -302,6 +303,15 @@ void showJobs(int itype)
 				sqlstm += "where rj.origid=" + jid;
 			} catch (Exception e) { return; }
 			break;
+
+		case 3: // by job pick-list no.
+			if(jpl.equals("")) return;
+			try {
+				k = Integer.parseInt(jpl);
+				sqlstm += "where jpl.origid=" + jpl;
+
+			} catch (Exception e) { return; }
+			break;
 	}
 
 	sqlstm += listjobs_extrasql + " order by rj.eta, rj.origid"; // listjobs_extrasql def in main modu-file
@@ -323,25 +333,25 @@ void showJobs(int itype)
 
 void showCheckstock_win(Div idiv, ArrayList titems)
 {
-Object[] cstkhds1 =
-{
-	new listboxHeaderWidthObj("No.",true,"40px"),
-	new listboxHeaderWidthObj("Items found",true,""),
-	//new listboxHeaderWidthObj("Type",true,"40px"),
-	//new listboxHeaderWidthObj("Pallet",true,"60px"),
-	new listboxHeaderWidthObj("Qty",true,"60px"),
-};
-String[] fl_t1 = { "name", "instk" }; // "item", "pallet", 
+	Object[] cstkhds1 =
+	{
+		new listboxHeaderWidthObj("No.",true,"40px"),
+		new listboxHeaderWidthObj("Items found",true,""),
+		//new listboxHeaderWidthObj("Type",true,"40px"),
+		//new listboxHeaderWidthObj("Pallet",true,"60px"),
+		new listboxHeaderWidthObj("Qty",true,"60px"),
+	};
+	String[] fl_t1 = { "name", "instk" }; // "item", "pallet", 
 
-Object[] cstkhds2 =
-{
-	new listboxHeaderWidthObj("No.",true,"40px"),
-	new listboxHeaderWidthObj("Items found",true,""),
-	new listboxHeaderWidthObj("Type",true,"40px"),
-	new listboxHeaderWidthObj("Pallet",true,"60px"),
-	new listboxHeaderWidthObj("Qty",true,"60px"),
-};
-String[] fl_t2 = { "name", "item", "pallet", "instk" };
+	Object[] cstkhds2 =
+	{
+		new listboxHeaderWidthObj("No.",true,"40px"),
+		new listboxHeaderWidthObj("Items found",true,""),
+		new listboxHeaderWidthObj("Type",true,"40px"),
+		new listboxHeaderWidthObj("Pallet",true,"60px"),
+		new listboxHeaderWidthObj("Qty",true,"60px"),
+	};
+	String[] fl_t2 = { "name", "item", "pallet", "instk" };
 
 	lbhds = cstkhds1; flds = fl_t1;
 	if(reqitems_grid_type == 2)
@@ -398,22 +408,22 @@ void js_adminDo(String itype)
 	refresh = refresh_joblist = false;
 	unm = useraccessobj.username;
 
-	if(itype.equals("admclrpckup_b")) // clear rw_jobs pickup
+	if(!glob_sel_job.equals(""))
 	{
-		if(glob_sel_job.equals("")) return;
-		sqlstm = "update rw_jobs set pickup_date=null, pickup_by=null where origid=" + glob_sel_job;
+		if(itype.equals("admclrpckup_b")) // clear rw_jobs pickup
+			sqlstm = "update rw_jobs set pickup_date=null, pickup_by=null where origid=" + glob_sel_job;
 	}
 
-	if(itype.equals("admclrcommit_b")) // clear commit
+	if(!glob_sel_jobsheet.equals(""))
 	{
-		if(glob_sel_jobsheet.equals("")) return;
-		sqlstm = "update rw_jobpicklist set pstatus='DRAFT', commitdate=null where origid=" + glob_sel_jobsheet;
-	}
+		if(itype.equals("admclrcommit_b")) // clear commit
+		{
+			sqlstm = "update rw_jobpicklist set pstatus='DRAFT', commitdate=null where origid=" + glob_sel_jobsheet;
+			// TODO audit
+		}
 
-	if(itype.equals("admclrack_b")) // clear WH ackby/ackdate
-	{
-		if(glob_sel_jobsheet.equals("")) return;
-		sqlstm = "update rw_jobpicklist set ackby=null,ackdate=null where origid=" + glob_sel_jobsheet;
+		if(itype.equals("admclrack_b")) // clear WH ackby/ackdate
+			sqlstm = "update rw_jobpicklist set ackby=null,ackdate=null where origid=" + glob_sel_jobsheet;
 	}
 
 	if(!sqlstm.equals(""))

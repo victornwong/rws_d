@@ -495,7 +495,7 @@ Asgn = assigned/unassigned asset
 			<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
 			<label value="End" sclass="k9b" />
 			<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
-			<button label="Load by date" sclass="k9mo" onClick="listEOL(1)" />
+			<button label="by LC end-date range" sclass="k9mo" onClick="listEOL(1)" />
 			<textbox id="search_txt" sclass="k9" />
 			<button label="Search" sclass="k9mo" onClick="listEOL(2)" />
 			<button label="List with super-reminder" sclass="k9mo" onClick="listEOL(3)" />
