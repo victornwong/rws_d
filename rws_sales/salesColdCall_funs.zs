@@ -18,7 +18,7 @@ void showActiContactMeta(String iwhat)
 	String[] fl = { "cust_name", "industry", "designation", "cust_address1", "cust_address2", "cust_address3", "cust_address4",
 	"cust_tel", "cust_fax", "cust_email", "businessroc", "leadsource", "campaign" };
 
-	populateUI_Data(ob, fl, acr);
+	ngfun.populateUI_Data(ob, fl, acr);
 
 	coldcd = sqlhand.clobToString(acr.get("coldcall_rec"));
 	coldcallmform.wolipar.clearFormFieldsAll();
@@ -66,7 +66,7 @@ void listTiedQuotations(String icn)
 	String[] fl = { "origid", "contact_person1", "qstatus", "qt_type", "username" };
 	for(d : recs)
 	{
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
 	}
@@ -77,6 +77,9 @@ Object[] actconthds =
 {
 	new listboxHeaderWidthObj("origid",false,""),
 	new listboxHeaderWidthObj("Customer",true,""),
+	new listboxHeaderWidthObj("DateCrt",true,""),
+	new listboxHeaderWidthObj("Grade",true,""),
+	new listboxHeaderWidthObj("Grd.Req",true,""),
 	new listboxHeaderWidthObj("ContactP",true,""),
 	new listboxHeaderWidthObj("Tel",true,""),
 	new listboxHeaderWidthObj("Email",true,""),
@@ -100,38 +103,48 @@ class acticontclk implements org.zkoss.zk.ui.event.EventListener
 }
 acticontclkier = new acticontclk();
 
-// itype: 1=list all, 2=list by username
+// itype: 1=list all, 2=list by username, 3=by date range
 void listActiContacts(int itype, String iusername)
 {
-/*
 	sdate = kiboo.getDateFromDatebox(startdate);
-    edate = kiboo.getDateFromDatebox(enddate);
-*/
+	edate = kiboo.getDateFromDatebox(enddate);
 	last_loadcont = itype;
 	st = kiboo.replaceSingleQuotes(schbox.getValue()).trim();
 	bycst = "";
-	if(!st.equals("")) bycst = " (cust_name like '%" + st + "%' or contact_person like '%" + st + "%') ";
 
 	Listbox newlb = lbhand.makeVWListbox_Width(acticonts_holder, actconthds, "acticonts_lb", 20);
 
-	sqlstm = "select origid,cust_name,potential,username,industry,deleted," +
-	"contact_person,cust_tel,cust_email,call_div from rw_activities_contacts ";
-	byusr = (itype == 2) ? "where username='" + iusername + "' and " + bycst : ((bycst.equals("")) ? "" : "where " + bycst);
-	sqlstm += byusr;
+	sqlstm = "select origid,cust_name,potential,username,industry,deleted,datecreated," +
+	"contact_person,cust_tel,cust_email,call_div,customer_grade,grade_req from rw_activities_contacts ";
+	switch(itype)
+	{
+		case 1:
+			if(!st.equals("")) sqlstm += "where (cust_name like '%" + st + "%' or contact_person like '%" + st + "%')";
+			break;
+		case 2:
+			sqlstm += "where username='" + iusername + "'";
+			break;
+		case 3:
+			sqlstm += "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00'";
+
+			break;
+	}
+	
+	sqlstm += " order by datecreated desc";
 
 	recs = sqlhand.gpSqlGetRows(sqlstm);
 	if(recs.size() == 0) return;
 	newlb.setMold("paging");
 	newlb.addEventListener("onSelect", acticontclkier );
 	ArrayList kabom = new ArrayList();
-	String[] fl = { "contact_person", "cust_tel", "cust_email", "industry", "username", "potential", "call_div" };
+	String[] fl = { "datecreated", "customer_grade", "grade_req", "contact_person", "cust_tel", "cust_email", "industry", "username", "potential", "call_div" };
 	for(d : recs)
 	{
 		kabom.add( d.get("origid").toString() );
 		cstn = kiboo.checkNullString( d.get("cust_name") );
 		if(cstn.equals("")) cstn = "NEW CUSTOMER";
 		kabom.add( cstn );
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 		dlt = (d.get("deleted") == null) ? "" : (d.get("deleted")) ? "font-size:9px;text-decoration:line-through;opacity:0.6;" : "";
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false",dlt);
 		kabom.clear();
@@ -143,9 +156,9 @@ void showActivityMeta(String iwhat)
 	rcs = getActivity_rec(iwhat);
 	glob_activ_rec = rcs; // use later
 	if(rcs == null) { guihand.showMessageBox("DBERR: Cannot access activity-table!!"); return; }
-	Object[] ob = { o_contact_person, o_designation, o_telephone, o_email, o_act_type, o_act_notes };
-	String[] fl = { "contact_person", "designation", "telephone", "email", "act_type", "act_notes" };
-	populateUI_Data(ob,fl,rcs);
+	Object[] ob = { o_contact_person, o_designation, o_telephone, o_email, o_act_type, o_act_notes, o_act_date };
+	String[] fl = { "contact_person", "designation", "telephone", "email", "act_type", "act_notes", "act_date" };
+	ngfun.populateUI_Data(ob,fl,rcs);
 }
 
 Object[] actihds =
@@ -156,6 +169,7 @@ Object[] actihds =
 	new listboxHeaderWidthObj("Designation",true,"100px"),
 	new listboxHeaderWidthObj("Type",true,"80px"),
 	new listboxHeaderWidthObj("User",true,"80px"),
+	new listboxHeaderWidthObj("Act.Date",true,"80px"),
 };
 
 class activiclk implements org.zkoss.zk.ui.event.EventListener
@@ -184,19 +198,18 @@ void listActivities(String ilnk)
 {
 	Listbox newlb = lbhand.makeVWListbox_Width(actis_holder, actihds, "activities_lb", 5);
 	sqlstm = "select origid,datecreated,contact_person,designation," + 
-	"act_type,username,act_notes from rw_activities where parent_id=" + ilnk;
+	"act_type,username,act_notes,act_date from rw_activities where parent_id=" + ilnk;
 
 	recs = sqlhand.gpSqlGetRows(sqlstm);
 	if(recs.size() == 0) return;
 	// newlb.setMultiple(true);
-	newlb.setRows(22);
-	newlb.setMold("paging");
+	newlb.setRows(21); newlb.setMold("paging");
 	newlb.addEventListener("onSelect", activityclker );
 	ArrayList kabom = new ArrayList();
-	String[] fl = { "origid","datecreated","contact_person","designation","act_type","username" };
+	String[] fl = { "origid","datecreated","contact_person","designation","act_type","username","act_date" };
 	for(d : recs)
 	{
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 		kak = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kak.setTooltiptext( kiboo.checkNullString(d.get("act_notes")) );
 		kabom.clear();
@@ -228,7 +241,7 @@ void genColdCallDump()
 	recs = sqlhand.gpSqlGetRows(sqlstm);
 	if(recs.size() == 0) return;
 
-   	startadder = 1;
+ 	startadder = 1;
 	rowcount = 0;
 	HashMap myhmap;
 

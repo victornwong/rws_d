@@ -167,7 +167,8 @@ void transfer_ScannedTags_toProd(String ijs)
 		}
 	}
 
-	kql = FC5030_Sql();
+	//kql = FC5030_Sql();
+	kql = sqlhand.rws_Sql();
 	tgs = checktags.toArray();
 	errcnt = 0;
 
@@ -189,8 +190,8 @@ void transfer_ScannedTags_toProd(String ijs)
 		if(wr != null) { plt = wr.get("pallet"); itm = wr.get("name"); }
 
 		if(plt.equals("")) errcnt++;
-		if(plt.indexOf("PUCHONG") != -1) { errcnt++; sty = errstyle; } // for PROD
-		if(plt.indexOf("PT1") != -1) { errcnt++; sty = errstyle; } // for EIS
+		if(plt.indexOf("PROD") != -1) { errcnt++; sty = errstyle; } // for PROD
+		if(plt.indexOf("EIS") != -1) { errcnt++; sty = errstyle; } // for EIS
 		if(plt.indexOf("OUT") != -1) { errcnt++; sty = errstyle; }
 
 		kbm[0] = tk;
@@ -222,7 +223,8 @@ void reallyTransferItemsToProd()
 	kpal = kiboo.replaceSingleQuotes( admpalletinp_tb.getValue().trim() ); // get pallet name from hidden tb. Only admin can see/change it.
 
 	sqlstm = "select top 1 masterid from mr003 where name='" + kpal + "';";
-	r = f30_gpSqlFirstRow(sqlstm);
+	//r = f30_gpSqlFirstRow(sqlstm);
+	r = sqlhand.rws_gpSqlFirstRow(sqlstm);
 	if(r == null)
 	{
 		guihand.showMessageBox("ERR: Cannot find pallet record!!");
@@ -245,7 +247,8 @@ void reallyTransferItemsToProd()
 
 	if(!sqlstm.equals(""))
 	{
-		f30_gpSqlExecuter(sqlstm);
+		//f30_gpSqlExecuter(sqlstm);
+		sqlhand.rws_gpSqlExecuter(sqlstm);
 
 		// Commit/transfer to prod audit-log and set rw_jobpicklist.ackby/ackdate
 		try { patgs = patgs.substring(0,patgs.length()-2); } catch (Exception e) {}

@@ -203,6 +203,8 @@ void pl_DoFunc(String itype) // pick-list functions dispenser
 		<textbox id="jobid_tb" width="50px" sclass="k9" />
 		<button label="by job" sclass="k9mo" onClick="showJobs(2)" />
 
+		<textbox id="picklist_tb" width="50px" sclass="k9" visible="false" />
+
 		<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#D60D0D" onClick="adminPop.open(self)" visible="false" />
 	</hbox>
 

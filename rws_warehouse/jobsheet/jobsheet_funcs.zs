@@ -275,7 +275,10 @@ void showJobs(int itype)
 	sdate = kiboo.getDateFromDatebox(startdate);
 	edate = kiboo.getDateFromDatebox(enddate);
 	jid = kiboo.replaceSingleQuotes( jobid_tb.getValue().trim() );
-	jpl = kiboo.replaceSingleQuotes( picklist_tb.getValue().trim() );
+
+	jpl = "";
+	try {	jpl = kiboo.replaceSingleQuotes( picklist_tb.getValue().trim() ); }
+	catch (Exception e) {}
 
 	Listbox newlb = lbhand.makeVWListbox_Width(jobs_holder, jobslbhds, "jobs_lb", 3);
 

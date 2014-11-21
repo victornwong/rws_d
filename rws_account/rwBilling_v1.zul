@@ -310,8 +310,8 @@ ASGN = assign/unassign
 		<vbox>
 			<button label="Jenis MRA" sclass="k9mo" onClick="genNOA(0)" />
 			<button label="Jenis MA" sclass="k9mo" onClick="genNOA(1)" />
-			<button label="Jenis AR Type 1" sclass="k9mo" onClick="genNOA(2)" />
-			<button label="Jenis AR Type 2" sclass="k9mo" onClick="genNOA(3)" />
+			<button label="Jenis AR Type MA" sclass="k9mo" onClick="genNOA(2)" />
+			<button label="Jenis AR Type MRA" sclass="k9mo" onClick="genNOA(3)" />
 		</vbox>
 	</div>
 </popup>

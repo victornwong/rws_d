@@ -101,10 +101,11 @@ void showReqItems(String iwhat)
 	if(trs.size() == 0) return;
 	newlb.setMold("paging");
 	newlb.addEventListener("onSelect", pricliclker);
-	lnc = 1;
+	lnc = 1; sumi = 0;
 	ArrayList kabom = new ArrayList();
 	for(d : trs)
 	{
+		sumi += d.get("qty2");
 		kabom.add( d.get("salesid").toString() );
 		kabom.add( lnc.toString() + "." );
 		kabom.add( kiboo.checkNullString(d.get("name")) ); 
@@ -113,6 +114,7 @@ void showReqItems(String iwhat)
 		lnc++;
 		kabom.clear();
 	}
+	totalreq_lbl.setValue("Total request quantity: " + sumi.toString());
 }
 
 // 27/06/2014: mod to save scanned-asstags into reqthings_stat.extra1 instead of storing individually in request-item -- can lesap after they mod ERG/PRG
@@ -474,8 +476,84 @@ void checkDupScannedAss(String iwhat)
 	guihand.showMessageBox("Found : " + itml.toString() + " :: " + jt);
 }
 
+
+
+class lbClick implements org.zkoss.zk.ui.event.EventListener
+{
+	public void onEvent(Event event) throws UiException
+	{
+		isel = event.getReference();
+		cel1 = lbhand.getListcellItemLabel(isel,0);
+	}
+}
+clkier = new lbClick();
+
+void showBOMList()
+{
+	
+
+	sqlstm = "";
+	rcs = sqlhand.gpSqlGetRows(sqlstm);
+	if(rcs.size() == 0) return;
+	newlb.setRows(21); newlb.setMold("paging");
+	newlb.addEventListener("onSelect", clkier);
+	ArrayList kabom = new ArrayList();
+	String[] fl = { };
+	for(d : rcs)
+	{
+		ngfun.popuListitems_Data(kabom,fl,d);
+		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+		kabom.clear();
+	}
+}
+
+Object[] scantagscheckhds = 
+{
+	new listboxHeaderWidthObj("Req.Items",true,""),
+	new listboxHeaderWidthObj("Qty",true,"60px"),
+};
+
+void showScanTags_breakdown()
+{
+	ags = "";
+	a = asstg_scans.getValue().trim().split("\n");
+	for(i=0; i<a.length; i++)
+	{
+		ags += "'" + a[i].trim() + "',";
+	}
+	try { ags = ags.substring(0,ags.length()-1); } catch (Exception e) {}
+
+	sqlstm = "select distinct name, count(name) as countn from partsall_0 where assettag in (" + ags + ") group by name;";
+	rcs = sqlhand.rws_gpSqlGetRows(sqlstm);
+	if(rcs.size() == 0) return;
+
+	Listbox newlb = lbhand.makeVWListbox_Width(staghold, scantagscheckhds, "scantags_lb", 10);
+	//newlb.setMold("paging");
+	ArrayList kabom = new ArrayList();
+	String[] fl = { "name","countn" };
+	sumi = 0;
+	for(d : rcs)
+	{
+		sumi += d.get("countn");
+		ngfun.popuListitems_Data(kabom,fl,d);
+		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+		kabom.clear();
+	}
+	checkscantags_lbl.setValue("Total qty: " + sumi.toString());
+	showcheckscantags_pop.open(savescantags_b);
+
+}
+
 ]]>
 </zscript>
+
+<popup id="showcheckscantags_pop">
+	<div class="shadowbox" style="background:#E36619" width="380px">
+		<div id="staghold" />
+		<separator height="3px" />
+		<label id="checkscantags_lbl" />
+	</div>
+</popup>
 
 <popup id="changeloca_pop">
 	<div class="shadowbox" style="background:#E36619" width="350px">
@@ -495,8 +573,7 @@ void checkDupScannedAss(String iwhat)
 	</div>
 </popup>
 
-<!-- update file description popup -->
-<popup id="updatefiledesc_popup">
+<popup id="updatefiledesc_popup"> <!-- update file description popup -->
 	<groupbox width="400px">
 		<caption id="updatefiledesc_label" />
 		<label value="Description" class="k9" />
@@ -509,8 +586,7 @@ void checkDupScannedAss(String iwhat)
 	</groupbox>
 </popup>
 
-<!-- upload a file popup -->
-<popup id="uploadfile_popup">
+<popup id="uploadfile_popup"> <!-- upload a file popup -->
 	<groupbox>
 	<caption label="Upload a file" />
 		<grid>
@@ -526,11 +602,11 @@ void checkDupScannedAss(String iwhat)
 			</rows>
 		</grid>
 	</groupbox>
-<separator height="3px" />
-<hbox>
-	<button label="Select file" onClick="uploadFile(documents_holder,p_vtype,glob_sel_ereq)" class="k9" />
-	<button label="Close" onClick="uploadfile_popup.close()"  class="k9" />
-</hbox>
+	<separator height="3px" />
+	<hbox>
+		<button label="Select file" onClick="uploadFile(documents_holder,p_vtype,glob_sel_ereq)" class="k9" />
+		<button label="Close" onClick="uploadfile_popup.close()"  class="k9" />
+	</hbox>
 </popup>
 
 <style src="/real-world.css" />
@@ -602,6 +678,8 @@ void checkDupScannedAss(String iwhat)
 				<label sclass="subhead1" style="color:#ffffff" value="Request Items" />
 			</div>
 			<div id="eqsitems_holder" width="500px" />
+			<separator height="3px" />
+			<label id="totalreq_lbl" style="color:#ffffff" />
 		</vbox>
 
 		<vbox>
@@ -609,8 +687,9 @@ void checkDupScannedAss(String iwhat)
 				<label id="scnass_lbl" sclass="subhead1" value="Asset-Tags" />
 			</div>
 			<hbox>
-				<button label="Save scanned asset-tags" style="font-weight:bold" sclass="k9" onClick="updPickedAssetTags(true)" />
+				<button id="savescantags_b" label="Save scanned asset-tags" style="font-weight:bold" sclass="k9" onClick="updPickedAssetTags(true)" />
 				<button id="chkdupass_b" label="Count / Check-dup ass.tags" style="font-size:9px;color:#F22267;font-weight:bold" onClick="checkDupScannedAss(glob_sel_ereq)" />
+				<button id="showscantags_b" label="Show scan-tags breakdown" sclass="k9" onClick="showScanTags_breakdown()" />
 				<button id="chgpallet_b" label="Change asset-tags loca/pallet" style="font-size:9px;color:#4286C9;font-weight:bold" onClick="changeloca_pop.open(self)" disabled="true" />
 			</hbox>
 			<separator height="3px" />

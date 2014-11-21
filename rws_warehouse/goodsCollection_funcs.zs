@@ -548,9 +548,9 @@ void genGCO_template(String igco)
 	"\nReq.By: " + gcor.get("username") +
 	"\nNotes: " + kiboo.checkNullString(gcor.get("collection_notes"));
 
-	excelInsertString(sheet,0,3, dets2 );
+	excelInsertString(sheet,0,4, dets2 );
 
-	String[] colhd = { "No.","Asset Tag","S/Number","Item description","Collected" };
+	String[] colhd = { "No.", "FromLC", "Asset Tag","S/Number","Item description","Collected" };
 	for(i=0;i<colhd.length;i++)
 	{
 		POI_CellSetAllBorders(excelWB,excelInsertString( sheet, 2, i, colhd[i] ),wfont,true,"");
@@ -559,6 +559,7 @@ void genGCO_template(String igco)
 	itag = sqlhand.clobToString(gcor.get("items_code")).split("~");
 	idsc = sqlhand.clobToString(gcor.get("items_desc")).split("~");
 	isn = sqlhand.clobToString(gcor.get("items_sn")).split("~");
+	ilc = sqlhand.clobToString(gcor.get("items_fromlc")).split("~");
 
 	if(itag.length > 0)
 	{
@@ -575,10 +576,14 @@ void genGCO_template(String igco)
 		tmds = "";
 		try { tmds = idsc[i]; } catch (Exception e) {}
 
-		POI_CellSetAllBorders(excelWB,excelInsertString( sheet, rowcount + startadder, 1, tmtg ),wfont,true,"");
-		POI_CellSetAllBorders(excelWB,excelInsertString( sheet, rowcount + startadder, 2, tmsn ),wfont,false,"");
-		POI_CellSetAllBorders(excelWB,excelInsertString( sheet, rowcount + startadder, 3, tmds ),wfont,false,"");
-		POI_CellSetAllBorders(excelWB,excelInsertString( sheet, rowcount + startadder, 4, "" ),wfont,false,"");
+		tmlc = "";
+		try { tmlc = ilc[i]; } catch (Exception e) {}		
+
+		POI_CellSetAllBorders(excelWB,excelInsertString( sheet, rowcount + startadder, 1, tmlc ),wfont,true,"");
+		POI_CellSetAllBorders(excelWB,excelInsertString( sheet, rowcount + startadder, 2, tmtg ),wfont,true,"");
+		POI_CellSetAllBorders(excelWB,excelInsertString( sheet, rowcount + startadder, 3, tmsn ),wfont,false,"");
+		POI_CellSetAllBorders(excelWB,excelInsertString( sheet, rowcount + startadder, 4, tmds ),wfont,false,"");
+		POI_CellSetAllBorders(excelWB,excelInsertString( sheet, rowcount + startadder, 5, "" ),wfont,false,"");
 
 		rowcount++;
 		}
