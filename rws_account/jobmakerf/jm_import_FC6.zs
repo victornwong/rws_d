@@ -56,46 +56,21 @@ boolean impFC6_SOROC_record(String ivn, String ijob, int itype)
 	vtype = "5635"; // ROC
 	exttb = "u001b";
 	otype = "li.ordertypeyh";
+	dto = "li.deliverytoyh as deliverytoyh,";
 
 	switch(itype)
 	{
-		/*
-		case 1: // ROC
-			sqlstm = "select distinct d.voucherno, d.bookno, " +
-			"ac.name as customer_name, aci.telyh, aci.contactyh, aci.emailyh, li.customerrefyh, li.opsnoteyh as deliverynotes, " +
-			"li.remarksyh, li.ordertypeyh, li.deliverytoyh, " +
-			"case li.etdyh when 0 then null else convert(datetime, dbo.ConvertFocusDate(li.etdyh), 112) end as etd, " +
-			"case li.etayh when 0 then null else convert(datetime, dbo.ConvertFocusDate(li.etayh), 112) end as eta " +
-			"from data d left join mr000 ac on ac.masterid = d.bookno " +
-			"left join u0000 aci on aci.extraid=ac.masterid " +
-			"left join u001b li on li.extraid = d.extraheaderoff " +
-			"left join header hh on hh.headerid = d.headeroff " +
-			"where d.vouchertype=5635 and d.voucherno='" + ivn + "'";
-			break;
-		*/
-
 		case 2: // SO
 			vtype = "5632";
 			exttb = "u0017";
 			otype = "'USED' as ordertypeyh";
-/*
-			sqlstm = "select distinct d.voucherno, d.bookno, " +
-			"ac.name as customer_name, aci.telyh, aci.contactyh, aci.emailyh, li.customerrefyh, li.opsnoteyh as deliverynotes, " +
-			"li.remarksyh, 'USED' as ordertypeyh, li.delivertoyh as deliverytoyh, " +
-			"case li.etdyh when 0 then null else convert(datetime, dbo.ConvertFocusDate(li.etdyh), 112) end as etd, " +
-			"case li.etayh when 0 then null else convert(datetime, dbo.ConvertFocusDate(li.etayh), 112) end as eta " +
-			"from data d left join mr000 ac on ac.masterid = d.bookno " +
-			"left join u0000 aci on aci.extraid=ac.masterid " +
-			"left join u0017 li on li.extraid = d.extraheaderoff " +
-			"left join header hh on hh.headerid = d.headeroff " +
-			"where d.vouchertype=5632 and d.voucherno='" + ivn + "'";
-*/
+			dto = "li.delivertoyh as deliverytoyh,";
 			break;
 	}
 
 	sqlstm = "select distinct d.voucherno, d.bookno, " +
 	"ac.name as customer_name, aci.telyh, aci.contactyh, aci.emailyh, li.customerrefyh, li.opsnoteyh as deliverynotes, " +
-	"li.remarksyh, " + otype + ", li.delivertoyh as deliverytoyh, " +
+	"li.remarksyh, " + otype + "," + dto +
 	"case li.etdyh when 0 then null else convert(datetime, dbo.ConvertFocusDate(li.etdyh), 112) end as etd, " +
 	"case li.etayh when 0 then null else convert(datetime, dbo.ConvertFocusDate(li.etayh), 112) end as eta " +
 	"from data d left join mr000 ac on ac.masterid = d.bookno " +

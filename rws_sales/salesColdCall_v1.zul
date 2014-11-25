@@ -343,7 +343,7 @@ void actiFunc(Object iwhat)
 								<separator height="3px" />
 								<hbox>
 									<listbox id="m_customer_grade" mold="select" />
-									<button id="updgrade_b" label="Update grade" style="font-weight:bold" onClick="contFunc(self)" />
+									<button id="updgrade_b" label="Update grade" style="font-weight:bold" onClick="contFunc(self)" disabled="true" />
 								</hbox>
 							</div>
 						</hbox>
@@ -413,6 +413,11 @@ glob_current_user = useraccessobj.username;
 //listActiContacts(1,glob_current_user);
 
 //showChecklistItems( checks_holder , 1, "testgrid1" , "testrows1" );
+
+if(sechand.allowedUser(useraccessobj.username,"CAN_UPDATE_GRADE"))
+{
+	updgrade_b.setDisabled(false);
+}
 
 if(useraccessobj.username.equals("mandy") || useraccessobj.username.equals("james")) // 10/03/2014
 {

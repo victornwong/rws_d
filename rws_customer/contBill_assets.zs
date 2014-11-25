@@ -655,7 +655,7 @@ void impRWI_Extra()
 	drc = sqlhand.rws_gpSqlFirstRow(sqlstm);
 	if(drc == null) return;
 
-	String[] fl = { "name", "bookno", "cstart", "cend", "rocnoyh", "rperiod",
+	String[] fl = { "name", "bookno", "cstart", "cend", "rocnoyh", "noofinstallmentyh",
 	"remarksyh", "ordertypeyh", "insttypeyh", "contractamt", "vdate" };
 
 	Object[] ob = { customername, l_fc6_custid, i_lstartdate, i_lenddate, i_rocno, i_period,
