@@ -5,7 +5,9 @@ void genPrintQuote(String iqt)
 	qtr = getQuotation_rec(iqt);
 	if(qtr == null) { guihand.showMessageBox("DBERR: Cannot access quotations database"); return; }
 
-	rwqtstr = QUOTE_PREFIX + qtr.get("origid").toString();
+	vnm = (qtr.get("version") == null) ? "0" : qtr.get("version").toString();
+
+	rwqtstr = QUOTE_PREFIX + qtr.get("origid").toString() + " (" + vnm + ")";
 
 	templatefn = "rwimg/rwqt_general_v1.xls";
 	inpfn = session.getWebApp().getRealPath(templatefn);

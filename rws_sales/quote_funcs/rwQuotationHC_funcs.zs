@@ -24,7 +24,7 @@ void toggQuoteButts(int itype, boolean iwhat)
 void checkMakeItemsGrid()
 {
 	String[] colws = { "15px","","60px","90px","80px","80px","100px" };
-	String[] colls = { "", "Items and Specs", "Qty", "Rental/Month", "Period", "Discount", "Sub.Total" };
+	String[] colls = { "", "Items and Specs", "Qty", "Rental/Price", "Period", "Discount", "Sub.Total" };
 
 	if(qtitems_holder.getFellowIfAny("qtitems_grid") == null) // make new grid if none
 	{
@@ -251,10 +251,10 @@ void showQuoteMeta(String iwhat, int itype)
 
 	//q_origid.setValue(iwhat);
 	Object[] uicomps = { customername, q_cust_address, q_contact_person1, q_telephone, q_fax, q_email, q_origid,
-	q_creditterm, q_curcode, q_exchangerate, q_quote_discount, q_notes, q_qt_type, q_qt_validity, q_et_action, q_datecreated };
+	q_creditterm, q_curcode, q_exchangerate, q_quote_discount, q_notes, q_qt_type, q_qt_validity, q_et_action, q_datecreated, q_version, q_order_type };
 
 	String[] flds = { "customer_name", "cust_address", "contact_person1", "telephone", "fax", "email", "origid",
-	"creditterm", "curcode", "exchangerate", "quote_discount", "notes", "qt_type", "qt_validity", "et_action","datecreated" };
+	"creditterm", "curcode", "exchangerate", "quote_discount", "notes", "qt_type", "qt_validity", "et_action","datecreated", "version", "order_type" };
 
 	ngfun.populateUI_Data(uicomps, flds, qtr);
 	showQT_items(qtr);
@@ -378,6 +378,7 @@ Object[] qtslb_hds =
 	new listboxHeaderWidthObj("Dated",true,"65px"),
 	new listboxHeaderWidthObj("Customer",true,""),
 	new listboxHeaderWidthObj("Q.Type",true,"80px"),
+	new listboxHeaderWidthObj("Ord.Type",true,"80px"),
 	new listboxHeaderWidthObj("User",true,"60px"),
 	new listboxHeaderWidthObj("Status",true,"60px"),
 	new listboxHeaderWidthObj("Validity",true,"60px"),
@@ -389,14 +390,14 @@ class qtlbclk implements org.zkoss.zk.ui.event.EventListener
 	{
 		isel = event.getReference();
 		glob_sel_quote = lbhand.getListcellItemLabel(isel,0);
-		glob_sel_qstatus = lbhand.getListcellItemLabel(isel,5);
-		glob_sel_username = lbhand.getListcellItemLabel(isel,4);
+		glob_sel_qstatus = lbhand.getListcellItemLabel(isel,6);
+		glob_sel_username = lbhand.getListcellItemLabel(isel,5);
 		showQuoteMeta(glob_sel_quote,0);
 	}
 }
 qtclicker = new qtlbclk();
 
-// itype: 1=by date and search-text if any, 2=by QT
+// itype: 1=by date and search-text if any, 2=by QT, 3=by user
 void listQuotations(int itype)
 {
 	last_listqt_type = itype;
@@ -404,27 +405,32 @@ void listQuotations(int itype)
 	bqt = kiboo.replaceSingleQuotes(byqt_tb.getValue()).trim();
 	sdate = kiboo.getDateFromDatebox(startdate);
 	edate = kiboo.getDateFromDatebox(enddate);
+	byu = byuser_lb.getSelectedItem().getLabel();
 	Listbox newlb = lbhand.makeVWListbox_Width(quotes_holder, qtslb_hds, "quotations_lb", 5);
 
 	scsql = "";
 
 	switch(itype)
 	{
-		case 1:
-		scsql = "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' ";
+		case 1: // by date and search-text if any
+			scsql = "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' ";
 
-		if(!scht.equals(""))
-			scsql += "and (customer_name like '%" + scht + "%' " + 
-			"or cast(q_items as varchar(max)) like '%" + scht + "%') ";
+			if(!scht.equals(""))
+				scsql += "and (customer_name like '%" + scht + "%' " + 
+				"or cast(q_items as varchar(max)) like '%" + scht + "%') ";
 
-		break;
+			break;
 
-		case 2:
+		case 2: // by QT
 			scsql = "where origid=" + bqt;
-		break;
+			break;
+
+		case 3: // by user
+			scsql = "where username='" + byu + "' ";
+			break;
 	}
 
-	sqlstm = "select origid,datecreated,customer_name,username,qstatus,qt_type,qt_validity from rw_quotations " + scsql;
+	sqlstm = "select origid,datecreated,customer_name,username,qstatus,qt_type,qt_validity,order_type from rw_quotations " + scsql;
 
 	screcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(screcs.size() == 0) return;
@@ -433,7 +439,7 @@ void listQuotations(int itype)
 	newlb.setRows(rws); newlb.setMold("paging"); newlb.setMultiple(true);
 	newlb.addEventListener("onSelect", qtclicker );
 	ArrayList kabom = new ArrayList();
-	String[] fl = { "origid", "datecreated", "customer_name", "qt_type", "username", "qstatus", "qt_validity" }; 
+	String[] fl = { "origid", "datecreated", "customer_name", "qt_type", "order_type", "username", "qstatus", "qt_validity" }; 
 	for(d : screcs)
 	{
 		ngfun.popuListitems_Data(kabom,fl,d);

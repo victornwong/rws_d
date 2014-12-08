@@ -38,7 +38,7 @@ if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler(); guihand = new GuiFuncs();
 luhand = new LookupFuncs(); dmshand = new DMSFuncs(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
-glob_current_user = glob_sel_acticont = glob_sel_activity = glob_sel_custname = "";
+glob_current_user = glob_sel_acticont = glob_sel_activity = glob_sel_custname = glob_sel_username = "";
 glob_acticont_rec = glob_activ_rec = null;
 last_loadcont = 2;
 
@@ -97,7 +97,7 @@ void contFunc(Object iwhat)
 		bizr = a_businessroc.getValue().trim();
 		cstn = a_cust_name.getValue().trim();
 
-		topeople = "creditcontrol@rentwise.com,tony@rentwise.com,victor@rentwise.com"; // HARDCODED - change accordingly
+		topeople = "creditcontrol@rentwise.com,tony@rentwise.com"; // HARDCODED - change accordingly
 		subj = "Pre-pre-evaluation request by " + unm + " for " + cstn + " (" + bizr + ")";
 		msgb = "Pre-pre-evaluation request for this company:\n" + cstn + " (" + bizr + ")\n\n" +
 		"Please update the customer-grade in RWMS Sales Activities/Cold-Call module ASAP.";
@@ -110,6 +110,19 @@ void contFunc(Object iwhat)
 	{
 		cgd = m_customer_grade.getSelectedItem().getLabel();
 		sqlstm = "update rw_activities_contacts set customer_grade='" + cgd + "' where origid=" + glob_sel_acticont;
+
+		// 01/12/2014: james req to send notif email to requesting-user and himself when grade is updated
+		topeople = "james.thomas@rentwise.com";
+		ur = sechand.getPortalUser_Rec_username(glob_sel_username);
+		if(ur != null)
+		{
+			uem = kiboo.checkNullString( ur.get("email") );
+			topeople += (uem.equals("")) ? "" : ("," + uem);
+		}
+		cstn = a_cust_name.getValue().trim();
+		subj = "Pre-pre-evaluation grade updated for " + cstn;
+		msgb = "Go check..";
+		gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, topeople, subj, msgb);
 	}
 
 	if(!sqlstm.equals(""))

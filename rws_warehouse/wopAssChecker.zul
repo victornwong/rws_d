@@ -8,7 +8,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "WhopAssets Checker/ Location Changer / Grade Also";
-MYVERSION = "v0.2.2";
+MYVERSION = "v0.2.3";
 MY_ID = "wopassdpan";
 /*
 @Author Victor Wong
@@ -19,6 +19,7 @@ Make it to check stock-tick scanned asset against what're inside FC6 inventory t
 21/08/2014: able to change parts/assets location from here
 24/09/2014: able to change asset grade too -- req by Vimalan
 13/10/2014: repair-dept(varan) request export lb to EXCEL. Put in checks to allow only authorized ppl to change loca/grade
+08/12/2014: req vimalan, able to change asset type (DT,MT,NB..etc)
 
 */
 
@@ -151,6 +152,27 @@ void exportListbox()
 	} catch (Exception e) {}
 }
 
+void massUpdateAssetType()
+{
+	if(!lbhand.check_ListboxExist_SelectItem(fndass_holder,"fndassets_lb")) return;
+	tg = itemtype_lb.getSelectedItem().getLabel();
+	//if(tg.equals("")) return;
+
+	ags = "";
+	si = fndassets_lb.getSelectedItems().toArray();
+	for(i=0; i<si.length; i++)
+	{
+		ags += "'" + lbhand.getListcellItemLabel(si[i],0).trim() + "',";
+	}
+	try { ags = ags.substring(0,ags.length()-1); } catch (Exception e) {}
+
+	sqlstm = "update u0001 set itemtypeyh='" + tg + "' " +
+	"where extraid in (select eoff from mr001 where ltrim(rtrim(code2)) in (" + ags + "));";
+
+	sqlhand.rws_gpSqlExecuter(sqlstm);
+	checkEmAssets(last_type);
+}
+
 ]]>
 </zscript>
 
@@ -180,6 +202,8 @@ void exportListbox()
 					<button id="chgpallet_b" sclass="k9mo" label="Change pallet" onClick="massUpdatePalletLoca(palletloca_tb.getValue())" disabled="true" />
 					<listbox id="assgrade_lb" mold="select" sclass="k9" />
 					<button id="chggrade_b" sclass="k9mo" label="Change grade" onClick="massUpdateAssetGrade()" disabled="true" />
+					<listbox id="itemtype_lb" mold="select" sclass="k9" />
+					<button id="chgtype_b" sclass="k9mo" label="Change type" onClick="massUpdateAssetType()" disabled="true" />
 				</hbox>
 				<separator height="5px" />
 				<div id="fndass_holder" />
@@ -191,12 +215,16 @@ void exportListbox()
 <div id="kasiexport" visible="false" />
 <zscript>
 <![CDATA[
+
 	rws_fillListbox_uniqField("partsall_0","grade",assgrade_lb);
+	rws_fillListbox_uniqField("partsall_0","item",itemtype_lb);
+
 	// || useraccessobj.accesslevel == 9
 	if(sechand.allowedUser(useraccessobj.username,"WHOPASSET_USER"))
 	{
 		chgpallet_b.setDisabled(false);
 		chggrade_b.setDisabled(false);
+		chgtype_b.setDisabled(false);
 	}
 
 ]]>

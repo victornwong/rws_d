@@ -18,7 +18,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "RW Quotations";
-MYVERSION = "v0.2";
+MYVERSION = "v0.2.1";
 MYPANEL = "rwqtodipan";
 /*
 @Title RW Quotations new HC
@@ -27,6 +27,8 @@ MYPANEL = "rwqtodipan";
 
 NOTES:
 27/10/2014: change customername to LABEL, user cannot simply type-in. Must import from FC6 or cold-call table. Req by James
+08/12/2014: multiple req from Nisha - able to change datecreated, extra field for "version", drop-down and field to select
+ equip_order_type, additional text in the T&C
 
 */
 import java.util.*;
@@ -92,8 +94,8 @@ void doFunc(Object iwhat)
 
 	if(itype.equals("newquote_b"))
 	{
-		sqlstm = "insert into rw_quotations (customer_name,qstatus,datecreated,username) values " +
-		"('UNDEF','DRAFT','" + todaydate + "','" + useraccessobj.username + "') ";
+		sqlstm = "insert into rw_quotations (customer_name,qstatus,datecreated,username,version) values " +
+		"('UNDEF','DRAFT','" + todaydate + "','" + useraccessobj.username + "',0) ";
 		refresh = true;
 	}
 
@@ -102,14 +104,18 @@ void doFunc(Object iwhat)
 		if(glob_sel_quote.equals("")) return;
 
 		Object[] ob = { customername, q_cust_address, q_contact_person1, q_telephone, q_fax, q_email,
-		q_creditterm, q_curcode, q_exchangerate, q_quote_discount, q_notes, q_qt_type, q_qt_validity };
+		q_creditterm, q_curcode, q_exchangerate, q_quote_discount, q_notes, q_qt_type, q_qt_validity, q_datecreated, q_version, q_order_type };
 
 		dt = ngfun.getString_fromUI(ob);
+
+		vnm = "0"; // validate the version number
+		try { kk = Integer.parseInt(dt[14]); vnm = dt[14]; } catch (Exception e) {}
 
 		sqlstm = "update rw_quotations set customer_name='" + dt[0] + "', cust_address='" + dt[1] + "'," +
 		"contact_person1='" + dt[2] + "', telephone='" + dt[3] + "', fax='" + dt[4] + "', email='" + dt[5] + "'," +
 		"creditterm='" + dt[6] + "', curcode='" + dt[7] + "', exchangerate='" + dt[8] + "',quote_discount='" + dt[9] + "'," +
-		"notes='" + dt[10] + "',qt_type='" + dt[11] + "', qt_validity='" + dt[12] + "' where origid=" + glob_sel_quote;
+		"notes='" + dt[10] + "',qt_type='" + dt[11] + "', qt_validity='" + dt[12] + "', " +
+		"datecreated='" + dt[13] + "', version=" + vnm + ", order_type='" + dt[15] + "' where origid=" + glob_sel_quote;
 
 		refresh = true;
 	}
@@ -174,7 +180,7 @@ void adminFunc(Object iwhat)
 
 	if(itype.equals("delpr_b"))
 	{
-		if (Messagebox.show("Hard delete this quotation", "Are you sure?", 
+		if(Messagebox.show("Hard delete this quotation", "Are you sure?",
 			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
 
 		sqlstm = "delete from rw_quotations where origid=" + glob_sel_quote;
@@ -399,6 +405,9 @@ testing
 			<textbox id="byqt_tb" width="70px" sclass="k9" />
 			<button label="by QT" sclass="k9" onClick="listQuotations(2)" />
 
+			<listbox id="byuser_lb" mold="select" sclass="k9" width="99%" />
+			<button label="by user" sclass="k9" onClick="listQuotations(3)" />
+
 			<separator width="10px" />
 			<button id="admin_bb" label="ADMIN" style="font-size:9px;color:#ff0000" visible="false" onClick="adminpop.open(self)" />
 		</hbox>
@@ -433,7 +442,9 @@ testing
 								<label id="q_origid" style="font-size:14px;font-weight:bold" />
 								<hbox>
 									<label value="Dated: " />
-									<label id="q_datecreated" />
+									<datebox id="q_datecreated" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
+									<label value="Version: " />
+									<textbox id="q_version" width="50px" value="0" />
 								</hbox>
 								<label value="JobID" />
 								<label id="p_job_id" style="font-weight:bold" />
@@ -543,6 +554,8 @@ testing
 
 <zscript>
 <![CDATA[
+
+fillListbox_uniqField("rw_quotations", "username", byuser_lb);
 
 qtmetaform = dynamicForm(qtform_holder, "qtmetaform_grid", "17");
 kiboo.setTodayDatebox(q_et_action);

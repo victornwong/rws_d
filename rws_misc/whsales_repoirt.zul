@@ -85,6 +85,7 @@ invposi = 0;
 itmposi = 7;
 amtposi = 8;
 paytyposi = 9;
+teamposi = 6;
 
 void showWHSinvoices()
 {
@@ -116,7 +117,18 @@ void showWHSinvoices()
 	for(d : ml) // find invoices with "credit card" charge item
 	{
 		dt = lbhand.getListcellItemLabel(d,itmposi).toUpperCase();
-		if(dt.indexOf("CREDIT CARD") != -1) kh.put( lbhand.getListcellItemLabel(d,0) , 1);
+		if(dt.indexOf("CREDIT CARD") != -1)
+		{
+			kh.put( lbhand.getListcellItemLabel(d,0) , 1);
+		}
+		else
+		{
+			dt2 = lbhand.getListcellItemLabel(d,teamposi).toUpperCase();
+			if(dt2.indexOf("CARD") != -1)
+			{
+				kh.put( lbhand.getListcellItemLabel(d,0) , 1);
+			}
+		}
 	}
 
 	for(d : ml) // update list-rows whose invoice = kh
@@ -173,6 +185,7 @@ Object[] whsasseshds =
 	new listboxHeaderWidthObj("Item",true,""),
 	new listboxHeaderWidthObj("S/Num",true,"80px"),
 	new listboxHeaderWidthObj("Grade",true,"80px"),
+	new listboxHeaderWidthObj("Team",true,"80px"),
 };
 
 void whsextractAssTags()
@@ -182,6 +195,7 @@ void whsextractAssTags()
 	atgs = fdups = "";
 	katgs = new HashMap();
 	kinvs = new HashMap();
+	ktms = new HashMap();
 	ml = whsalesinv_lb.getItems();
 	for(d : ml)
 	{
@@ -197,7 +211,8 @@ void whsextractAssTags()
 				if(katgs.containsKey(hh)) fdups += hh + ", ";
 				katgs.put(hh,1);
 
-				kinvs.put(hh,lbhand.getListcellItemLabel(d,invposi));
+				kinvs.put(hh, lbhand.getListcellItemLabel(d,invposi));
+				ktms.put(hh, lbhand.getListcellItemLabel(d,teamposi) );
 			}
 		}
 		//if(dt.indexOf("CREDIT CARD") != -1) kh.put( lbhand.getListcellItemLabel(d,0) , 1);
@@ -210,6 +225,8 @@ void whsextractAssTags()
 	}
 
 	try { atgs = atgs.substring(0,atgs.length()-1); } catch (Exception e) {}
+
+	if(atgs.trim().equals("")) return;
 
 	sqlstm = "select name,assettag,serial,grade from partsall_0 where assettag in (" + atgs + ") order by assettag;";
 	r = sqlhand.rws_gpSqlGetRows(sqlstm);
@@ -241,12 +258,13 @@ void whsextractAssTags()
 				kabom.add( dr.get("name") );
 				kabom.add( dr.get("serial") );
 				kabom.add( dr.get("grade") );
+				kabom.add( ktms.get(mk) );
 			}
 		}
 		else
 		{
 			kabom.add( kinvs.get(mk) );
-			for(j=0;j<3;j++) { kabom.add(""); }
+			for(j=0;j<4;j++) { kabom.add(""); }
 			styl = "background:#F533C4;font-size:9px";
 		}
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false",styl);

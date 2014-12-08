@@ -305,7 +305,7 @@ void showAllRiskSched()
 */
 
 	"ro.name as itemname, " +
-	"iy.gross, cast((iy.quantity*-1) as int) as unitqty, " +
+	"iy.gross, iy.input0 as unitqty, " +
 	"ri.remarksyh, d.bookno " +
 	"from data d left join mr000 a on a.masterid = d.bookno " +
 	"left join mr008 ro on ro.masterid = d.tags6 " +

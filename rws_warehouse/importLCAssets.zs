@@ -61,11 +61,6 @@ Object[] imtrnhds =
 	for(d : rcs)
 	{
 		ngfun.popuListitems_Data(kabom,fl,d);
-		/*
-		kabom.add(kiboo.checkNullString(d.get("lc_id")));
-		kabom.add( d.get("astc").toString() );
-		kabom.add( d.get("lc_id") );
-		*/
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","font-weight:bold");
 		kabom.clear();
 	}
@@ -96,10 +91,6 @@ Object[] pimtrnhds =
 	for(d : rcs)
 	{
 		ngfun.popuListitems_Data(kabom,fl,d);
-		/*
-		kabom.add( d.get("partner_pr").toString() );
-		kabom.add( (d.get("gcn_id") == null) ? "" : d.get("gcn_id").toString() );
-		*/
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
 	}
@@ -141,7 +132,6 @@ void impFromCSV_replacements(String igco)
 
 	sqlstm += "update rw_goodscollection set sv_no='" + csvlist + "' where origid=" + igco;
 	sqlhand.gpSqlExecuter(sqlstm);
-	//alert(sqlstm + " >> " + csvlist);
 }
 
 // 27/12/2013: show transient-items from partner's replacement requests
@@ -186,20 +176,6 @@ void impFromPartnersReplacements(String igco)
 	for(d : rcs)
 	{
 		addRow_Imported_Things( d.get("asset_tag"), kiboo.checkNullString(d.get("serial_no")), d.get("item_desc"), "" );
-		/*
-		nrw = new org.zkoss.zul.Row();
-		nrw.setParent(items_rows);
-
-		gpMakeCheckbox(nrw,"","","");
-		gpMakeTextbox(nrw,"",d.get("asset_tag"),"","99%"); // ass-tag
-		gpMakeTextbox(nrw,"",kiboo.checkNullString(d.get("serial_no")),"font-size:9px","99%"); // S/N
-		kbb = gpMakeTextbox(nrw,"",d.get("item_desc"),"font-size:9px","99%");
-		kbb.setMultiline(true);
-		kbb.setHeight("40px");
-
-		ckb = gpMakeCheckbox(nrw,"","","");
-		ckb.setDisabled(true);
-		*/
 	}
 
 	sqlstm = "update rw_gcn_transient set gcn_id=" + igco + " where partner_pr=" + preq + ";";
@@ -232,19 +208,6 @@ void impTransientAssets()
 	for(d : rcs)
 	{
 		addRow_Imported_Things( d.get("asset_tag"), d.get("serial_no"), d.get("item_desc"), d.get("lc_id") );
-		/*
-		nrw = new org.zkoss.zul.Row();
-		nrw.setParent(items_rows);
-		gpMakeCheckbox(nrw,"","","");
-		gpMakeTextbox(nrw,"",d.get("asset_tag"),"","99%"); // ass-tag
-		gpMakeTextbox(nrw,"",d.get("serial_no"),"font-size:9px","99%"); // S/N
-		kbb = gpMakeTextbox(nrw,"",d.get("item_desc"),"font-size:9px","99%");
-		kbb.setMultiline(true);
-		kbb.setHeight("40px");
-		ckb = gpMakeCheckbox(nrw,"","","");
-		ckb.setDisabled(true);
-		gpMakeTextbox(nrw,"",d.get("lc_id"),"font-size:9px","99%"); // 25/06/2014: from-LC box
-		*/
 
 		usql += "update rw_lc_equips set gcn_id=" + glob_sel_gco +
 		" where lc_parent=(select origid from rw_lc_records where lc_id='" + d.get("lc_id") + "')"  +
@@ -292,18 +255,6 @@ void impTransientAssets_1by1()
 	for(d : rcs)
 	{
 		addRow_Imported_Things( d.get("asset_tag"), d.get("serial_no"), d.get("item_desc"), "" );
-/*
-		nrw = new org.zkoss.zul.Row();
-		nrw.setParent(items_rows);
-		gpMakeCheckbox(nrw,"","","");
-		gpMakeTextbox(nrw,"",d.get("asset_tag"),"","99%"); // ass-tag
-		gpMakeTextbox(nrw,"",d.get("serial_no"),"font-size:9px","99%"); // S/N
-		kbb = gpMakeTextbox(nrw,"",d.get("item_desc"),"font-size:9px","99%");
-		kbb.setMultiline(true);
-		kbb.setHeight("40px");
-		ckb = gpMakeCheckbox(nrw,"","","");
-		ckb.setDisabled(true);
-*/
 	}
 
 	imptransient_pop.close();
@@ -376,13 +327,6 @@ void loadShowLCAssets(Object itxtb)
 	for(dpi : asrs)
 	{
 		ngfun.popuListitems_Data(kabom,fl,dpi);
-		/*
-		kabom.add(kiboo.checkNullString(dpi.get("asset_tag")));
-		kabom.add(kiboo.checkNullString(dpi.get("serial_no")));
-		kabom.add(kiboo.checkNullString(dpi.get("type")));
-		kabom.add(kiboo.checkNullString(dpi.get("brand")));
-		kabom.add(kiboo.checkNullString(dpi.get("model")));
-		*/
 		krem = kiboo.checkNullString(dpi.get("remarks"));
 		if(krem.length() > 40) krem = krem.substring(0,40) + "..";
 		kabom.add(krem);
@@ -415,6 +359,22 @@ void procImpAssetTags()
 
 	impasset_pop.close();
 	impLCAssets_callback(sats,ssn,sdes);
+}
+
+// 08/12/2014: import from FC6-DO .. everything, then user can remove unwanted
+void importFromFC6_DO()
+{
+	if(flexi_impdoass_holder.getFellowIfAny("flximpfc6dolb") == null) return;
+	sels = flximpfc6dolb.getItems().toArray();
+	don = "DO" + flexfc6do_tb.getValue().trim();
+	for(i=0; i<sels.length; i++)
+	{
+		ast = lbhand.getListcellItemLabel(sels[i],0);
+		asn = lbhand.getListcellItemLabel(sels[i],1);
+		asd = lbhand.getListcellItemLabel(sels[i],2);
+		addRow_Imported_Things(ast,asn,asd,don);
+	}
+
 }
 
 /*

@@ -9,7 +9,7 @@ itype:
 */ 
 void disableButts(int itype, boolean iwhat)
 {
-	Object[] ibuts = { assigncust_b, updategco_b, additem_b, removeitem_b, imptransient_b, imppartreq_b, impfromcsv_b };
+	Object[] ibuts = { assigncust_b, updategco_b, additem_b, removeitem_b, imptransient_b, imppartreq_b, impfromcsv_b, impfromdo_b };
 	switch(itype)
 	{
 		case 1:
@@ -69,7 +69,7 @@ void checkCreateCollectGrid()
 	rws.setId("items_rows");
 	rws.setParent(grd);
 
-	String[] colhed = { "","Asset Tag","S/N","Description","Col","FromLC" };
+	String[] colhed = { "","Asset Tag","S/N","Description","Col","FromLC/DO" };
 	kcols = new org.zkoss.zul.Columns();
 	kcols.setParent(grd);
 	for(i=0;i<colhed.length;i++)

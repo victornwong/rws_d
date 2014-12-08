@@ -1,6 +1,7 @@
 import java.util.regex.*;
 import org.victor.*;
 // Asset related funcs for contractBillingTrack_v1.zul
+// 04/12/2014: added city and state field for asset-location, req by Leanne
 
 void showAssetMetadata(String iwhat)
 {
@@ -10,14 +11,14 @@ void showAssetMetadata(String iwhat)
 	Object[] metflds = {
 	m_asset_tag,m_brand,m_model,m_battery,m_hdd,m_hdd2,m_hdd3,m_hdd4,m_ram,m_ram2,m_ram3,m_ram4,
 	m_gfxcard,m_mouse,m_keyboard,m_monitor,m_poweradaptor,coa1,coa2,coa3,coa4,m_misc,m_cust_location,
-	m_type,osversion,offapps,m_serial_no, m_rm_month, m_qty, m_do_no
+	m_type,osversion,offapps,m_serial_no, m_rm_month, m_qty, m_do_no, m_loca_city, m_loca_state
 	};
 
 	String[] metfnms = {
 	"asset_tag","brand","model","battery","hdd","hdd2","hdd3","hdd4","ram","ram2","ram3","ram4",
 	"gfxcard","mouse","keyboard","monitor","poweradaptor","coa1","coa2","coa3","coa4",
 	"remarks","cust_location",
-	"type","osversion","offapps","serial_no", "RM_Month", "qty", "do_no"
+	"type","osversion","offapps","serial_no", "RM_Month", "qty", "do_no", "loca_city", "loca_state"
 	};
 	
 	ngfun.clearUI_Field(metflds);
@@ -124,7 +125,8 @@ void assFunc(Object iwhat)
 		m_asset_tag, m_brand, m_model, m_battery, m_hdd, m_hdd2, m_hdd3, m_hdd4,
 		m_ram, m_ram2, m_ram3, m_ram4, m_gfxcard, m_mouse, m_keyboard, m_monitor,
 		coa1, coa2, coa3, coa4, osversion, offapps, m_misc,
-		m_type, m_cust_location, m_poweradaptor, m_serial_no, m_rm_month, m_qty, m_do_no
+		m_type, m_cust_location, m_poweradaptor, m_serial_no, m_rm_month, m_qty, m_do_no,
+		m_loca_city, m_loca_state
 		};
 
 		inpdat = ngfun.getString_fromUI(inpflds);
@@ -138,7 +140,7 @@ void assFunc(Object iwhat)
 		"coa1='" + inpdat[16] + "', coa2='" + inpdat[17] + "', coa3='" + inpdat[18] + "', coa4='" + inpdat[19] + "'," +
 		"osversion='" + inpdat[20] + "', offapps='" + inpdat[21] + "', remarks='" + inpdat[22] + "', type='" + inpdat[23] + "'," + 
 		"cust_location='" + inpdat[24] + "', poweradaptor='" + inpdat[25] + "', serial_no='" + inpdat[26] + "', rm_month=" + inpdat[27] +
-		", qty=" + inpdat[28] + ", do_no='" + inpdat[29] + "' where origid=" + glob_selected_ass;
+		", qty=" + inpdat[28] + ", do_no='" + inpdat[29] + "', loca_city='" + inpdat[30] + "', loca_state='" + inpdat[31] + "' where origid=" + glob_selected_ass;
 
 		refresh_wass = true;
 	}

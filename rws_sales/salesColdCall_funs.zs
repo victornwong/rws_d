@@ -89,13 +89,18 @@ Object[] actconthds =
 	new listboxHeaderWidthObj("Divs",true,"70px"),
 };
 
+USERNAME_POSI = 9;
+
 class acticontclk implements org.zkoss.zk.ui.event.EventListener
 {
 	public void onEvent(Event event) throws UiException
 	{
 		isel = event.getReference();
+
 		glob_sel_acticont = lbhand.getListcellItemLabel(isel,0);
 		glob_sel_custname = lbhand.getListcellItemLabel(isel,1);
+		glob_sel_username = lbhand.getListcellItemLabel(isel,USERNAME_POSI);
+
 		showActiContactMeta(glob_sel_acticont);
 		listActivities(glob_sel_acticont);
 		listTiedQuotations(glob_sel_custname);

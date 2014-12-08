@@ -14,11 +14,12 @@
 <zscript src="./goodsCollection_funcs.zs" />
 <zscript src="./auditQC_funcs.zs" />
 <zscript src="../rws_account/GRNMRN_winShow.zs" />
+<zscript src="../rws_customer/contImport_funcs.zs" />
 
 <zscript>
 <![CDATA[
 MYTITLE = "Goods Collection Note / Order";
-MYVERSION = "v0.2.4";
+MYVERSION = "v0.2.5";
 MYPANEL = "goodscolpa";
 /*
 @Title Goods/assets collection management
@@ -34,6 +35,7 @@ Collection-list status : complete, partial, pending
 18/08/2014: remove GCO-id from LC's assets if GCO is partial and assets not collected - req Huiping (updLC_GCO_links())
 19/08/2014: list gco by username and between dates
 07/11/2014: filter to list by status
+08/12/2014: req by farah/huiping: able to import assets from DO - uses codes from LC module
 
 */
 import java.util.*;
@@ -522,6 +524,22 @@ BOXWIDTH = "800px";
 	</div>
 </popup>
 
+<popup id="fleximportfc6_pop"> <!-- knockoff from contractbillingtrack_v1.zul -->
+	<div sclass="shadowbox" style="background:#5c0404;" width="600px" >
+		<hbox>
+			<label style="color:#ffffff" value="FC6 DO" />
+			<textbox id="flexfc6do_tb" />
+			<button label="Load DO items" onClick='show_FC_DO(impfromdo_b,2,flexi_impdoass_holder,"flximpfc6dolb")' />
+		</hbox>
+		<separator height="3px" />
+		<label id="flximp_lbl" />
+		<label id="imp_do_lbl" sclass="subhead" visible="false" />
+		<div id="flexi_impdoass_holder" />
+		<separator height="3px" />
+		<button id="flexi_impDOass_b" label="Import them assets" onClick="fleximportfc6_pop.close(); importFromFC6_DO()" />
+	</div>
+</popup>
+
 <style src="/real-world.css" />
 <style>
 .GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
@@ -652,6 +670,8 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 
 				<button id="impfromcsv_b" label="Imp. from CSV" class="k9"
 				onClick="showTransientItems_byCSV(global_selected_customerid,impcsvs_holder); impcsvs_pop.open(self)" />
+
+				<button id="impfromdo_b" label="Imp. from FC6-DO" class="k9" onClick="fleximportfc6_pop.open(impfromdo_b)" />
 
 				<button id="saveitems_b" label="SAVE" sclass="k9mo" onClick="doFunc(self)" />
 				<button id="updatelc_b" label="Update LC-link" sclass="k9mo" onClick="doFunc(self)" />
