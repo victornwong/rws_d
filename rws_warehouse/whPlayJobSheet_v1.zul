@@ -248,6 +248,7 @@ void reallyTransferItemsToProd()
 	if(!sqlstm.equals(""))
 	{
 		//f30_gpSqlExecuter(sqlstm);
+
 		sqlhand.rws_gpSqlExecuter(sqlstm);
 
 		// Commit/transfer to prod audit-log and set rw_jobpicklist.ackby/ackdate
@@ -259,7 +260,6 @@ void reallyTransferItemsToProd()
 		"ackdate='" + kiboo.todayISODateTimeString() + "' where origid=" + glob_sel_jobsheet;
 
 		sqlhand.gpSqlExecuter(sqlstm);
-
 		guihand.showMessageBox("OK: Assets transferred to PROD..");
 	}
 }

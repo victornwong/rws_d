@@ -19,7 +19,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "Goods Collection Note / Order";
-MYVERSION = "v0.2.5";
+MYVERSION = "v0.2.6";
 MYPANEL = "goodscolpa";
 /*
 @Title Goods/assets collection management
@@ -36,6 +36,7 @@ Collection-list status : complete, partial, pending
 19/08/2014: list gco by username and between dates
 07/11/2014: filter to list by status
 08/12/2014: req by farah/huiping: able to import assets from DO - uses codes from LC module
+10/12/2014: req huiping, CANCEL status, check gco not COMPLETE/PARTIAL, then ask for reason and audit-log
 
 */
 import java.util.*;
@@ -273,6 +274,28 @@ void doFunc(Object iwhat)
 		updLC_GCO_links();
 	}
 
+	if(itype.equals("cancelgco_b")) // 10/12/2014: cancel a gco, check GCO for not COMPLETE/PARTIAL
+	{
+		if(glob_sel_gco.equals("")) return;
+		rsn = kiboo.replaceSingleQuotes(reasontocancel_tb.getValue().trim());
+		if(rsn.equals("")) return;
+
+		if(glob_sel_status.equals("COMPLETE") || glob_sel_status.equals("PARTIAL"))
+		{
+			msgtext = "ERR: GCO already completed or partially-collected, cannot CANCEL";
+		}
+		else
+		{
+			sqlstm = "update rw_goodscollection set status='CANCEL' where origid=" + glob_sel_gco;
+			refresh = true;
+			add_RWAuditLog(lnkc, "", "CANCEL CGO, reason: " + rsn, useraccessobj.username);
+			disableButts(1,true);
+			disableButts(2,true);
+			// TODO send email to GCO creator when someone do cancel
+		}
+
+	}
+
 	if(itype.equals("importitems_b"))
 	{
 	}
@@ -365,7 +388,6 @@ BOXWIDTH = "800px";
 <popup id="adminpopup">
 	<div>
 		<vbox>
-			<button id="setnew_b" label="set NEW" onClick="adminFunc(self)" />
 			<button id="clrtransimp_b" label="Clear transient import" onClick="adminFunc(self)" />
 			<button id="delete_b" label="DELETE" onClick="adminFunc(self)" />
 			<separator height="2px" />
@@ -540,6 +562,16 @@ BOXWIDTH = "800px";
 	</div>
 </popup>
 
+<popup id="cancelgcopop">
+	<div sclass="shadowbox" style="background:#E23535;">
+		<vbox>
+			<label value="REASON TO CANCEL" style="font-weight:bold" />
+			<textbox id="reasontocancel_tb" multiline="true" width="400px" height="70px" />
+			<button id="cancelgco_b" label="CANCEL GCO" onClick="cancelgcopop.close(); doFunc(self)" />
+		</vbox>
+	</div>
+</popup>
+
 <style src="/real-world.css" />
 <style>
 .GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
@@ -553,150 +585,152 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
 <panelchildren style="background:#619BC2">
 
-<div sclass="shadowbox" style="background:#2e3436;" >
-<hbox>
-	<label value="Start" sclass="k9b" />
-	<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
-	<label value="End" sclass="k9b" />
-	<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
-	<textbox id="searhtxt_tb" width="100px" class="k9" />
-	<button label="Load/Search" sclass="k9mo" onClick="showGoodsCollection(1)" />
-	<textbox id="asstga_tb" sclass="k9" width="70px" />
-	<button sclass="k9mo" label="by asset-tag" onClick="showGoodsCollection(4)" />
-	<textbox id="searchgco_tb" sclass="k9" width="40px" />
-	<button label="by GCO" sclass="k9mo" onClick="showGoodsCollection(2)" />
-
-	<button label="Filters" sclass="k9mo" onClick="filterspop.open(self)" />
-	<button id="admin_b" label="Admin" visible="false" sclass="k9mo" style="color:#cc0000" onClick="adminpopup.open(self)" />
-</hbox>
-</div>
-<separator height="3px" />
-
-<div sclass="shadowbox" style="background:#2e3436;" >
+	<div sclass="shadowbox" style="background:#2e3436;" >
 	<hbox>
-		<button id="newcollection_b" sclass="k9mo" label="New collection" onClick="doFunc(self)" />
-		<button id="submit_b" sclass="k9mo" label="Submit" onClick="doFunc(self)" />
-		<button id="ackjob_b" sclass="k9mo" label="Acknowledge" onClick="doFunc(self)" />
-		<button id="pickup_b" sclass="k9mo" label="Transp.Pickup" onClick="doFunc(self)" />
-		<button id="print_b" sclass="k9mo" label="Print" onClick="doFunc(self)" />
-		<!-- <button id="complete_b" label="Complete" onClick="doFunc(self)" /> -->
-		<button label="Export EXCEL" sclass="k9mo" onClick="exportGCOList()" />
-		<separator width="20px" />
-		<button id="opadt_b" sclass="k9mo" label="View ADT/QC" onClick="loadADT_things(); viewadt_pop.open(glob_sel_gcoli);" />
-		<button id="vwtgrn_b" sclass="k9mo" label="View T.GRN" onClick="doFunc(self)" />
-		<button id="vwmrns_b" sclass="k9mo" label="View MRN" onClick="doFunc(self)" />
+		<label value="Start" sclass="k9b" />
+		<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
+		<label value="End" sclass="k9b" />
+		<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
+		<textbox id="searhtxt_tb" sclass="k9" />
+		<button label="Load/Search" sclass="k9mo" onClick="showGoodsCollection(1)" />
+		<textbox id="asstga_tb" sclass="k9" width="70px" />
+		<button sclass="k9mo" label="by asset-tag" onClick="showGoodsCollection(4)" />
+		<textbox id="searchgco_tb" sclass="k9" width="40px" />
+		<button label="by GCO" sclass="k9mo" onClick="showGoodsCollection(2)" />
+
+		<button label="Filters" sclass="k9mo" onClick="filterspop.open(self)" />
+		<button id="admin_b" label="Admin" visible="false" sclass="k9mo" style="color:#cc0000" onClick="adminpopup.open(self)" />
 	</hbox>
+	</div>
 	<separator height="3px" />
-	<div id="collections_holder" />
-</div>
 
-<tabbox id="workarea"  visible="false">
-	<tabs>
-		<tab label="Customer and transporter" />
-		<tab label="Collect items" />
-		<tab label="Attachments" />
-	</tabs>
-	<tabpanels>
-		<tabpanel> <!-- customer/transporter -->
-			<div sclass="shadowbox" style="background:#2e3436;" width="${BOXWIDTH}" >
-			<grid>
-				<rows>
-					<row>
-						<label value="GCO" style="font-size:9px;font-weight:bold" />
-						<label id="collection_id_lbl" style="font-weight:bold" />
-						<label id="fc6custid_lbl" class="k9" />
-					</row>
-					<row>
-						<label value="Customer" class="k9" />
-						<label id="customername" style="font-weight:bold" />
-						<button id="assigncust_b" label="Assign customer" style="font-weight:bold;font-size:9px" onClick="pickcustomer_popup.open(glob_sel_gcoli)" />
-					</row>
-				</rows>
-			</grid>
-			<separator height="3px" />
-			<button id="updategco_b" label="Update GCO details" style="font-weight:bold" onClick="doFunc(self)" />
-			<button id="showaudit_b" label="Audit logs" onClick="showGCOauditlogs(self)" />
-			<separator height="3px" />
-			<div id="collectionform_holder" />
-			<separator height="3px" />
+	<div sclass="shadowbox" style="background:#2e3436;" >
+		<hbox>
+			<button id="newcollection_b" sclass="k9mo" label="New collection" onClick="doFunc(self)" />
+			<button id="submit_b" sclass="k9mo" label="Submit" onClick="doFunc(self)" />
+			<button id="ackjob_b" sclass="k9mo" label="Acknowledge" onClick="doFunc(self)" />
+			<button label="CANCEL" sclass="k9mo" style="color:#F52222" onClick='reasontocancel_tb.setValue(""); cancelgcopop.open(self)' />
+			<button id="pickup_b" sclass="k9mo" label="Transp.Pickup" onClick="doFunc(self)" />
+			<button id="print_b" sclass="k9mo" label="Print" onClick="doFunc(self)" />
+			<!-- <button id="complete_b" label="Complete" onClick="doFunc(self)" /> -->
+			<button id="setnew_b" label="SET NEW" sclass="k9mo" style="color:#F52222" onClick="adminFunc(self)" visible="false" />
+			<button label="Export EXCEL" sclass="k9mo" onClick="exportGCOList()" />
+			<separator width="20px" />
+			<button id="opadt_b" sclass="k9mo" label="View ADT/QC" onClick="loadADT_things(); viewadt_pop.open(glob_sel_gcoli);" />
+			<button id="vwtgrn_b" sclass="k9mo" label="View T.GRN" onClick="doFunc(self)" />
+			<button id="vwmrns_b" sclass="k9mo" label="View MRN" onClick="doFunc(self)" />
+		</hbox>
+		<separator height="3px" />
+		<div id="collections_holder" />
+	</div>
 
-			<grid>
-				<rows>
-					<row spans="6" style="background:#eb0904">
-						<label sclass="blink" style=";color:#ffffff;font-size:14px;font-weight:bold;">
-						DO NOT USE NATIONWIDE EXPRESS COURIER SERVICES BERHAD FOR MARIGOLD KULIM
-						</label>
-					</row>
-					<row style="background:#204a87">
-						<label value="Transporter" style="color:#ffffff" />
-						<listbox id="g_transporter" mold="select" />
-						<label value="Ref No." style="color:#ffffff" />
-						<textbox id="g_transp_ref" />
-						<label value="Region" style="color:#ffffff" />
-						<listbox id="g_logregion" mold="select" />
-					</row>
-					<row style="background:#204a87" >
-						<label value="Act.Date" style="color:#ffffff" />
-						<datebox id="g_res_date" format="yyyy-MM-dd" onCreate="kiboo.setTodayDatebox(self);" />
-						<label value="CSV" style="color:#ffffff" />
-						<textbox id="g_sv_no" />
-						<label value="Partner" style="color:#ffffff" />
-						<listbox id="g_opartner" mold="select" />
-					</row>
-					<row style="background:#204a87" spans="1,5">
-						<label value="TEMP GRN" style="color:#ffffff" />
-						<textbox id="g_tempgrn" />
-					</row>
-					<row spans="6" style="background:#204a87">
-						<button id="savetransp_b" label="Save progress info" style="font-weight:bold" onClick="doFunc(self)" />
-					</row>
-				</rows>
-			</grid>
-			</div>
-		</tabpanel>
-
-		<tabpanel> <!-- collect items -->
-			<div sclass="shadowbox" style="background:#555753" width="${BOXWIDTH}">
-			<hbox>
-				<button id="additem_b" label="Add collection item" class="k9" onClick="doFunc(self)" />
-				<button id="removeitem_b" label="Remove item" class="k9" style="color:#CD1010" onClick="doFunc(self)" />
-				<!--
-				<button id="importitems_b" label="Import" style="font-size:9px" onClick="impasset_pop.open(additem_b)" />
-				-->
-				<button id="imptransient_b" label="Imp. from LC" class="k9" onClick="showTransientItems_bycustomer();imptransient_pop.open(self)" />
-
-				<button id="imppartreq_b" label="Imp. from partner" class="k9"
-				onClick="showTransientItems_bypartner(global_selected_customerid, imppartners_holder); imppartnerreq_pop.open(self)" />
-
-				<button id="impfromcsv_b" label="Imp. from CSV" class="k9"
-				onClick="showTransientItems_byCSV(global_selected_customerid,impcsvs_holder); impcsvs_pop.open(self)" />
-
-				<button id="impfromdo_b" label="Imp. from FC6-DO" class="k9" onClick="fleximportfc6_pop.open(impfromdo_b)" />
-
-				<button id="saveitems_b" label="SAVE" sclass="k9mo" onClick="doFunc(self)" />
-				<button id="updatelc_b" label="Update LC-link" sclass="k9mo" onClick="doFunc(self)" />
-			</hbox>
-			<separator height="3px" />
-			<div id="pitems_holder" />
-			</div>
-		</tabpanel>
-
-		<tabpanel> <!-- attachments -->
-			<div sclass="shadowbox" style="background:#555753" id="docholder" width="${BOXWIDTH}">
-				<label sclass="subhead1">ATTACHMENT / DOCUMENTS</label>
+	<tabbox id="workarea" visible="false">
+		<tabs>
+			<tab label="Customer and transporter" />
+			<tab label="Collect items" />
+			<tab label="Attachments" />
+		</tabs>
+		<tabpanels>
+			<tabpanel> <!-- customer/transporter -->
+				<div sclass="shadowbox" style="background:#2e3436;" width="${BOXWIDTH}" >
+				<grid>
+					<rows>
+						<row>
+							<label value="GCO" style="font-size:9px;font-weight:bold" />
+							<label id="collection_id_lbl" style="font-weight:bold" />
+							<label id="fc6custid_lbl" class="k9" />
+						</row>
+						<row>
+							<label value="Customer" class="k9" />
+							<label id="customername" style="font-weight:bold" />
+							<button id="assigncust_b" label="Assign customer" style="font-weight:bold;font-size:9px" onClick="pickcustomer_popup.open(glob_sel_gcoli)" />
+						</row>
+					</rows>
+				</grid>
 				<separator height="3px" />
+				<button id="updategco_b" label="Update GCO details" style="font-weight:bold" onClick="doFunc(self)" />
+				<button id="showaudit_b" label="Audit logs" onClick="showGCOauditlogs(self)" />
+				<separator height="3px" />
+				<div id="collectionform_holder" />
+				<separator height="3px" />
+
+				<grid>
+					<rows>
+						<row spans="6" style="background:#eb0904">
+							<label sclass="blink" style=";color:#ffffff;font-size:14px;font-weight:bold;">
+							DO NOT USE NATIONWIDE EXPRESS COURIER SERVICES BERHAD FOR MARIGOLD KULIM
+							</label>
+						</row>
+						<row style="background:#204a87">
+							<label value="Transporter" style="color:#ffffff" />
+							<listbox id="g_transporter" mold="select" />
+							<label value="Ref No." style="color:#ffffff" />
+							<textbox id="g_transp_ref" />
+							<label value="Region" style="color:#ffffff" />
+							<listbox id="g_logregion" mold="select" />
+						</row>
+						<row style="background:#204a87" >
+							<label value="Act.Date" style="color:#ffffff" />
+							<datebox id="g_res_date" format="yyyy-MM-dd" onCreate="kiboo.setTodayDatebox(self);" />
+							<label value="CSV" style="color:#ffffff" />
+							<textbox id="g_sv_no" />
+							<label value="Partner" style="color:#ffffff" />
+							<listbox id="g_opartner" mold="select" />
+						</row>
+						<row style="background:#204a87" spans="1,5">
+							<label value="TEMP GRN" style="color:#ffffff" />
+							<textbox id="g_tempgrn" />
+						</row>
+						<row spans="6" style="background:#204a87">
+							<button id="savetransp_b" label="Save progress info" style="font-weight:bold" onClick="doFunc(self)" />
+						</row>
+					</rows>
+				</grid>
+				</div>
+			</tabpanel>
+
+			<tabpanel> <!-- collect items -->
+				<div sclass="shadowbox" style="background:#555753" width="${BOXWIDTH}">
 				<hbox>
-					<button id="uploaddoc_btn" label="Upload file" class="k9" onClick="showUploadPopup(COLLECTION_PREFIX,glob_sel_gco)" />
-					<button id="viewdoc_btn" label="View file" class="k9" onClick="viewFile()" />
-					<button id="editdoc_btn" label="Update" class="k9" onClick="updatefiledesc_popup.open(self)" />
-					<button id="deletedoc_btn" label="Delete" class="k9" onClick="deleteFile(documents_holder,COLLECTION_PREFIX,glob_sel_gco)" />
+					<button id="additem_b" label="Add collection item" class="k9" onClick="doFunc(self)" />
+					<button id="removeitem_b" label="Remove item" class="k9" style="color:#CD1010" onClick="doFunc(self)" />
+					<!--
+					<button id="importitems_b" label="Import" style="font-size:9px" onClick="impasset_pop.open(additem_b)" />
+					-->
+					<button id="imptransient_b" label="Imp. from LC" class="k9" onClick="showTransientItems_bycustomer();imptransient_pop.open(self)" />
+
+					<button id="imppartreq_b" label="Imp. from partner" class="k9"
+					onClick="showTransientItems_bypartner(global_selected_customerid, imppartners_holder); imppartnerreq_pop.open(self)" />
+
+					<button id="impfromcsv_b" label="Imp. from CSV" class="k9"
+					onClick="showTransientItems_byCSV(global_selected_customerid,impcsvs_holder); impcsvs_pop.open(self)" />
+
+					<button id="impfromdo_b" label="Imp. from FC6-DO" class="k9" onClick="fleximportfc6_pop.open(impfromdo_b)" />
+
+					<button id="saveitems_b" label="SAVE" sclass="k9mo" onClick="doFunc(self)" />
+					<button id="updatelc_b" label="Update LC-link" sclass="k9mo" onClick="doFunc(self)" />
 				</hbox>
 				<separator height="3px" />
-				<div id="documents_holder" />
-			</div>
-		</tabpanel>
-	</tabpanels>
-</tabbox> <!-- ENDOF main workarea -->
+				<div id="pitems_holder" />
+				</div>
+			</tabpanel>
+
+			<tabpanel> <!-- attachments -->
+				<div sclass="shadowbox" style="background:#555753" id="docholder" width="${BOXWIDTH}">
+					<label sclass="subhead1">ATTACHMENT / DOCUMENTS</label>
+					<separator height="3px" />
+					<hbox>
+						<button id="uploaddoc_btn" label="Upload file" class="k9" onClick="showUploadPopup(COLLECTION_PREFIX,glob_sel_gco)" />
+						<button id="viewdoc_btn" label="View file" class="k9" onClick="viewFile()" />
+						<button id="editdoc_btn" label="Update" class="k9" onClick="updatefiledesc_popup.open(self)" />
+						<button id="deletedoc_btn" label="Delete" class="k9" onClick="deleteFile(documents_holder,COLLECTION_PREFIX,glob_sel_gco)" />
+					</hbox>
+					<separator height="3px" />
+					<div id="documents_holder" />
+				</div>
+			</tabpanel>
+		</tabpanels>
+	</tabbox> <!-- ENDOF main workarea -->
 
 <div id="kasiexport" visible="false" />
 <div id="winsholder" />
@@ -716,6 +750,11 @@ luhand.populateListbox_ByLookup(bytransp_lb, "TRANSPORTER_COURIER", 2);
 collection_formmaker = dynamicForm(collectionform_holder, "collectionmeta_grid", "12");
 
 //showGoodsCollection(last_list_type);
+
+if(sechand.allowedUser(useraccessobj.username,"GCO_ADMIN_USER"))
+{
+	setnew_b.setVisible(true);
+}
 
 if(useraccessobj.accesslevel == 9)
 {

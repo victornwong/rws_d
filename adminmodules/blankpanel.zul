@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?page id="rwprmmod"?>
+<?page id="meluplcsgn"?>
 <zk>
 <zscript src="../rwglobal/rwglobaldefs.zs" />
 <zscript src="../rwglobal/rwsqlfuncs.zs" />
@@ -12,13 +12,13 @@
 <zscript src="../rwglobal/emailfuncs.zs" />
 <zscript>
 <![CDATA[
-MYTITLE = "";
+MYTITLE = "MEL - Consignment Note Management";
 MYVERSION = "v0.1";
-MYPANEL = "";
+MYPANEL = "meluplcsgnpanel";
 /*
-@Title
-@Author
-@Since
+@Title MEL upload consignment note
+@Author Victor Wong
+@Since 09/12/2014
 @Notes
 */
 import java.util.*;

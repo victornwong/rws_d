@@ -34,7 +34,8 @@ Object[] sysloglb_hds =
 	{
 		kabom.add( ldtf.format(dpi.get("datecreated")) );
 		kabom.add(kiboo.checkNullString(dpi.get("username")));
-		kabom.add(kiboo.checkNullString(dpi.get("audit_notes")));
+		kn = (dpi.get("audit_notes") == null) ? "" : sqlhand.clobToString(dpi.get("audit_notes"));
+		kabom.add(kn);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
 	}

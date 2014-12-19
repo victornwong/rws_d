@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?page id="meluplcsgn"?>
+<zk>
+<zscript src="../rwglobal/rwglobaldefs.zs" />
+<zscript src="../rwglobal/rwsqlfuncs.zs" />
+<zscript src="../rwglobal/formMaker_v1.zs" />
+<zscript src="../rwglobal/systemAudit.zs" />
+<zscript src="../rwglobal/uploadDocu_v1.zs" />
+<zscript src="../rwglobal/fc6_CustomerSelector.zs" />
+<zscript src="../rwglobal/jobNotes_funcs.zs" />
+<zscript src="../rwglobal/uploadedWorksheet_v1.zs" />
+<zscript src="../rwglobal/emailfuncs.zs" />
+<zscript src="./uploadFuncs/csgnFuncs.zs" />
+<zscript>
+<![CDATA[
+MYTITLE = "MEL - Consignment Note Management";
+MYVERSION = "v0.1";
+MYPANEL = "meluplcsgnpanel";
+/*
+@Title MEL upload consignment note
+@Author Victor Wong
+@Since 09/12/2014
+@Notes
+*/
+import java.util.*;
+import java.text.*;
+import java.io.*;
+import java.lang.Float;
+import groovy.sql.Sql;
+import org.zkoss.zk.ui.*;
+import org.zkoss.zk.zutl.*;
+import java.math.BigDecimal;
+import java.awt.Color;
+import org.zkoss.util.media.AMedia;
+import org.zkoss.zul.*;
+import org.apache.poi.hssf.usermodel.*;
+import org.apache.poi.hssf.util.*;
+import org.apache.poi.ss.util.*;
+import org.victor.*;
+sechand = new SecurityFuncs();
+myincludeid = Executions.getCurrent().getParameter("myid");
+useraccessobj = sechand.getUserAccessObject();
+if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
+
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
+guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
+gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
+
+Object csgn_upload_data = null;
+
+last_list_csgn = 0;
+glob_sel_csgn = "";
+
+void doFunc(String itype)
+{
+	todaydate = kiboo.todayISODateTimeString();
+	unm = useraccessobj.username;
+	sqlstm = msgtext = "";
+	refresh = false;
+
+	if(itype.equals("newcsgn_b"))
+	{
+		sqlstm = "insert into mel_csgn (datecreated,csgn,mel_user,extranotes,mstatus) values " +
+		"('" + todaydate + "','UNDEF','" + unm + "','','NEW');";
+	}
+
+	if(!sqlstm.equals(""))
+	{
+		sqlhand.gpSqlExecuter(sqlstm);
+		loadCSGN(last_list_csgn);
+	}
+
+	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
+}
+
+// Process the MEL csgn and insert items into table
+void uploadMEL_CSGN()
+{
+	if(glob_sel_csgn.equals("")) return;
+
+	csgn_upload_data = new uploadedWorksheet();
+	csgn_upload_data.getUploadFileData();
+	if(csgn_upload_data.thefiledata == null)
+	{
+		guihand.showMessageBox("ERR: Invalid worksheet");
+		return;
+	}
+	//rental_sched_filename.setValue( kiboo.checkNullString(rentalsched_data.thefilename) );
+
+	InputStream inps = null;
+	org.apache.poi.hssf.usermodel.HSSFRow checkrow;
+	Cell kcell;
+
+	try
+	{
+		if(csgn_upload_data == null) return;
+		if(csgn_upload_data.thefiledata == null) return;
+		inps = new ByteArrayInputStream(csgn_upload_data.thefiledata);
+	}
+	catch (Exception e) { guihand.showMessageBox("ERR: Invalid worksheet.."); return; }
+
+	HSSFWorkbook excelWB = new HSSFWorkbook(inps);
+	FormulaEvaluator evaluator = excelWB.getCreationHelper().createFormulaEvaluator();
+	
+}
+
+]]>
+</zscript>
+
+<style src="/real-world.css" />
+
+<div width="1200px">
+<panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
+<panelchildren style="background:#65780E">
+
+<div sclass="shadowbox" style="background:#2e3436;">
+	<hbox>
+		<label value="Start" class="k9b" />
+		<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
+		<label value="End" class="k9b" />
+		<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
+		<button label="Load CSGN" sclass="k9mo" onClick="loadCSGN(1)" />
+	</hbox>
+	<separator bar="true" />
+	<hbox>
+		<button id="newcsgn_b" label="NEW CSGN" sclass="k9mo" onClick="doFunc(self.getId())" />
+		<button id="commitcsgn_b" label="COMMIT" sclass="k9mo" onClick="doFunc(self.getId())" />
+		<button id="cancelcsgn_b" label="CANCEL" sclass="k9mo" style="color:#DB0F0F" onClick="doFunc(self.getId())" />
+	</hbox>
+</div>
+<separator height="2px" />
+
+<div sclass="shadowbox" style="background:#3A4566;overflow:auto;overflow-y:hidden">
+	<div id="csgnholder" />
+</div>
+<separator height="2px" />
+
+<div id="workarea" sclass="shadowbox" style="background:#3A4566;overflow:auto;overflow-y:hidden">
+	<hbox>
+		<button id="uplassets_b" label="Upload XLS" sclass="k9mo" onClick="uploadMEL_CSGN()" />
+	</hbox>
+</div>
+
+<zscript>
+<![CDATA[
+
+]]>
+</zscript>
+</panelchildren>
+</panel>
+</div>
+</zk>
+
