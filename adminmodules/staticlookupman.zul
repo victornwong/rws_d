@@ -106,7 +106,7 @@ void showLookups(int itype, Div iholder, String theparent, String parentdisptext
 
 	if(param_notstandalone != null) parstr = "where myparent in (" + theparent + ") ";
 	
-	orderstr = (itype == 1) ? "order by disptext" : " order by idlookups";
+	orderstr = (itype == 1) ? "order by name" : " order by idlookups";
 
 	sqlstm += parstr + expstring + orderstr;
 	mcrecs = sqlhand.gpSqlGetRows(sqlstm);

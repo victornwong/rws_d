@@ -36,7 +36,7 @@ gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 HashMap plx = new HashMap();
 HashMap pl_itemtypes = new HashMap();
-glob_sel_job = glob_sel_jobsheet = glob_sel_jstat = "";
+glob_sel_job = glob_sel_jobsheet = glob_sel_jstat = glob_sel_picklist = "";
 last_joblist_type = 0;
 
 listjobs_extrasql = ""; // set by other modu used in jobsheet_funcs.showJobs()
@@ -118,7 +118,7 @@ void pl_DoFunc(String itype) // pick-list functions dispenser
 			"else " +
 			"update rw_jobpicklist set pl_items='" + itms + "', pl_qty='" + qtys + "', extranotes='" + jnt + "' where parent_job=" + glob_sel_job + ";";
 
-			refresh_joblist = hideworkarea = true;
+			refresh_joblist = true;
 			msgtext = "Items request list saved..";
 
 		} catch (Exception e) {}

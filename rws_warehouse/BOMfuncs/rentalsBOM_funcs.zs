@@ -262,7 +262,8 @@ bomclkier = new bomslbClick();
 
 void showBOMList()
 {
-	scht = kiboo.replaceSingleQuotes(searhtxt_tb.getValue().trim());
+	scht = kiboo.replaceSingleQuotes( searhtxt_tb.getValue().trim() );
+	bybom = kiboo.replaceSingleQuotes( bybomid_tb.getValue().trim() );
 	sdate = kiboo.getDateFromDatebox(startdate);
 	edate = kiboo.getDateFromDatebox(enddate);
 	Listbox newlb = lbhand.makeVWListbox_Width(boms_holder, bomslb_headers, "boms_lb", 3);
@@ -271,9 +272,28 @@ void showBOMList()
 	"sri.bomcategory,sri.job_id, sri.approveby, sri.approvedate, sri.roc_id, sri.commitdate, sri.commitby from stockrentalitems sri ";
 	wherestr = "where sri.createdate between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' ";
 
-	if(!scht.equals("")) wherestr = "left join stockrentalitems_det srid on srid.parent_id = sri.origid " + 
-		"where srid.asset_tag like '%" + scht + "%' or sri.customer_name like '%" + scht + "%' group by sri.origid,sri.customer_name,sri.createdate," + 
-		"sri.createdby,sri.bomstatus,sri.bomcategory,sri.job_id";
+	if(!bybom.equals(""))
+	{
+		bybomid_tb.setValue("");
+		try
+		{
+			kk = Integer.parseInt(bybom);
+			wherestr = "where sri.origid=" + bybom;
+		} catch (Exception e)
+		{
+			return;
+		}
+	}
+
+	if(!scht.equals(""))
+	{
+		wherestr = "left join stockrentalitems_det srid on srid.parent_id = sri.origid " + 
+		"where srid.asset_tag like '%" + scht + "%' or sri.customer_name like '%" + scht + "%' " +
+		"group by sri.origid,sri.customer_name,sri.createdate,sri.createdby,sri.bomstatus,sri.bomcategory," +
+		"sri.job_id, sri.approveby, sri.approvedate, sri.roc_id, sri.commitdate, sri.commitby ";
+
+		searhtxt_tb.setValue("");
+	}
 
 	sqlstm += wherestr;
 

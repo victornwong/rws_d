@@ -47,7 +47,7 @@ global_selected_customerid = ""; // set in fc6_CustomerSelector.zs
 global_selected_customername = "";
 
 last_showdo_type = 0;
-glob_sel_do = glob_sel_do_stat = glob_sel_do_jobid = "";
+glob_sel_do = glob_sel_do_stat = glob_sel_do_jobid = glob_sel_picklist = "";
 
 String JN_linkcode()
 {
@@ -107,9 +107,9 @@ void doFunc(String itype)
 	{
 		irow = gridhand.gridMakeRow("","","",items_rows);
 		ngfun.gpMakeCheckbox(irow,"","","");
-		lk = ngfun.gpMakeTextbox(irow,"","","font-size:9px;","99%",textboxnulldrop);
-		lk.setMultiline(true);
+		ngfun.gpMakeTextbox(irow,"","","font-size:9px;","99%",textboxnulldrop).setMultiline(true);
 		ngfun.gpMakeTextbox(irow,"", "1","font-size:9px;","60%",textboxnulldrop);
+		ngfun.gpMakeTextbox(irow,"", "","font-size:9px;","60%",textboxnulldrop).setMultiline(true);
 	}
 
 	if(itype.equals("delitem_b")) // delete DO item
@@ -227,12 +227,82 @@ void doFunc(String itype)
 			msgtext = "ERR: you must enter how boxes/cartons or any packing/refurb notes..";
 	}
 
+	if(itype.equals("impasstags_b")) // import asset-tags from pick-list - this one show the pick-list items
+	{
+		if(glob_sel_do_jobid.equals("")) return;
+		if(glob_sel_picklist.equals("")) { msgtext = "ERR: No pick-list detected.."; }
+		else
+		{
+			show_picklist_items(glob_sel_picklist);
+		}
+	}
+
 	if(!sqlstm.equals(""))
 	{
 		sqlhand.gpSqlExecuter(sqlstm);
 		showDOList(last_showdo_type);
 	}
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
+}
+
+Object[] plisthds =
+{
+	new listboxHeaderWidthObj("Items",true,""),
+	new listboxHeaderWidthObj("Qty",true,"40px"),
+	new listboxHeaderWidthObj("AssTags",true,""),
+};
+
+// Show pick-list items and the asset-tags
+void show_picklist_items(String iwhat)
+{
+	// TODO: put a check for only COMMITTED pick-list will show
+	sqlstm = "select pl_items,pl_qty,pl_asset_tags from rw_jobpicklist where origid=" + iwhat;
+	r = sqlhand.gpSqlFirstRow(sqlstm);
+	if(r == null)
+	{
+		guihand.showMessageBox("No pick-list to show");
+		return;
+	}
+	itms = sqlhand.clobToString(r.get("pl_items")).split("~");
+	qtys = sqlhand.clobToString(r.get("pl_qty")).split("~");
+	atgs = sqlhand.clobToString(r.get("pl_asset_tags")).split("~");
+
+	Listbox newlb = lbhand.makeVWListbox_Width(impplist_holder, plisthds, "picklist_lb", 10);
+	ArrayList kabom = new ArrayList();
+
+	for(i=0;i<itms.length;i++)
+	{
+		kk = ""; try { kk = itms[i]; } catch (Exception e) {}
+		kabom.add(kk);
+
+		kk = ""; try { kk = qtys[i]; } catch (Exception e) {}
+		kabom.add(kk);
+
+		kk = ""; try { kk = atgs[i]; } catch (Exception e) {}
+		kabom.add(kk);
+
+		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+		kabom.clear();
+	}
+	impplist_pop.open(imppopup_posi);
+}
+
+// Really import asset-tags from pick-list.
+void impPList_asstags()
+{
+	impplist_pop.close();
+	if(!lbhand.check_ListboxExist_SelectItem(impplist_holder,"picklist_lb")) return;
+	kms = items_rows.getChildren().toArray();
+	atgs = lbhand.getListcellItemLabel(picklist_lb.getSelectedItem(),2);
+	for(i=0;i<kms.length;i++)
+	{
+		ki = kms[i].getChildren().toArray();
+		if(ki[0].isChecked())
+		{
+			ki[3].setValue(atgs);
+		}
+	}
+	toggCheckbox(items_rows.getChildren().toArray(),false); // clear all checked box
 }
 
 void adminFunc(String itype)
@@ -301,6 +371,14 @@ void updateDO_deliveryStat(String istat)
 
 ]]>
 </zscript>
+
+<popup id="impplist_pop">
+	<div sclass="shadowbox" style="background:#3853D0" width="500px">
+		<div id="impplist_holder" />
+		<separator height="3px" />
+		<button id="impplist_b" label="Get asset-tags" sclass="k9" onClick="impPList_asstags()" />
+	</div>
+</popup>
 
 <popup id="expasspop">
 	<div id="expass_div" width="700px" />
@@ -396,12 +474,14 @@ void updateDO_deliveryStat(String istat)
 </popup> <!-- ENDOF pickcustomer_popup -->
 
 <popup id="adminPop">
-	<div style="background:#EE1010;padding:3px" width="350px">
-		<button id="setdate_b" label="Set today" sclass="k9mo" onClick="adminFunc(self.getId())" />
-		<button id="setdraft_b" label="Set DRAFT" sclass="k9mo" onClick="adminFunc(self.getId())" />
-		<button id="clrjobid_b" label="Clear job-id" sclass="k9mo" onClick="adminFunc(self.getId())" />
-		<button id="clrdelstat_b" label="Clear delivery stat" sclass="k9mo" onClick="adminFunc(self.getId())" />
-		<button id="clrrefpackstat_b" label="Clear refurb/packing stat" sclass="k9mo" onClick="adminFunc(self.getId())" />
+	<div style="background:#EE1010;padding:3px">
+		<vbox>
+			<button id="setdate_b" label="Set today" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			<button id="setdraft_b" label="Set DRAFT" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			<button id="clrjobid_b" label="Clear job-id" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			<button id="clrdelstat_b" label="Clear delivery stat" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			<button id="clrrefpackstat_b" label="Clear refurb/packing stat" sclass="k9mo" onClick="adminFunc(self.getId())" />
+		</vbox>
 	</div>
 </popup> <!-- ENDOF adminPop -->
 
@@ -503,11 +583,12 @@ void updateDO_deliveryStat(String istat)
 				<hbox>
 					<button id="additem_b" label="Add item" sclass="k9mo" onClick="doFunc(self.getId())" />
 					<button id="delitem_b" label="Delete" sclass="k9mo" onClick="doFunc(self.getId())" />
+					<button id="impasstags_b" label="Import asset-tags" sclass="k9mo" onClick="doFunc(self.getId())" />
 					<button id="savedoitems_b" label="Save DO items" sclass="k9mo" onClick="doFunc(self.getId())" />
-
 				</hbox>
 				<separator height="3px" />
 				<div id="items_holder" />
+				<label id="imppopup_posi" />
 			</div>
 		</hbox>
 	</div>

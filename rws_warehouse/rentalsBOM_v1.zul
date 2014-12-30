@@ -16,7 +16,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "Bill Of Materials (BOM)";
-MYVERSION = "v0.5.4";
+MYVERSION = "v0.5.5";
 MYPANEL = "rentitebom3";
 /*
 @Title Rental items BOM maker
@@ -37,6 +37,7 @@ ERR: javax.mail.AuthenticationFailedException: No authentication mechansims supp
 09/07/2014: thanesh requested for MPF to update remarks/others, webcam, optical, cardreader, grade and bluetooh. Added W7PR code-prefix to import SN/Keys
 10/07/2014: mass-update the things requested by Thanesh above to all selected builds
 16/10/2014: only show textbox to let user enter Job-ID which will link to BOM
+26/12/2014: can goto BOM by id
 
 */
 import java.util.*;
@@ -633,8 +634,10 @@ void mpfFunc(String itype)
 			<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
 			<label value="End date" sclass="k9b" />
 			<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
-			<textbox id="searhtxt_tb" width="200px" sclass="k9" />
+			<textbox id="searhtxt_tb" sclass="k9" />
 			<button label="Search/Load" sclass="k9" onClick="showBOMList()" />
+			<textbox id="bybomid_tb" width="60px" sclass="k9" />
+			<button label="by BOM" sclass="k9" onClick="showBOMList()" />
 			<separator width="20px" />
 			<button id="admin_b" label="ADMIN" style="color:#ff0000;font-weight:bold;font-size:9px" onClick="adminpopup.open(self)" visible="false" />
 		</hbox>

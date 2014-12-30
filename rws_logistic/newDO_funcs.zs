@@ -1,8 +1,8 @@
 import org.victor.*;
 // Genaral funcs for newDOmanager
 
-String[] itm_colws = { "30px","",                "60px" };
-String[] itm_colls = { ""    ,"Item description","Qty"  };
+String[] itm_colws = { "30px","",                "60px","" };
+String[] itm_colls = { ""    ,"Item description","Qty","AssTags" };
 
 class tbnulldrop implements org.zkoss.zk.ui.event.EventListener
 {
@@ -15,7 +15,8 @@ textboxnulldrop = new tbnulldrop();
 // itype: 1=main butts, 2=items butts
 void toggButts(int itype, boolean iwhat)
 {
-	Object[] itmsbutts = { asscust_b, impjobbutt, savedometa_b, additem_b, delitem_b, savedoitems_b, savedometa_b };
+	Object[] itmsbutts = { asscust_b, impjobbutt, savedometa_b, additem_b, delitem_b,
+		savedoitems_b, savedometa_b, impasstags_b };
 
 	switch(itype)
 	{
@@ -25,6 +26,19 @@ void toggButts(int itype, boolean iwhat)
 				itmsbutts[i].setDisabled(iwhat);
 			}
 			break;
+	}
+}
+
+// gitems: grid-row converted to array, ichk: checkbox stat
+void toggCheckbox(Object gitems, boolean ichk)
+{
+	for(i=0;i<gitems.length;i++)
+	{
+		ki = gitems[i].getChildren().toArray();
+		if(ki[0] instanceof Checkbox) // assuming 1st obj is a checkbox
+		{
+			ki[0].setChecked(ichk);
+		}
 	}
 }
 
@@ -60,11 +74,12 @@ void saveDO_items(String ido)
 		{
 			ki = jk[i].getChildren().toArray();
 			ti = kiboo.replaceSingleQuotes( ki[1].getValue().trim() ); // item
+			atgs = kiboo.replaceSingleQuotes( ki[3].getValue().trim() ); // asset-tags
 			tq = "1";
 			try { kk = Integer.parseInt(kiboo.replaceSingleQuotes( ki[2].getValue().trim() ) ); tq = kk.toString(); }
 			catch (Exception e) {}
 
-			sqlstm += "insert into deliveryorder (dono,description,quantity) values ('" + ido + "','" + ti + "'," + tq + ");";
+			sqlstm += "insert into deliveryorder (dono,description,quantity,asset_tags) values ('" + ido + "','" + ti + "'," + tq + ",'" + atgs + "');";
 		}
 		if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
 
@@ -76,7 +91,7 @@ void showDO_items(String ido)
 	if(items_holder.getFellowIfAny("items_grid") != null) items_grid.setParent(null);
 	ngfun.checkMakeGrid(itm_colws,itm_colls,items_holder,"items_grid","items_rows","background:#97b83a","",false);
 
-	sqlstm = "select description,quantity from deliveryorder where dono='" + ido + "';";
+	sqlstm = "select description,quantity,asset_tags from deliveryorder where dono='" + ido + "';";
 	r = sqlhand.gpSqlGetRows(sqlstm);
 	if(r.size() == 0) return;
 
@@ -84,9 +99,9 @@ void showDO_items(String ido)
 	{
 		irow = gridhand.gridMakeRow("","","",items_rows);
 		ngfun.gpMakeCheckbox(irow,"","","");
-		lk = ngfun.gpMakeTextbox(irow,"",d.get("description"),"font-size:9px;","99%",textboxnulldrop);
-		lk.setMultiline(true);
+		ngfun.gpMakeTextbox(irow,"",d.get("description"),"font-size:9px;","99%",textboxnulldrop).setMultiline(true);
 		ngfun.gpMakeTextbox(irow,"", GlobalDefs.nf0.format(d.get("quantity")),"font-size:9px;","60%",textboxnulldrop);
+		ngfun.gpMakeTextbox(irow,"",sqlhand.clobToString(d.get("asset_tags")),"font-size:9px;","99%",textboxnulldrop).setMultiline(true);
 	}
 }
 
@@ -130,6 +145,7 @@ RDO_CUSTNAME_POS = 2;
 RDO_STAT_POS = 3;
 RDO_DELSTAT_POS = 6;
 RDO_JOBID_POS = 9;
+RDO_PICKLIST_POS = 10;
 
 class dolbClick implements org.zkoss.zk.ui.event.EventListener
 {
@@ -140,6 +156,7 @@ class dolbClick implements org.zkoss.zk.ui.event.EventListener
 		glob_sel_do_stat = lbhand.getListcellItemLabel(isel,RDO_STAT_POS);
 		glob_sel_do_jobid = lbhand.getListcellItemLabel(isel,RDO_JOBID_POS);
 		global_selected_customername = lbhand.getListcellItemLabel(isel,RDO_CUSTNAME_POS);
+		glob_sel_picklist = lbhand.getListcellItemLabel(isel,RDO_PICKLIST_POS);
 
 		showDO_meta(glob_sel_do);
 	}
