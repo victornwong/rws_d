@@ -195,65 +195,65 @@ void loadShowPostings()
 </zscript>
 
 <popup id="uploadfile_popup"> <!-- upload a file popup -->
-<div sclass="shadowbox" style="background:#2e3436;">
-	<grid>
-		<rows>
-			<row>
-				<label value="Filename" sclass="k9" />
-				<textbox id="fileupl_file_title" width="200px" sclass="k9" />
-			</row>
-			<row>
-				<label value="Description" sclass="k9" />
-				<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" sclass="k9" />
-			</row>
-		</rows>
-	</grid>
-	<separator height="3px" />
-	<hbox>
-		<button id="uploaddoc_btn" label="Upload file" onClick="uploadfile_popup.close(); docuFunc_DM(self.getId())" sclass="k9mo" />
-	</hbox>
-</div>
+	<div sclass="shadowbox" style="background:#2e3436;">
+		<grid>
+			<rows>
+				<row>
+					<label value="Filename" sclass="k9" />
+					<textbox id="fileupl_file_title" width="200px" sclass="k9" />
+				</row>
+				<row>
+					<label value="Description" sclass="k9" />
+					<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" sclass="k9" />
+				</row>
+			</rows>
+		</grid>
+		<separator height="3px" />
+		<hbox>
+			<button id="uploaddoc_btn" label="Upload file" onClick="uploadfile_popup.close(); docuFunc_DM(self.getId())" sclass="k9mo" />
+		</hbox>
+	</div>
 </popup>
 
 <popup id="managepostingpop">
-<div sclass="shadowbox" style="background:#042a6c" width="500px">
-	<div id="manposts_holder" />
-	<separator height="3px" />
-	<hbox>
-		<button id="totactive_b" label="Toggle active" sclass="k9" onClick="postFunc(self.getId())" />
-		<button id="delpost_b" label="Delete post" style="font-weight:bold;font-size:9px;color:#ff0000" visible="false" onClick="postFunc(self.getId())" />
-	</hbox>
-</div>
+	<div sclass="shadowbox" style="background:#042a6c" width="500px">
+		<div id="manposts_holder" />
+		<separator height="3px" />
+		<hbox>
+			<button id="totactive_b" label="Toggle active" sclass="k9" onClick="postFunc(self.getId())" />
+			<button id="delpost_b" label="Delete post" style="font-weight:bold;font-size:9px;color:#ff0000" visible="false" onClick="postFunc(self.getId())" />
+		</hbox>
+	</div>
 </popup>
 
 <popup id="moderatorpop">
-<div sclass="shadowbox" style="background:#042a6c" width="500px">
-	<vbox>
-		<hbox>
-			<label sclass="subhead1" value="Moderator" />
-			<label id="postselected_lbl" style="color:#ffffff" />
-			<button label="Manage postings" sclass="k9mo" onClick="loadShowPostings(); managepostingpop.open(self)" />
-		</hbox>
-		<separator height="3px" bar="true" />
-		<label value="Post title" sclass="k9b" />
-		<textbox id="p_title" sclass="k9" width="480px" />
-		<label value="Message" sclass="k9b" />
-		<textbox id="p_message" sclass="k9" multiline="true" width="480px" height="70px" />
-		<hbox>
-			<button id="modpost_b" label="Post/Update" sclass="k9mo" onClick="moderatorpop.close(); postFunc(self.getId())" />
-			<button id="modclr_b" label="Clear" sclass="k9mo" onClick="postFunc(self.getId())" />
-		</hbox>
-	</vbox>
-	<separator height="3px" />
-	<vbox>
-		<div id="docu_holder" />
-		<hbox>
-			<button label="Upload file" sclass="k9mo" onClick="uploadfile_popup.open(self)" />
-			<button id="viewdocfile_btn" label="View" sclass="k9mo" onClick="docuFunc_DM(self.getId())" />
-			<button id="deletedoc_btn" label="Delete" sclass="k9mo" onClick="docuFunc_DM(self.getId())" />
-		</hbox>
-	</vbox>
-</div>
+	<div sclass="shadowbox" style="background:#042a6c" width="500px">
+		<vbox>
+			<hbox>
+				<label sclass="subhead1" value="Moderator" />
+				<label id="postselected_lbl" style="color:#ffffff" />
+				<button label="Manage postings" sclass="k9mo" onClick="loadShowPostings(); managepostingpop.open(self)" />
+			</hbox>
+			<separator height="3px" bar="true" />
+			<label value="Post title" sclass="k9b" />
+			<textbox id="p_title" sclass="k9" width="480px" />
+			<label value="Message" sclass="k9b" />
+			<textbox id="p_message" sclass="k9" multiline="true" width="480px" height="70px" />
+			<hbox>
+				<button id="modpost_b" label="Post/Update" sclass="k9mo" onClick="moderatorpop.close(); postFunc(self.getId())" />
+				<button id="modclr_b" label="Clear" sclass="k9mo" onClick="postFunc(self.getId())" />
+			</hbox>
+		</vbox>
+		<separator height="3px" />
+		<vbox>
+			<div id="docu_holder" />
+			<hbox>
+				<button label="Upload file" sclass="k9mo" onClick="uploadfile_popup.open(self)" />
+				<button id="viewdocfile_btn" label="View" sclass="k9mo" onClick="docuFunc_DM(self.getId())" />
+				<button id="deletedoc_btn" label="Delete" sclass="k9mo" onClick="docuFunc_DM(self.getId())" />
+			</hbox>
+		</vbox>
+	</div>
 </popup>
 
 <style src="/real-world.css" />
@@ -268,15 +268,15 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
 <panelchildren style="background:#3a3b50">
 
-<hbox>
-	<image src="/rwimg/Refresh-button.png" width="25px"  style="position:absolute;right:0px" onClick="showPostings()" />
-	<image id="moderatoricon" src="/rwimg/mod.png" width="50px" onClick="openModeratorThings(self)" visible="false" />
-</hbox>
+	<hbox>
+		<image src="/rwimg/Refresh-button.png" width="25px"  style="position:absolute;right:0px" onClick="showPostings()" />
+		<image id="moderatoricon" src="/rwimg/mod.png" width="50px" onClick="openModeratorThings(self)" visible="false" />
+	</hbox>
 
-<div id="postings" />
+	<div id="postings" />
 
-<label id="docutitle_lbl" visible="false" /> <!-- used by documan2_funcs.viewTheDocument_DM() -->
-<label id="docudesc_lbl" visible="false" />
+	<label id="docutitle_lbl" visible="false" /> <!-- used by documan2_funcs.viewTheDocument_DM() -->
+	<label id="docudesc_lbl" visible="false" />
 
 <zscript>
 <![CDATA[

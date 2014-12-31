@@ -712,6 +712,9 @@ void checkRMA_Reps()
 	//alert(sqlstm);
 
 	rcs = sqlhand.rws_gpSqlGetRows(sqlstm);
+
+alert(sqlstm);
+
 	if(rcs.size() == 0) return;
 	Listbox newlb = lbhand.makeVWListbox_Width(rmarep_holder, rephds, "reprma_lb", 20);
 	ArrayList kabom = new ArrayList();

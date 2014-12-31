@@ -1,8 +1,8 @@
 import org.victor.*;
 // Genaral funcs for newDOmanager
 
-String[] itm_colws = { "30px","",                "60px","" };
-String[] itm_colls = { ""    ,"Item description","Qty","AssTags" };
+String[] itm_colws = { "30px","",                "60px","","" };
+String[] itm_colls = { ""    ,"Item description","Qty","AssTags","S/Nums" };
 
 class tbnulldrop implements org.zkoss.zk.ui.event.EventListener
 {
@@ -16,7 +16,7 @@ textboxnulldrop = new tbnulldrop();
 void toggButts(int itype, boolean iwhat)
 {
 	Object[] itmsbutts = { asscust_b, impjobbutt, savedometa_b, additem_b, delitem_b,
-		savedoitems_b, savedometa_b, impasstags_b };
+		savedoitems_b, savedometa_b, impasstags_b, parseserials_b };
 
 	switch(itype)
 	{
@@ -59,6 +59,20 @@ String getJob_linkDO(int ijb)
 	return retv;
 }
 
+void saveDO_Metadata(String iwhat)
+{
+	Object[] jkl = { customername, d_code, d_shipaddress1, d_shipaddress2, d_shipaddress3, d_shippingcontact, d_shippingphone, d_remark, d_transporter, d_airwaybill };
+	dt = ngfun.getString_fromUI(jkl);
+
+	sqlstm = "update deliveryordermaster set name='" + dt[0] + "', code='" + dt[1] + "'," +
+	"shipaddress1='" + dt[2] + "', shipaddress2='" + dt[3] + "', shipaddress3='" + dt[4] + "'," +
+	"shippingcontact='" + dt[5] + "', shippingphone='" + dt[6] + "', remark='" + dt[7] + "'," +
+	"transporter='" + dt[8] + "', airwaybill='" + dt[9] + "' where id=" + iwhat;
+
+	sqlhand.gpSqlExecuter(sqlstm);
+	showDOList(last_showdo_type);
+}
+
 void saveDO_items(String ido)
 {
 	try
@@ -75,11 +89,13 @@ void saveDO_items(String ido)
 			ki = jk[i].getChildren().toArray();
 			ti = kiboo.replaceSingleQuotes( ki[1].getValue().trim() ); // item
 			atgs = kiboo.replaceSingleQuotes( ki[3].getValue().trim() ); // asset-tags
+			snms = kiboo.replaceSingleQuotes( ki[4].getValue().trim() ); // s/nums
 			tq = "1";
 			try { kk = Integer.parseInt(kiboo.replaceSingleQuotes( ki[2].getValue().trim() ) ); tq = kk.toString(); }
 			catch (Exception e) {}
 
-			sqlstm += "insert into deliveryorder (dono,description,quantity,asset_tags) values ('" + ido + "','" + ti + "'," + tq + ",'" + atgs + "');";
+			sqlstm += "insert into deliveryorder (dono,description,quantity,asset_tags,serial_numbers) values " +
+			"('" + ido + "','" + ti + "'," + tq + ",'" + atgs + "','" + snms + "');";
 		}
 		if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
 
@@ -91,7 +107,7 @@ void showDO_items(String ido)
 	if(items_holder.getFellowIfAny("items_grid") != null) items_grid.setParent(null);
 	ngfun.checkMakeGrid(itm_colws,itm_colls,items_holder,"items_grid","items_rows","background:#97b83a","",false);
 
-	sqlstm = "select description,quantity,asset_tags from deliveryorder where dono='" + ido + "';";
+	sqlstm = "select description,quantity,asset_tags,serial_numbers from deliveryorder where dono='" + ido + "';";
 	r = sqlhand.gpSqlGetRows(sqlstm);
 	if(r.size() == 0) return;
 
@@ -102,6 +118,7 @@ void showDO_items(String ido)
 		ngfun.gpMakeTextbox(irow,"",d.get("description"),"font-size:9px;","99%",textboxnulldrop).setMultiline(true);
 		ngfun.gpMakeTextbox(irow,"", GlobalDefs.nf0.format(d.get("quantity")),"font-size:9px;","60%",textboxnulldrop);
 		ngfun.gpMakeTextbox(irow,"",sqlhand.clobToString(d.get("asset_tags")),"font-size:9px;","99%",textboxnulldrop).setMultiline(true);
+		ngfun.gpMakeTextbox(irow,"",sqlhand.clobToString(d.get("serial_numbers")),"font-size:9px;","99%",textboxnulldrop).setMultiline(true);
 	}
 }
 
@@ -173,8 +190,6 @@ void showDOList(int itype)
 	edate = kiboo.getDateFromDatebox(enddate);
 	doid = kiboo.replaceSingleQuotes(doid_tb.getValue().trim());
 
-	Listbox newlb = lbhand.makeVWListbox_Width(do_holder, dolbhds, "do_lb", 3);
-
 	sqlstm = "select top 200 id,entrydate,name,user1,job_id,status,del_status,transporter,deliverydate, packing_flag, " +
 	"(select origid from rw_jobpicklist where parent_job=job_id) as picklist " +
 	"from DeliveryOrderMaster ";
@@ -185,11 +200,14 @@ void showDOList(int itype)
 			sqlstm += "where entrydate between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' and name like '%" + st + "%'";
 			break;
 		case 2:
+			if(doid.equals("")) return;
 			sqlstm += "where id=" + doid;
 			break;
 	}
 
 	sqlstm += " order by entrydate";
+
+	Listbox newlb = lbhand.makeVWListbox_Width(do_holder, dolbhds, "do_lb", 3);
 
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() == 0) return;
@@ -500,11 +518,67 @@ void superDOInventoryUpdater(int itype)
 	sqlhand.rws_gpSqlExecuter(sqlstm);
 }
 
-// UI things in main
+// 31/12/2014: parse snums based on asset-tags and populate textbox
+void parsePopulate_snums()
+{
+	jk = items_rows.getChildren().toArray();
+	for(i=0;i<jk.length;i++) // go through asset-tags and grab 'em serials if any
+	{
+		wi = "";
+		ki = jk[i].getChildren().toArray();
+		atgs = kiboo.replaceSingleQuotes( ki[3].getValue().trim() ).split("\n"); // asset-tags
+		if(atgs.length > 0)
+		{
+			for(x=0;x<atgs.length;x++)
+			{
+				nn = atgs[x].trim();
+				if(!nn.equals("")) wi += "'" + nn + "',";
+			}
+			try
+			{
+				wi = wi.substring(0,wi.length()-1);
+				sqlstm = "select serial from partsall_0 where assettag in (" + wi + ")";
+				r = sqlhand.rws_gpSqlGetRows(sqlstm);
+				if(r.size() > 0) // found some s/numbs
+				{
+					snm = "";
+					for(d : r)
+					{
+						snm += kiboo.checkNullString(d.get("serial")) + "\n";
+					}
+					ki[4].setValue(snm); // insert snumbs
+				}
+			} catch (Exception e) {}
+		}
+	}
+	
+	//guihand.showMessageBox("ERR: cannot parse serial-numbers");
+}
+
+void updateDO_deliveryStat(String istat)
+{
+	if(glob_sel_do.equals("")) return;
+	if(glob_sel_do_stat.equals("STKOUT")) // Only DO stat=STKOUT can update delivery status
+	{
+		dt = kiboo.getDateFromDatebox(delstat_date);
+		tdt = kiboo.todayISODateTimeString();
+		sqlstm = "update deliveryordermaster set deliverydate='" + dt + "', del_status_date='" + tdt + "',del_status='" + istat + "' where id=" + glob_sel_do;
+		sqlhand.gpSqlExecuter(sqlstm);
+		showDOList(last_showdo_type);
+		add_RWAuditLog(JN_linkcode(), "", "Update delivery status", useraccessobj.username);
+	}
+	else
+	{
+		guihand.showMessageBox("ERR: DO is not yet STKOUT, you cannot update the delivery status..");
+	}
+}
+
+// 31/12/2014: populate serial_numbers field based on asset-tags
 void printBIRT_DO(String ido)
 {
 	deliverystat_pop.close();
 	if(ido.equals("")) return;
+
 	if(expass_div.getFellowIfAny("expassframe") != null) expassframe.setParent(null);
 	Iframe newiframe = new Iframe();
 	newiframe.setId("expassframe"); newiframe.setWidth("100%"); newiframe.setHeight("600px");

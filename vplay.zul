@@ -588,80 +588,75 @@ void doFunc(Object iwhat)
 </zscript>
 
 <popup id="adminpop">
-	<label id="adminmsg" style="font-size:9px" />
-	<button label="ReloadMenu" style="font-size:9px" onClick="drawMenuBar()" />
-	<button label="Lookups" style="font-size:9px" onClick="adminButtons(1,1)" />
-	<!-- <button label="Lookups" style="font-size:9px" onClick="activateLookupEditor(1)" /> -->
-	<!-- <button label="folderdet" style="font-size:9px" onClick="debugsampledet()" /> -->
-	<button id="bugger_btn" label="bugger" style="font-size:9px" onClick="doFunc(self)" />
+	<vbox>
+		<label id="adminmsg" style="font-size:9px" />
+		<button label="ReloadMenu" style="font-size:9px" onClick="drawMenuBar()" />
+		<button label="Lookups" style="font-size:9px" onClick="adminButtons(1,1)" />
+		<!-- <button label="Lookups" style="font-size:9px" onClick="activateLookupEditor(1)" /> -->
+		<!-- <button label="folderdet" style="font-size:9px" onClick="debugsampledet()" /> -->
+		<button id="bugger_btn" label="bugger" style="font-size:9px" onClick="doFunc(self)" />
+	</vbox>
 </popup>
 
-<!-- popup to change release-report pin -->
-<popup id="changerelpin_popup">
-<groupbox>
-	<caption label="Change Release-Report PIN" />
-	<hbox>
-		<label value="PIN" style="font-size:9px" />
-		<textbox id="pin_tb" style="font-size:9px" />
-		<button label="Change" style="font-size:9px" onClick="changePIN()" />
-	</hbox>
-</groupbox>
+<popup id="changerelpin_popup"> <!-- popup to change release-report pin -->
+	<groupbox>
+		<caption label="Change Release-Report PIN" />
+		<hbox>
+			<label value="PIN" style="font-size:9px" />
+			<textbox id="pin_tb" style="font-size:9px" />
+			<button label="Change" style="font-size:9px" onClick="changePIN()" />
+		</hbox>
+	</groupbox>
 </popup>
-<!-- end of popup -->
 
-<!-- popup show usergroup -->
-<popup id="showusergroup_popup">
-<groupbox mold="3d" width="300px">
-	<div id="usergroup_holder" />
-</groupbox>
+<popup id="showusergroup_popup"> <!-- popup show usergroup -->
+	<groupbox mold="3d" width="300px">
+		<div id="usergroup_holder" />
+	</groupbox>
 </popup>
-<!-- end of popup -->
 
-<!-- popup to change branch -->
-<popup id="admintukarbranch_popup">
-<groupbox>
-<caption label="Change lab branch" />
-	<hbox>
-		<label value="Branch" style="font-size:9px" />
-		<listbox id="branch_drd" mold="select" style="font-size:9px" />
-		<button id="chgbranch_btn" label="Change" style="font-size:9px" onClick="doFunc(self)" />
-		<!-- <button label="Close" style="font-size:9px" onClick="admintukarbranch_popup.close()" /> -->
-	</hbox>
-</groupbox>
+<popup id="admintukarbranch_popup"> <!-- popup to change branch -->
+	<groupbox>
+	<caption label="Change lab branch" />
+		<hbox>
+			<label value="Branch" style="font-size:9px" />
+			<listbox id="branch_drd" mold="select" style="font-size:9px" />
+			<button id="chgbranch_btn" label="Change" style="font-size:9px" onClick="doFunc(self)" />
+			<!-- <button label="Close" style="font-size:9px" onClick="admintukarbranch_popup.close()" /> -->
+		</hbox>
+	</groupbox>
 </popup>
-<!-- end of popup -->
 
 <popup id="utilpop">
-<div sclass="shadowbox" style="background:#402E22" >
-<vbox>
-	<button id="fctranst_b" label="FC-Transactions" sclass="k9" width="150px" onClick="doFunc(self)" />
-	<button id="checkasset_b" label="Contract/Asset check" width="150px" sclass="k9" onClick="doFunc(self)" />
-	<!-- onClick="contractass_pop.open(self)" -->
-	<button id="checkparts_b" label="Parts check" width="150px" sclass="k9" onClick="doFunc(self)" />
-	<separator height="5px" bar="true" />
-	<button id="calcinsura_b" label="Calc insurance" width="150px" sclass="k9" onClick="doFunc(self)" />
-	<button id="calcpartilamt_b" label="Calc partial billing" width="150px" sclass="k9" onClick="doFunc(self)" />
-</vbox>
-</div>
+	<div sclass="shadowbox" style="background:#402E22" >
+		<vbox>
+			<button id="fctranst_b" label="FC-Transactions" sclass="k9" width="150px" onClick="doFunc(self)" />
+			<button id="checkasset_b" label="Contract/Asset check" width="150px" sclass="k9" onClick="doFunc(self)" />
+			<!-- onClick="contractass_pop.open(self)" -->
+			<button id="checkparts_b" label="Parts check" width="150px" sclass="k9" onClick="doFunc(self)" />
+			<separator height="5px" bar="true" />
+			<button id="calcinsura_b" label="Calc insurance" width="150px" sclass="k9" onClick="doFunc(self)" />
+			<button id="calcpartilamt_b" label="Calc partial billing" width="150px" sclass="k9" onClick="doFunc(self)" />
+		</vbox>
+	</div>
 </popup>
 
 <popup id="youhavemsg">
-<div width="400px" style="background:#cd2467;padding:5px" onClick="doFunc(notification_btn)" >
+	<div width="400px" sclass="shadowbox" style="background:#cd2467;padding:5px" onClick="doFunc(notification_btn)" >
+		<hbox>
+		<image src="alsimg/e-mail_icon_0.png" />
 
-<hbox>
-<image src="alsimg/e-mail_icon_0.png" />
-
-<vbox>
-	<label style="font-size:24px;color:#eeeeee;text-decoration:blink;" >
-	You have a new message..
-	</label>
-	<separator height="2px" />
-	<label style="color:#eeeeee">
-	Click to view..
-	</label>
-</vbox>
-</hbox>
-</div>
+		<vbox>
+			<label style="font-size:24px;color:#eeeeee;text-decoration:blink;" >
+			You have a new message..
+			</label>
+			<separator height="2px" />
+			<label style="color:#eeeeee">
+			Click to view..
+			</label>
+		</vbox>
+		</hbox>
+	</div>
 </popup>
 
 <style src="/real-world.css" />
@@ -673,115 +668,115 @@ void doFunc(Object iwhat)
 <!--  style="background-image:url('alsimg/wallpaper/free-wallpaper-5.jpg')"  -->
 <div id="mainbox" width="2000px" >
 
-<textbox id="debugbox" multiline="true" width="100%" height="100px" visible="false" />
+	<textbox id="debugbox" multiline="true" width="100%" height="100px" visible="false" />
 
-<borderlayout width="100%" height="90000px" >
-<!--
-<north border="none" style="background:#2e3436;background:url('rwimg/RW1.jpg') no-repeat center center fixed; background-size: cover;">
--->
-<north border="none" style="background:#2e3436;" >
-<div>
-	<div id="topbar" style="padding:2px" width="100%">
-		<hbox>
-		<!-- <div style="background:#2e3436;padding:5px" width="1600px"> -->
-		<div sclass="shadowbox" style="background:#2e3436; " width="${MAINBAR_WIDTH}">
-			<hbox>
-				<image id="profilepix" />
-				<label id="dbgb" visible="false" />
-				<vbox>
-					<hbox>
-						<label id="program_title" style="color:#f57900;font-size:22px;font-weight:bold" value="${MYTITLE}" />
-						<label style="color:#eeeeee;font-size:9px" value="${MYVERSION}" />
-					</hbox>
-					<!-- <div style="background:#3fbcd0;padding:2px" width="130px" /> -->
-					
-					<hbox>
-						<div style="background:#f57900;padding:2px">
-							<label id="username_lbl" sclass="k9mo" />
-						</div>
-						<div style="background:#f57900;padding:2px">
-							<label id="accesslevel_lbl" sclass="k9mo" />
-						</div>
-						<div style="background:#f57900;padding:2px">
-							<label id="branch_lbl" sclass="k9mo" />
-						</div>
-
-						<button id="internaltasks_btn" label="My Tasks" sclass="k9" onClick="doFunc(self)" />
-						<button id="chgpasswd_btn" label="Change login password" sclass="k9" onClick="doFunc(self)" />
-						<!-- <button id="shwusergroup_btn" label="Usergroup" sclass="k9" onClick="doFunc(self)" /> -->
-
-						<button id="dashboard_btn" label="Dashboard" sclass="k9" onClick="doFunc(self)" />
-						<button label="Utilities" sclass="k9" onClick="utilpop.open(self)" />
-
-						<button id="itwinvent_b" label="ITWise inventory" sclass="k9mo" onClick="doFunc(self)" />
-
-						<separator width="20px" />
-						<button label="Logout" sclass="k9" onClick="logoutSystem()" />
-
-						<div id="msg_noti" style="background:#f57900;padding:2px" visible="false">
-						<label style="color:#eeeeee;text-decoration:blink;font-weight:bold">YOU HAVE MESSAGE</label>
-						</div>
-
-						<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#ff0000" visible="false" onClick="adminpop.open(self)" />
-					</hbox>
-				</vbox>
-
-				<separator width="10px" />
-				<vbox>
-					<hbox>
-<!--
-<button id="overdues_btn" label="Folders overview" style="font-size:9px" onClick="doFunc(self)" />
-<button id="wall_btn" label="Wall/LabComment" style="font-size:9px" onClick="doFunc(self)" />
-<button id="notification_btn" label="Notification / Messages" style="font-size:9px" onClick="doFunc(self)" />
-<button id="chgextrapin_btn" label="Change PIN" style="font-size:9px" onClick="doFunc(self); changerelpin_popup.open(chgrelpin_btn)" />
-<button id="srchcust_btn" label="Search customer" style="font-size:9px" onClick="doFunc(self)" />
-<button id="switchbranch_btn" label="Switch branch" style="font-size:9px" onClick="admintukarbranch_popup.open(switchbranch_btn)" />
-<button label="I'm feeling pink" style="font-size:8px" onClick="changeTopBarColor(1)" />
-<button label="The blues" style="font-size:8px" onClick="changeTopBarColor(2)" />
-<button id="msgboard_btn" label="Messages" style="font-size:9px" onClick="doFunc(self)" visible="false" />
--->
-					</hbox>
-					<!-- <div style="background:#3fbcd0;padding:2px" width="2000px" /> -->
-				</vbox>
-
-			</hbox>
-			<separator height="3px" />
-			<div id="mainmenu_holder" width="${MAINBAR_WIDTH}" />
-
-		</div>
-	</hbox>
-
-	</div>
-
-</div>
-</north>
-
-<west title="Wall" size="25%" collapsible="true" border="0" style="background:#254257;">
-	<div>
-		<hbox id="wallbutts" visible="false">
-			<button label="Annc" sclass="k9" onClick="reloadWallMod(1)" />
-		</hbox>
-		<div id="wallmod_holder" />
-	</div>
-</west>
-
-<center border="none" style="background:#2e3436;">
+	<borderlayout width="100%" height="90000px" >
 	<!--
-	style="background:#2e3436;background:url('rwimg/RW1.jpg') no-repeat center center fixed; background-size: cover;"
+		<north border="none" style="background:#2e3436;background:url('rwimg/RW1.jpg') no-repeat center center fixed; background-size: cover;">
 	-->
-	<div sclass="shadowbox" style="background:#2e3436;" width="1200px" >
-		<div id="workbox" />
-		<div id="worksandbox" />
-	</div>
-</center>
+		<north border="none" style="background:#2e3436;" >
+			<div>
+				<div id="topbar" style="padding:2px" width="100%">
+					<hbox>
+					<!-- <div style="background:#2e3436;padding:5px" width="1600px"> -->
+					<div sclass="shadowbox" style="background:#2e3436; " width="${MAINBAR_WIDTH}">
+						<hbox>
+							<image id="profilepix" />
+							<label id="dbgb" visible="false" />
+							<vbox>
+								<hbox>
+									<label id="program_title" style="color:#f57900;font-size:22px;font-weight:bold" value="${MYTITLE}" />
+									<label style="color:#eeeeee;font-size:9px" value="${MYVERSION}" />
+								</hbox>
+								<!-- <div style="background:#3fbcd0;padding:2px" width="130px" /> -->
+								
+								<hbox>
+									<div style="background:#f57900;padding:2px">
+										<label id="username_lbl" sclass="k9mo" />
+									</div>
+									<div style="background:#f57900;padding:2px">
+										<label id="accesslevel_lbl" sclass="k9mo" />
+									</div>
+									<div style="background:#f57900;padding:2px">
+										<label id="branch_lbl" sclass="k9mo" />
+									</div>
 
-<south border="none">
-<div>
-    <div id="miscwindows" />
-</div>
-</south>
+									<button id="internaltasks_btn" label="My Tasks" sclass="k9" onClick="doFunc(self)" />
+									<button id="chgpasswd_btn" label="Change login password" sclass="k9" onClick="doFunc(self)" />
+									<!-- <button id="shwusergroup_btn" label="Usergroup" sclass="k9" onClick="doFunc(self)" /> -->
 
-</borderlayout>
+									<button id="dashboard_btn" label="Dashboard" sclass="k9" onClick="doFunc(self)" />
+									<button label="Utilities" sclass="k9" onClick="utilpop.open(self)" />
+
+									<button id="itwinvent_b" label="ITWise inventory" sclass="k9mo" onClick="doFunc(self)" />
+
+									<separator width="20px" />
+									<button label="Logout" sclass="k9" onClick="logoutSystem()" />
+
+									<div id="msg_noti" style="background:#f57900;padding:2px" visible="false">
+									<label style="color:#eeeeee;text-decoration:blink;font-weight:bold">YOU HAVE MESSAGE</label>
+									</div>
+
+									<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#ff0000" visible="false" onClick="adminpop.open(self)" />
+								</hbox>
+							</vbox>
+
+							<separator width="10px" />
+							<vbox>
+								<hbox>
+			<!--
+			<button id="overdues_btn" label="Folders overview" style="font-size:9px" onClick="doFunc(self)" />
+			<button id="wall_btn" label="Wall/LabComment" style="font-size:9px" onClick="doFunc(self)" />
+			<button id="notification_btn" label="Notification / Messages" style="font-size:9px" onClick="doFunc(self)" />
+			<button id="chgextrapin_btn" label="Change PIN" style="font-size:9px" onClick="doFunc(self); changerelpin_popup.open(chgrelpin_btn)" />
+			<button id="srchcust_btn" label="Search customer" style="font-size:9px" onClick="doFunc(self)" />
+			<button id="switchbranch_btn" label="Switch branch" style="font-size:9px" onClick="admintukarbranch_popup.open(switchbranch_btn)" />
+			<button label="I'm feeling pink" style="font-size:8px" onClick="changeTopBarColor(1)" />
+			<button label="The blues" style="font-size:8px" onClick="changeTopBarColor(2)" />
+			<button id="msgboard_btn" label="Messages" style="font-size:9px" onClick="doFunc(self)" visible="false" />
+			-->
+								</hbox>
+								<!-- <div style="background:#3fbcd0;padding:2px" width="2000px" /> -->
+							</vbox>
+
+						</hbox>
+						<separator height="3px" />
+						<div id="mainmenu_holder" width="${MAINBAR_WIDTH}" />
+
+					</div>
+				</hbox>
+
+				</div>
+
+			</div>
+		</north>
+
+		<west title="Wall" size="25%" collapsible="true" border="0" style="background:#254257;">
+			<div>
+				<hbox id="wallbutts" visible="false">
+					<button label="Annc" sclass="k9" onClick="reloadWallMod(1)" />
+				</hbox>
+				<div id="wallmod_holder" />
+			</div>
+		</west>
+
+		<center border="none" style="background:#2e3436;">
+			<!--
+			style="background:#2e3436;background:url('rwimg/RW1.jpg') no-repeat center center fixed; background-size: cover;"
+			-->
+			<div sclass="shadowbox" style="background:#2e3436;" width="1200px" >
+				<div id="workbox" />
+				<div id="worksandbox" />
+			</div>
+		</center>
+
+		<south border="none">
+			<div>
+				<div id="miscwindows" />
+			</div>
+		</south>
+
+	</borderlayout>
 
 <!--
 <timer id="maintimer" delay="${TIMER_DELAY}" repeats="true" onTimer="timerFunc()" />
@@ -851,8 +846,7 @@ branch_lbl.setValue("Branch: " + useraccessobj.branch);
 
 unm = useraccessobj.username;
 
-// default panels to load
-if(!unm.equals("padmin"))
+if(!unm.equals("padmin")) // default panels to load for users
 {
 	//doFunc(internaltasks_btn);
 	//doFunc(overdues_btn);
@@ -864,7 +858,6 @@ if(!unm.equals("padmin"))
 	if(randomInt > 80) profilepix.setSrc("/rwimg/avatars/padmin.jpg");
 	dbgb.setValue(randomInt.toString());
 	*/
-
 	reloadWallMod(1);
 }
 

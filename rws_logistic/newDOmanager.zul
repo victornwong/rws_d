@@ -12,8 +12,8 @@
 
 <zscript>
 <![CDATA[
-MYTITLE = "DO Management";
-MYVERSION = "v0.1";
+MYTITLE = "DO Management (This is not linked to FOCUS)";
+MYVERSION = "v0.2";
 MYPANEL = "newodmangerpan";
 /*
 @Title DO handling which will minus FC6 inventory
@@ -22,6 +22,8 @@ MYPANEL = "newodmangerpan";
 @Notes
 Total redesign from last year's module - pickup job-sheet and check asset-tags and minus FC6 inventory.
 Uses rwsdb2.DeliveryOrder and DeliveryOrderMaster
+
+31/12/2014: Lai req, add serial-numbers col
 
 */
 import java.util.*;
@@ -83,18 +85,12 @@ void doFunc(String itype)
 	}
 	else
 	{
-		if(glob_sel_do.equals("")) return;	
+		if(glob_sel_do.equals("")) return;
 	}
 
 	if(itype.equals("savedometa_b"))
 	{
-		Object[] jkl = { customername, d_code, d_shipaddress1, d_shipaddress2, d_shipaddress3, d_shippingcontact, d_shippingphone, d_remark, d_transporter, d_airwaybill };
-		dt = ngfun.getString_fromUI(jkl);
-
-		sqlstm = "update deliveryordermaster set name='" + dt[0] + "', code='" + dt[1] + "'," +
-		"shipaddress1='" + dt[2] + "', shipaddress2='" + dt[3] + "', shipaddress3='" + dt[4] + "'," +
-		"shippingcontact='" + dt[5] + "', shippingphone='" + dt[6] + "', remark='" + dt[7] + "'," +
-		"transporter='" + dt[8] + "', airwaybill='" + dt[9] + "' where id=" + glob_sel_do;
+		saveDO_Metadata(glob_sel_do);
 	}
 
 	if(itype.equals("savedoitems_b")) // save DO items
@@ -109,7 +105,8 @@ void doFunc(String itype)
 		ngfun.gpMakeCheckbox(irow,"","","");
 		ngfun.gpMakeTextbox(irow,"","","font-size:9px;","99%",textboxnulldrop).setMultiline(true);
 		ngfun.gpMakeTextbox(irow,"", "1","font-size:9px;","60%",textboxnulldrop);
-		ngfun.gpMakeTextbox(irow,"", "","font-size:9px;","60%",textboxnulldrop).setMultiline(true);
+		ngfun.gpMakeTextbox(irow,"", "","font-size:9px;","99%",textboxnulldrop).setMultiline(true);
+		ngfun.gpMakeTextbox(irow,"", "","font-size:9px;","99%",textboxnulldrop).setMultiline(true);
 	}
 
 	if(itype.equals("delitem_b")) // delete DO item
@@ -133,6 +130,8 @@ void doFunc(String itype)
 		{
 			if(Messagebox.show("Once DO committed, no more changes..", "Are you sure?",
 				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+			saveDO_items(glob_sel_do); // do a last save
 
 			sqlstm = "update deliveryordermaster set status='COMMIT' where id=" + glob_sel_do;
 			glob_sel_do_stat = "COMMIT";
@@ -351,21 +350,12 @@ void adminFunc(String itype)
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 }
 
-void updateDO_deliveryStat(String istat)
+void closePanel()
 {
-	if(glob_sel_do.equals("")) return;
-	if(glob_sel_do_stat.equals("STKOUT")) // Only DO stat=STKOUT can update delivery status
+	if(!glob_sel_do.equals("")) // Save works before closing panel
 	{
-		dt = kiboo.getDateFromDatebox(delstat_date);
-		tdt = kiboo.todayISODateTimeString();
-		sqlstm = "update deliveryordermaster set deliverydate='" + dt + "', del_status_date='" + tdt + "',del_status='" + istat + "' where id=" + glob_sel_do;
-		sqlhand.gpSqlExecuter(sqlstm);
-		showDOList(last_showdo_type);
-		add_RWAuditLog(JN_linkcode(), "", "Update delivery status", useraccessobj.username);
-	}
-	else
-	{
-		guihand.showMessageBox("ERR: DO is not yet STKOUT, you cannot update the delivery status..");
+		saveDO_Metadata(glob_sel_do);
+		saveDO_items(glob_sel_do);
 	}
 }
 
@@ -515,20 +505,22 @@ void updateDO_deliveryStat(String istat)
 <style src="/real-world.css" />
 
 <div width="1200px">
-<panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true">
+<panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" onClose="closePanel()">
 <panelchildren style="background:#60718A">
 
-	<hbox sclass="shadowbox" style="background:#793460">
-		<label value="Start date" sclass="k9mo" style="color:#ffffff" />
-		<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
-		<label value="End date" sclass="k9mo" style="color:#ffffff" />
-		<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
-		<textbox id="searhtxt_tb" width="100px" sclass="k9" />
-		<button label="Load/Find" sclass="k9mo" onClick="showDOList(1)" />
-		<textbox id="doid_tb" width="50px" sclass="k9" />
-		<button label="by DO" sclass="k9mo" onClick="showDOList(2)" />
-		<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#D60D0D" onClick="adminPop.open(self)" visible="false" />
-	</hbox>
+	<div sclass="shadowbox" style="background:#444D6A">
+		<hbox>
+			<label value="Start date" sclass="k9mo" style="color:#ffffff" />
+			<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
+			<label value="End date" sclass="k9mo" style="color:#ffffff" />
+			<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
+			<textbox id="searhtxt_tb" sclass="k9" />
+			<button label="Load/Find" sclass="k9mo" onClick="showDOList(1)" />
+			<textbox id="doid_tb" width="50px" sclass="k9" />
+			<button label="by DO" sclass="k9mo" onClick="showDOList(2)" />
+			<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#D60D0D" onClick="adminPop.open(self)" visible="false" />
+		</hbox>
+	</div>
 
 	<div sclass="shadowbox" style="background:#8CBA1C">
 		<hbox>
@@ -554,7 +546,7 @@ void updateDO_deliveryStat(String istat)
 			<label id="rdotitle_lbl" sclass="subhead1" />
 		</hbox>
 		<hbox>
-			<div sclass="shadowbox" style="background:#89AC4F" width="560px">
+			<div sclass="shadowbox" style="background:#89AC4F" width="450px">
 				<vbox>
 					<hbox>
 						<button id="asscust_b" label="Assign customer" sclass="k9mo" onClick="pickcustomer_popup.open(self)" />
@@ -584,6 +576,7 @@ void updateDO_deliveryStat(String istat)
 					<button id="additem_b" label="Add item" sclass="k9mo" onClick="doFunc(self.getId())" />
 					<button id="delitem_b" label="Delete" sclass="k9mo" onClick="doFunc(self.getId())" />
 					<button id="impasstags_b" label="Import asset-tags" sclass="k9mo" onClick="doFunc(self.getId())" />
+					<button id="parseserials_b" label="Parse serial-numbers" sclass="k9mo" onClick="parsePopulate_snums()" />
 					<button id="savedoitems_b" label="Save DO items" sclass="k9mo" onClick="doFunc(self.getId())" />
 				</hbox>
 				<separator height="3px" />
