@@ -537,14 +537,14 @@ void parsePopulate_snums()
 			try
 			{
 				wi = wi.substring(0,wi.length()-1);
-				sqlstm = "select serial from partsall_0 where assettag in (" + wi + ")";
+				sqlstm = "select assettag,serial from partsall_0 where assettag in (" + wi + ")";
 				r = sqlhand.rws_gpSqlGetRows(sqlstm);
 				if(r.size() > 0) // found some s/numbs
 				{
 					snm = "";
 					for(d : r)
 					{
-						snm += kiboo.checkNullString(d.get("serial")) + "\n";
+						snm += kiboo.checkNullString(d.get("assettag")) + " (" + kiboo.checkNullString(d.get("serial"))  + ")\n";
 					}
 					ki[4].setValue(snm); // insert snumbs
 				}
