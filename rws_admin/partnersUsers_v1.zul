@@ -5,8 +5,8 @@
 <zscript src="../rwglobal/rwsqlfuncs.zs" />
 <zscript>
 <![CDATA[
-MYTITLE = "OS-Partners Users";
-MYVERSION = "v0.1";
+MYTITLE = "OS-Partners and MEL Users";
+MYVERSION = "v0.2";
 MYPANEL = "partnmuserm_pan";
 /*
 Title		: Partners users controller
@@ -18,6 +18,7 @@ Uses webreportuser table
 uses these lookups-parents: dd_accesslevel , dd_branches
 
 05/12/2012: codes to save customer-prefix to be used to identify COC or whatever later : customer.newfield9
+06/01/2015: modif to cater for MEL-project users too
 
 */
 import org.victor.*;
@@ -27,16 +28,11 @@ myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
+guihand = new GuiFuncs(); luhand = new LookupFuncs();
 
-// Global vars
-glob_selected_ar_code = glob_selected_customer_name = "";
+glob_selected_ar_code = glob_selected_customer_name = glob_sel_partner = "";
 glob_selected_user = ""; // webreportuser.origid
-glob_sel_partner = "";
 last_customer_search = 0;
 
 void resetGlobalVars()
@@ -113,7 +109,6 @@ Object[] custun_lb_headers = {
 
 	trecs = sqlhand.gpSqlGetRows(sqlstm);
 
-	//alert(glob_sel_partner + " :: " + trecs);
 	if(trecs.size() == 0) return;
 	newlb.setMold("paging");
 	newlb.addEventListener("onSelect", custuclicker);
@@ -122,18 +117,6 @@ Object[] custun_lb_headers = {
 	for(dpi : trecs)
 	{
 		popuListitems_Data(kabom,fl,dpi);
-		/*
-		kabom.add(dpi.get("origid").toString());
-		kabom.add( kiboo.checkNullString(dpi.get("username")) );
-		kabom.add( kiboo.checkNullString(dpi.get("fullname")) );
-		kabom.add( kiboo.checkNullString(dpi.get("designation")) );
-		kabom.add( kiboo.checkNullString(dpi.get("email")) );
-		kabom.add( kiboo.checkNullString(dpi.get("handphone")) );
-		kabom.add( dpi.get("accesslevel").toString() );
-		kabom.add( (dpi.get("deleted") == 1) ? "Y" : "" );
-		kabom.add( (dpi.get("locked") == 1) ? "Y" : "" );
-		kabom.add( kiboo.checkNullString(dpi.get("branch")) );
-		*/
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"","");
 		kabom.clear();
 	}
@@ -242,8 +225,7 @@ void newupdateUser(int itype)
 		"where origid=" + glob_selected_user;
 
 	sqlhand.gpSqlExecuter(sqlstm);
-	//clearUserFields();
-	showCustomerUsersBox(); // refresh
+	showCustomerUsersBox();
 }
 
 void changePassword()
@@ -287,79 +269,79 @@ void saveCustomerPrefix()
 ]]>
 </zscript>
 
+<style src="/real-world.css" />
+<style>
+.GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
+{
+border: none; overflow: hidden; zoom: 1;
+border-top: none; border-left: none; border-right: none; border-bottom: none;
+} 
+</style>
+
 <div width="1200px">
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true">
 <panelchildren>
 
-<div style="background:#add8e6; -moz-box-shadow: 4px 5px 7px #000000; -webkit-box-shadow: 4px 5px 7px #000000;
-box-shadow: 4px 5px 7px #000000;padding:3px;margin:3px" >
+	<div sclass="shadowbox" style="background:#add8e6;" >
+		<div sclass="shadowbox" style="background:#3465a4;" >
+			<hbox>
+				<label value="Outsource partner" style="color:#ffffff" />
+				<listbox id="os_selector" mold="select" rows="1" />
+				<button id="loadosusers_b" label="Load users" onClick="showCustomerUsersBox()" />
+			</hbox>
+		</div>
+		<separator height="5px" />
+		<hbox>
+			<div id="custusers_holder" width="600px" />
 
-	<div style="background:#3465a4; -moz-box-shadow: 4px 5px 7px #000000; -webkit-box-shadow: 4px 5px 7px #000000;
-	box-shadow: 4px 5px 7px #000000;padding:3px;margin:3px" >
-
-	<hbox>
-		<label value="Outsource partner" style="color:#ffffff" />
-		<listbox id="os_selector" mold="select" rows="1" />
-		<button id="loadosusers_b" label="Load users" onClick="showCustomerUsersBox()" />
-	</hbox>
-
+			<div>
+				<grid id="usermetagrid" width="500px">
+					<rows>
+						<row spans=",3">
+							<label value="OS_Code" />
+							<label id="wru_arcode" />
+							<!-- <button label="Assign customer" sclass="k9" /> -->
+						</row>
+						<row>
+							<label value="Username" sclass="k9" />
+							<textbox id="wru_username" sclass="k9" width="99%" />
+							<label value="Password" sclass="k9" />
+							<textbox id="wru_password" sclass="k9" width="99%" />
+						</row>
+						<row>
+							<label value="Full.Name" sclass="k9" />
+							<textbox id="wru_fullname" sclass="k9" width="99%" />
+							<label value="Designation" sclass="k9" />
+							<textbox id="wru_designation" sclass="k9" width="99%" />
+						</row>
+						<row>
+							<label value="Email" sclass="k9" />
+							<textbox id="wru_email" sclass="k9" width="99%" />
+							<label value="Phone" sclass="k9" />
+							<textbox id="wru_handphone" sclass="k9" width="99%" />
+						</row>
+						<row>
+							<label value="Branch" sclass="k9" />
+							<listbox id="wru_branch" mold="select" sclass="k9" />
+							<label value="Access.Level" sclass="k9" />
+							<listbox id="wru_accesslevel" mold="select" sclass="k9" />
+						</row>
+						<row spans="4">
+							<checkbox id="wru_locked" label="Lock account" sclass="k9" />
+						</row>
+					</rows>
+				</grid>
+				<separator height="2px" />
+				<hbox>
+					<button id="newupdate_btn" label="New user" sclass="k9" onClick="newupdateUser(1)" />
+					<button id="update_btn" label="Update.." sclass="k9" onClick="newupdateUser(2)" />
+					<button id="clrfields_btn" label="Clear fields" sclass="k9" onClick="clearUserFields()" />
+					<button id="chgpwd_btn" label="Change password" sclass="k9" onClick="changePassword()" />
+					<button id="deluser_btn" label="Delete user" sclass="k9" onClick="deleteUser()" visible="false" />
+				</hbox>
+			</div>
+		</hbox>
 	</div>
-
-	<separator height="5px" />
-
-<hbox>
-<div id="custusers_holder" width="600px" />
-
-<div>
-	<grid id="usermetagrid" width="500px" visible="false">
-		<rows>
-			<row spans=",3">
-				<label value="OS_Code" />
-				<label id="wru_arcode" />
-				<!-- <button label="Assign customer" style="font-size:9px" /> -->
-			</row>
-			<row>
-				<label value="Username" style="font-size:9px" />
-				<textbox id="wru_username" style="font-size:9px" width="99%" />
-				<label value="Password" style="font-size:9px" />
-				<textbox id="wru_password" style="font-size:9px" width="99%" />
-			</row>
-			<row>
-				<label value="Full.Name" style="font-size:9px" />
-				<textbox id="wru_fullname" style="font-size:9px" width="99%" />
-				<label value="Designation" style="font-size:9px" />
-				<textbox id="wru_designation" style="font-size:9px" width="99%" />
-			</row>
-			<row>
-				<label value="Email" style="font-size:9px" />
-				<textbox id="wru_email" style="font-size:9px" width="99%" />
-				<label value="Phone" style="font-size:9px" />
-				<textbox id="wru_handphone" style="font-size:9px" width="99%" />
-			</row>
-			<row>
-				<label value="Branch" style="font-size:9px" />
-				<listbox id="wru_branch" mold="select" style="font-size:9px" />
-				<label value="Access.Level" style="font-size:9px" />
-				<listbox id="wru_accesslevel" mold="select" style="font-size:9px" />
-			</row>
-			<row spans="4">
-				<checkbox id="wru_locked" label="Lock account" style="font-size:9px" />
-			</row>
-		</rows>
-	</grid>
-	<separator height="2px" />
-	<hbox>
-		<button id="newupdate_btn" label="New user" style="font-size:9px" onClick="newupdateUser(1)" />
-		<button id="update_btn" label="Update.." style="font-size:9px" onClick="newupdateUser(2)" />
-		<button id="clrfields_btn" label="Clear fields" style="font-size:9px" onClick="clearUserFields()" />
-		<button id="chgpwd_btn" label="Change password" style="font-size:9px" onClick="changePassword()" />
-		<button id="deluser_btn" label="Delete user" style="font-size:9px" onClick="deleteUser()" visible="false" />
-	</hbox>
-</div>
-
-</hbox>
-
-</div>
 
 <separator height="5px" />
 
@@ -371,7 +353,6 @@ luhand.populateListbox_ByLookup(wru_branch,"dd_branches",2);
 luhand.populateListbox_ByLookup(os_selector, "OUTSOURCE_PARTNERS", 2);
 os_selector.setSelectedIndex(1);
 
-// admin stuff
 if(useraccessobj.accesslevel == 9)
 {
 	deluser_btn.setVisible(true);

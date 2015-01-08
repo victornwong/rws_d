@@ -653,10 +653,22 @@ Object getFC_indta_rec(String iwhat)
 	return sqlhand.rws_gpSqlFirstRow(sqlstm);
 }
 
+Object getMELGRN_rec(String iwhat)
+{
+	sqlstm = "select * from mel_grn where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
+}
+
 boolean existRW_inLCTab(String iwhat)
 {
 	sqlstm = "select top 1 origid from rw_lc_records where rwno='" + iwhat + "' or lc_id='" + iwhat + "'";
 	return (sqlhand.gpSqlFirstRow(sqlstm) == null) ? false : true;
+}
+
+Object getFocus_StockGrades() // Get Focus6 available inventory grades
+{
+	sqlstm = "select distinct grade from partsall_0 order by grade";
+	return sqlhand.rws_gpSqlGetRows(sqlstm);
 }
 
 Object getFC6DO_rec(String iwhat) // TODO check java codes for this

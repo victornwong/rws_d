@@ -37,6 +37,7 @@ MYPANEL = "billtrkcpan";
 27/10/2014: add rw_lc_equips.assigned, user able to set assigned/un for assets
 31/10/2014: helpdesk replacement let BA update the LC record
 06/11/2014: pull in sqlstm from eolmanager.zul to list expire LCs, show also the no. of GCO raised per LC
+07/01/2015: Mahes req, new LC status, REFRESH_COL, refresh collected
 
 */
 import java.util.*;
@@ -198,7 +199,7 @@ void doFunc(Object iwhat)
 
 	if(itype.equals("stactive_b") || itype.equals("sttermin_b") || itype.equals("stextens_b") ||
 	itype.equals("stinerti_b") || itype.equals("stbuyout_b") || itype.equals("stinactive_b") || itype.equals("stpartial_b") ||
-	itype.equals("partret_b") || itype.equals("creditn_b") || itype.equals("refresh_b"))
+	itype.equals("partret_b") || itype.equals("creditn_b") || itype.equals("refresh_b") || itype.equals("refcoll_b") )
 	{
 		if(glob_selected_lc.equals("")) return;
 		sqlstm = "update rw_lc_records set lstatus='" + iwhat.getLabel() + "' where origid=" + glob_selected_lc;
@@ -582,6 +583,7 @@ BUTT_WIDTH2 = "190px";
 			<button id="partret_b" label="PARTIAL_RET" width="100px" onClick="doFunc(self)" />
 			<button id="creditn_b" label="CN" width="100px" onClick="doFunc(self)" />
 			<button id="refresh_b" label="REFRESH" width="100px" onClick="doFunc(self)" />
+			<button id="refcoll_b" label="REFRESH_COL" width="100px" onClick="doFunc(self)" />
 		</vbox>
 	</div>
 </popup>

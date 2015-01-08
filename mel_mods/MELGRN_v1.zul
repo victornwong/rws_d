@@ -10,7 +10,9 @@
 <zscript src="../rwglobal/jobNotes_funcs.zs" />
 <zscript src="../rwglobal/uploadedWorksheet_v1.zs" />
 <zscript src="../rwglobal/emailfuncs.zs" />
+<zscript src="../rws_warehouse/goodsreceive/injtest.zs" />
 <zscript src="./MELGRN_funcs.zs" />
+<zscript src="./MELGRN_inventory.zs" />
 <zscript>
 <![CDATA[
 MYTITLE = "MEL - Goods Receival";
@@ -37,7 +39,9 @@ guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 PARSE_SNUM_POS = 0; // posi to MELGRN_funcs.csgnasshd
+PARSE_ASSETTAG_POS = 1;
 PARSE_CSGN_NO_POS = 2;
+PARSE_ITEMDESC_POS = 5;
 PARSE_DATERECEIVED_POS = 14;
 
 MELGRN_PREFIX = "MELGRN";
@@ -58,6 +62,7 @@ void grnFunc(String itype)
 	todaydate =  kiboo.todayISODateTimeString();
 	sqlstm = msgtext = "";
 	unm = useraccessobj.username;
+	lnkc = JN_linkcode();
 
 	if(itype.equals("newgrn_b"))
 	{
@@ -95,6 +100,22 @@ void grnFunc(String itype)
 		updateMEL_inventory(glob_sel_grn, glob_sel_batchno);
 	}
 
+	if(itype.equals("rediginvt_b")) // re-dig mel_inventory to resolve unknown-serials,
+	{																// MEL has to confirm and upload the unknown snums for further action
+		if( impsns_holder.getFellowIfAny("impsn_lb") == null) return "";
+		ki = impsn_lb.getItems().toArray();
+		snums = "";
+		for(i=0; i<ki.length; i++)
+		{
+			xsn = lbhand.getListcellItemLabel(ki[i],PARSE_SNUM_POS); // serial-no
+			xastg = lbhand.getListcellItemLabel(ki[i],PARSE_ASSETTAG_POS); // asset-tag
+			snums += xsn + "\n" + xastg + "\n";
+		}
+		if(snums.equals("")) return;
+		importParse_MEL_snums(snums,glob_sel_parentcsgn);
+		msgtext = "Serial-numbers re-dig against MEL inventory..";
+	}
+
 	if(itype.equals("commgrn_b")) // commit MEL-GRN
 	{
 		if(!glob_sel_unknown.equals("")) // got unknown unresolved serial-numbers
@@ -104,27 +125,59 @@ void grnFunc(String itype)
 		else
 		if(glob_sel_stat.equals("DRAFT"))
 		{
+			r = getMELGRN_rec(glob_sel_grn);
+			if(r == null) { guihand.showMessageBox("ERR: cannot access MELGRN record.."); return; }
+			if(r.get("unknown_snums") != null) { guihand.showMessageBox("ERR: unknown serial-numbers found, cannot commit.."); return; }
+
 			if(Messagebox.show("Once MELGRN committed, no more changes..", "Are you sure?",
-				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) != Messagebox.YES) return;
+
+			updateMEL_inventory(glob_sel_grn, glob_sel_batchno); // upd the scanned snums before committing
+			toggButts(true); // disabled butts once committed
 
 			sqlstm = "update mel_grn set gstatus='COMMIT', commitdate='" + todaydate + "', commituser='" + unm + "' where origid=" + glob_sel_grn + ";";
 			sqlstm += commit_GRN_equips(glob_sel_grn, glob_sel_batchno);
-			toggButts(true); // disabled butts once committed
+
+			add_RWAuditLog(lnkc,"", "Commit MELGRN: " + glob_sel_grn, unm);
+			notifyCommitMELGRN(glob_sel_grn);
 		}
 		else
 		{
-			msgtext = "MELGRN is either committed or cancelled. No further actions allowed.";
+			msgtext = "MELGRN is either committed or cancelled or stock-in. No further actions allowed.";
 		}
 	}
 
-	if(itype.equals("cancelgrn_b")) // cancel MEL-GRN
+	if(itype.equals("cancelgrn_b")) // cancel MEL-GRN, unlink snums in mel_inventory
 	{
 		if(glob_sel_stat.equals("DRAFT"))
 		{
+			if(Messagebox.show("Once MELGRN cancelled, no more changes..", "Are you sure?",
+				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) != Messagebox.YES) return;
+
+			sqlstm = "update mel_grn set gstatus='CANCEL', commitdate=null, commituser=null where origid=" + glob_sel_grn + ";";
+			add_RWAuditLog(lnkc,"", "CANCEL MELGRN: " + glob_sel_grn, unm);
+			toggButts(true); // disabled butts
 		}
 		else
 		{
-			msgtext = "MELGRN is either committed or cancelled. No further actions allowed.";
+			msgtext = "MELGRN is either committed or cancelled or stock-in. No further actions allowed.";
+		}
+	}
+
+	if(itype.equals("updinventory_b")) // insert equip into FC6 inventory
+	{
+		if( impsns_holder.getFellowIfAny("impsn_lb") == null) return "";
+		if(!glob_sel_stat.equals("COMMIT"))
+		{
+			msgtext = "ERR: MELGRN must be committed before you can post inventory..";
+		}
+		else
+		{
+			if(Messagebox.show("This action will insert the equipments into inventory..", "Are you sure?",
+				Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+			updateInventory_GRNItems();
+			sqlstm = "update mel_grn set gstatus='STKIN' where origid=" + glob_sel_grn + ";";
 		}
 	}
 
@@ -134,13 +187,6 @@ void grnFunc(String itype)
 		show_MELGRN(last_showgrn_type);
 	}
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
-}
-
-String commit_GRN_equips(String igrn, String ibn)
-{
-	retsql = "";
-
-	return retsql;
 }
 
 void adminFunc(String itype)
@@ -200,7 +246,16 @@ void adminFunc(String itype)
 		sqlstm += "update mel_inventory set batch_no=null, received=null, melgrn_id=null where melgrn_id=" + glob_sel_grn;
 	}
 
-/*
+	if(itype.equals("admdelequip_b")) // del equip from list
+	{
+		if(!lbhand.check_ListboxExist_SelectItem(impsns_holder,"impsn_lb")) return;
+		ki = impsn_lb.getSelectedItems().toArray();
+		for(i=0; i<ki.length; i++)
+		{
+			ki[i].setParent(null);
+		}
+	}
+
 	if(itype.equals("minustock_b") || itype.equals("addstock_b"))
 	{
 		kk = kiboo.replaceSingleQuotes( a_minus_stock.getValue().trim() );
@@ -212,7 +267,7 @@ void adminFunc(String itype)
 		mt = (itype.equals("minustock_b")) ? 1 : 2;
 		minusAddFocus_Stock(mt,ki);
 	}
-*/
+
 	if(!sqlstm.equals(""))
 	{
 		sqlhand.gpSqlExecuter(sqlstm);
@@ -220,39 +275,6 @@ void adminFunc(String itype)
 	}
 	if(refresh_equips) {}
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
-}
-
-void notifyUnknownSerials(String iwhat)
-{
-	if(iwhat.equals("")) return;
-	subj = topeople = emsg = "";
-
-	sqlstm = "select parent_csgn, batch_no, unknown_snums, rwlocation from mel_grn where origid=" + iwhat;
-	r = sqlhand.gpSqlFirstRow(sqlstm);
-	if(r == null) return;
-	if(r.get("unknown_snums") == null)
-	{
-		guihand.showMessageBox("ERR: no unknown serial-numbers in record..");
-		return;
-	}
-	else
-	{
-		subj = "[UNKNOWN] Serial-numbers detected in MELGRN: " + iwhat + " at " + r.get("rwlocation");
-		topeople = luhand.getLookups_ConvertToStr("MEL_RW_COORD",2,",");
-		emsg =
-		"------------------------------------------------------" +
-		"\nMELGRN          : " + iwhat +
-		"\nRW warehouse    : " + r.get("rwlocation") +
-		"\nUnknown serials :\n\n" +
-		sqlhand.clobToString(r.get("unknown_snums")) +
-		"\n\nPlease login to check and process ASAP." +
-		"\n------------------------------------------------------";
-
-		gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, topeople, subj, emsg );
-		add_RWAuditLog(JN_linkcode(),"", "Send unknown serials notification email", useraccessobj.username);
-		guihand.showMessageBox("Notification email sent for unknown serial-numbers detected..");
-	}
-
 }
 
 ]]>
@@ -277,6 +299,7 @@ void notifyUnknownSerials(String iwhat)
 			<button id="clrecvdate_b" label="Clear inventory recv" sclass="k9mo" onClick="adminFunc(self.getId())" />
 			<button id="clrsnums_b" label="Clear grn snums + unknowns" sclass="k9mo" onClick="adminFunc(self.getId())" />
 			<button id="delgrn_b" label="DELETE MELGRN" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			<button id="updinventory_b" label="Update FC6 inventory" sclass="k9mo" style="color:#DB3535" onClick="grnFunc(self.getId())" />
 			<hbox>
 				<textbox id="a_minus_stock" sclass="k9" value="1" />
 				<button id="minustock_b" label="-stock" sclass="k9mo" onClick="adminFunc(self.getId())" />
@@ -300,13 +323,13 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 <panelchildren style="background:#0C203E">
 
 	<div sclass="shadowbox" style="background:#3E436B">
-		<hbox style="padding:3px">
+		<hbox>
 			<label value="Start date" sclass="k9b" />
 			<datebox id="startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
 			<label value="End date" sclass="k9b" />
 			<datebox id="enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
-			<textbox id="searhtxt_tb" sclass="k9" />
-			<button label="Load/Find" sclass="k9mo" onClick="show_MELGRN(1)" />
+			<textbox id="searhtxt_tb" sclass="k9" visible="false" />
+			<button label="Load" sclass="k9mo" onClick="show_MELGRN(1)" />
 			<textbox id="grnid_tb" width="50px" sclass="k9" />
 			<button label="by MELGRN" sclass="k9mo" onClick="show_MELGRN(2)" />
 			<listbox id="p_location" mold="select" sclass="k9" />
@@ -316,8 +339,8 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 		<separator bar="true" />
 		<hbox>
 			<button id="newgrn_b" label="New MELGRN" sclass="k9mo" onClick="grnFunc(self.getId())" />
-			<button id="cancelgrn_b" label="Cancel" sclass="k9mo" onClick="grnFunc(self.getId())" />
 			<button id="commgrn_b" label="Commit" sclass="k9mo" onClick="grnFunc(self.getId())" />
+			<button id="cancelgrn_b" label="Cancel" sclass="k9mo" style="color:#DB3535" onClick="grnFunc(self.getId())" />
 		</hbox>
 		<separator height="3px" />
 		<div id="melgrnlb_holder" />
@@ -343,7 +366,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 						</row>
 					</rows>
 				</grid>
-				<label value="Scan S/Nums" style="color:#ffffff;font-weight:bold" />
+				<label value="Scan S/Nums and RW Asset-tags" style="color:#ffffff;font-weight:bold" />
 				<textbox id="t_serial_numbers" multiline="true" width="99%" height="200px" />
 				<hbox>
 					<button id="impsnums_b" label="Import and parse" sclass="k9mo" onClick="grnFunc(self.getId())" />
@@ -357,6 +380,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 					<button id="saveimpd_b" label="Save/link equips to consignment and batch" sclass="k9mo" onClick="grnFunc(self.getId())" />
 					<button id="rediginvt_b" label="Re-dig MEL inventory" sclass="k9mo" onClick="grnFunc(self.getId())" />
 					<button id="notifprob_b" label="NOTIFY on UNKNOWN equips" sclass="k9mo" onClick="notifyUnknownSerials(glob_sel_grn)" />
+					<button id="admdelequip_b" label="REMOVE" sclass="k9mo" visible="false" onClick="adminFunc(self.getId())" />
 				</hbox>
 			</vbox>
 
@@ -369,9 +393,14 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 luhand.populateListbox_ByLookup(p_location, "MEL_PARTNER_LOCATION", 2);
 populate_MELCSGN(xm_csgn);
 
+if(sechand.allowedUser(useraccessobj.username,"MEL_RW_COORD_USERS"))
+{
+}
+
 if(useraccessobj.accesslevel == 9)
 {
 	admin_b.setVisible(true);
+	admdelequip_b.setVisible(true);
 }
 
 ]]>

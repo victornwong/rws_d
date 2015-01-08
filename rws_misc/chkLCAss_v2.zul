@@ -144,9 +144,9 @@ void listLCassets(String iwhat)
 	newlb.setMold("paging"); newlb.setRows(20);
 	ArrayList kabom = new ArrayList();
 	String[] fl = { "origid", "asset_tag", "serial_no", "origid", "type", "gcn_id", "buyout" , "billable" };
-	ks = "font-size:9px";
 	for(d : r)
 	{
+		ks = "";
 		ngfun.popuListitems_Data(kabom,fl,d);
 		if(d.get("gcn_id") != null && d.get("gcn_id") != 0 ) ks="background:#f77272;font-size:9px";
 		if(d.get("buyout")) ks = "background:#23B3DB;font-size:9px";
