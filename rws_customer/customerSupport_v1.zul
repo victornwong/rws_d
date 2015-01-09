@@ -103,13 +103,14 @@ void doFunc(Object iwhat)
 		};
 
 		dt = ngfun.getString_fromUI(ob);
+		cnm = kiboo.replaceSingleQuotes( global_selected_customername );
 		//t_resolved_on
 		//restyp = kiboo.replaceSingleQuotes(t_resolve_type.getValue().trim());
 		//osid = kiboo.replaceSingleQuotes(t_os_id.getValue().trim());
 		//t_os_pickup, t_os_resolve
 
 		sqlstm = "update rw_helptickets set fc6_custid='" + global_selected_customerid + "'," + 
-		"cust_name='" + global_selected_customername + "',cust_caller='" + dt[0] + "',cust_caller_phone='" + dt[1] + "'," + 
+		"cust_name='" + cnm + "',cust_caller='" + dt[0] + "',cust_caller_phone='" + dt[1] + "'," + 
 		"cust_caller_des='" + dt[2] + "',cust_caller_email='" + dt[3] + "',cust_location='" + dt[4] + "'," + 
 		"asset_tag='" + dt[5] + "',serial_no='" + dt[6] + "',product_name='" + dt[7] + "',assign_to='" + dt[8] + "'," + 
 		"priority='" + dt[9] + "',problem='" + dt[10] + "',action='" + dt[11] + "',resolved_by='" + dt[12] + "'," + 

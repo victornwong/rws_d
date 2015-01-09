@@ -381,3 +381,52 @@ void impBatchLCAssets()
 	showAssets(glob_selected_lc);
 	guihand.showMessageBox("Kabooomm... batch-imported 'em assets");
 }
+
+// 09/01/2015: import RDO assets
+void importRDO(String ilc)
+{
+	sedutRDOpop.close();
+	if(ilc.equals("")) return;
+	rdo = kiboo.replaceSingleQuotes( imprdo_tb.getValue().trim() );
+	try { k = Integer.parseInt(rdo); } catch (Exception e) { guihand.showMessageBox("We need RDO nombor to work"); return; }
+	sqlstm = "select serial_numbers from deliveryorder where dono='" + rdo + "';";
+	r = sqlhand.gpSqlGetRows(sqlstm);
+	if(r.size() == 0) { guihand.showMessageBox("Nothing to import from this RDO!"); return; }
+
+	drc = getnewDO_rec(rdo);
+	sadr = ""; // shipment address
+	if(drc != null)
+	{
+		sadr = kiboo.checkNullString(drc.get("ShipAddress1")) + "\n" +
+		kiboo.checkNullString(drc.get("ShipAddress2")) + "\n" + 
+		kiboo.checkNullString(drc.get("ShipAddress3"));
+	}
+
+	sqlstm = "";
+	for(d : r)
+	{
+		m = sqlhand.clobToString( d.get("serial_numbers") );
+		snp = m.split("\n");
+		//for(i=0; i<snp.length; i++)
+		for(i=0; i<snp.length; i++)
+		{
+			xp = snp[i].split(" ");
+			try { atg = xp[0]; } catch (Exception e) { atg = ""; }
+			try { snm = xp[1].replaceAll("\\(","").replaceAll("\\)",""); } catch (Exception e) { snm =""; }
+
+			if(!atg.equals("")) // must have rw ass-tag to insert
+				sqlstm += "insert into rw_lc_equips (asset_tag,serial_no,lc_parent,billable,buyout,cust_location,do_no) values " +
+				"('" + atg + "','" + snm + "'," + ilc + ",0,0,'" + sadr + "','" + rdo + "');";
+
+			if(i > 10) break;
+		}
+	}
+	if(!sqlstm.equals(""))
+	{
+		sqlhand.gpSqlExecuter(sqlstm);
+		showAssets(ilc);
+		imprdo_tb.setValue("");
+		guihand.showMessageBox("RDO asset-tags imported..");
+	}
+}
+

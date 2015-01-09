@@ -103,6 +103,7 @@ String[] MEL_invt_fields = {
 "model",
 "sub_type",
 "sub_spec",
+"rw_monitortype",
 "rw_color",
 "rw_casing",
 "rw_COA",

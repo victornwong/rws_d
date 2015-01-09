@@ -18,7 +18,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "LC Management";
-MYVERSION = "v0.4.3";
+MYVERSION = "v0.4.4";
 MYPANEL = "billtrkcpan";
 /*
 @Title LC billing tracking and so on
@@ -38,6 +38,7 @@ MYPANEL = "billtrkcpan";
 31/10/2014: helpdesk replacement let BA update the LC record
 06/11/2014: pull in sqlstm from eolmanager.zul to list expire LCs, show also the no. of GCO raised per LC
 07/01/2015: Mahes req, new LC status, REFRESH_COL, refresh collected
+09/01/2015: Farah req import from RDO - the items
 
 */
 import java.util.*;
@@ -71,6 +72,8 @@ Object glob_sel_assetrec = null; // to be used for replacement and other funcs w
 last_list_type = 0;
 
 lc_manager_flag = 1; // used in LCassReplaceTracker.zs to show LB
+
+STATBUTT_WIDTH = "150px";
 
 // callback from fc6_CustomerSelector.zs
 void pickcustomer_Callback()
@@ -199,7 +202,7 @@ void doFunc(Object iwhat)
 
 	if(itype.equals("stactive_b") || itype.equals("sttermin_b") || itype.equals("stextens_b") ||
 	itype.equals("stinerti_b") || itype.equals("stbuyout_b") || itype.equals("stinactive_b") || itype.equals("stpartial_b") ||
-	itype.equals("partret_b") || itype.equals("creditn_b") || itype.equals("refresh_b") || itype.equals("refcoll_b") )
+	itype.equals("partret_b") || itype.equals("creditn_b") || itype.equals("refresh_b") || itype.equals("refcoll_b") || itype.equals("termcoll_b") )
 	{
 		if(glob_selected_lc.equals("")) return;
 		sqlstm = "update rw_lc_records set lstatus='" + iwhat.getLabel() + "' where origid=" + glob_selected_lc;
@@ -573,17 +576,18 @@ BUTT_WIDTH2 = "190px";
 	<div sclass="shadowbox" style="background:#97b83a;">
 		<label id="lcsetstat_lbl" />
 		<vbox>
-			<button id="stactive_b" label="ACTIVE" width="100px" onClick="doFunc(self)" />
-			<button id="stinactive_b" label="INACTIVE" width="100px" onClick="doFunc(self)" />
-			<button id="sttermin_b" label="TERMINATED" width="100px" onClick="doFunc(self)" />
-			<button id="stextens_b" label="EXTENSION" width="100px" onClick="doFunc(self)" />
-			<button id="stinerti_b" label="INERTIA" width="100px" onClick="doFunc(self)" />
-			<button id="stbuyout_b" label="BUYOUT" width="100px" onClick="doFunc(self)" />
-			<button id="stpartial_b" label="PARTIAL" width="100px" onClick="doFunc(self)" />
-			<button id="partret_b" label="PARTIAL_RET" width="100px" onClick="doFunc(self)" />
-			<button id="creditn_b" label="CN" width="100px" onClick="doFunc(self)" />
-			<button id="refresh_b" label="REFRESH" width="100px" onClick="doFunc(self)" />
-			<button id="refcoll_b" label="REFRESH_COL" width="100px" onClick="doFunc(self)" />
+			<button id="stactive_b" label="ACTIVE" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
+			<button id="stinactive_b" label="INACTIVE" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
+			<button id="sttermin_b" label="TERMINATED" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
+			<button id="stextens_b" label="EXTENSION" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
+			<button id="stinerti_b" label="INERTIA" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
+			<button id="stbuyout_b" label="BUYOUT" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
+			<button id="stpartial_b" label="PARTIAL" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
+			<button id="partret_b" label="PARTIAL_RET" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
+			<button id="creditn_b" label="CN" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
+			<button id="refresh_b" label="REFRESH" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
+			<button id="refcoll_b" label="REFRESH_COL" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
+			<button id="termcoll_b" label="TERMINATED_COL" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
 		</vbox>
 	</div>
 </popup>
@@ -596,7 +600,19 @@ BUTT_WIDTH2 = "190px";
 			<button label="Sedut Contractcare" sclass="k9" width="${BUTT_WIDTH}" onClick="popOp_suckContractcare(self)" />
 			<button id="getfc6assdet_b" label="TryGet FC6 asset-info" width="${BUTT_WIDTH}" sclass="k9" onClick="assFunc(self)" />
 			<button id="sdtdoaddr_b" label="Sedut DO muntah address" width="${BUTT_WIDTH}" sclass="k9" onClick="assFunc(self)" />
+			<separator bar="true" />
+			<button id="sdtrdo_b" label="Sedut RDO" sclass="k9" width="${BUTT_WIDTH}" onClick="sedutRDOpop.open(self)" />
 		</vbox>
+	</div>
+</popup>
+
+<popup id="sedutRDOpop">
+	<div sclass="shadowbox" style="background:#97b83a;">
+		<hbox>
+			<label value="RDO" sclass="k9" />
+			<textbox id="imprdo_tb" sclass="k9" />
+			<button label="Import RDO" sclass="k9" onClick="importRDO(glob_selected_lc)" />
+		</hbox>
 	</div>
 </popup>
 
