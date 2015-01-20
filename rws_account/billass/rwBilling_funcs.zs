@@ -358,9 +358,9 @@ void showLC_tree(int itype, Tree itree)
 
 			sqlstm = "select " + wola +
 			"from rw_lc_records lc " +
-			"where ( DATEDIFF(dd,lc.lenddate,GETDATE()) ) > " + expire_lc_daysbefore +
-			" and lc.lstatus not in ('INACTIVE', 'TERMINATED', 'CN', 'BUYOUT', 'Buy Out') " +
-			//"and lc.lstartdate between '" + sdate + "' and '" + edate + "' " +
+			//"where ( DATEDIFF(dd,lc.lenddate,GETDATE()) ) > " + expire_lc_daysbefore +
+			"where lc.lstatus not in ('INACTIVE', 'TERMINATED', 'CN', 'BUYOUT', 'Buy Out') " +
+			"and lc.lenddate between '" + sdate + "' and '" + edate + "' " +
 			cph +
 			"order by lc.lenddate";
 			recurlvl = 1; // only 1 level branch

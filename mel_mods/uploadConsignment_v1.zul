@@ -21,6 +21,7 @@ MYPANEL = "meluplcsgnpanel";
 @Author Victor Wong
 @Since 09/12/2014
 @Notes
+12/01/2015: if snum is NULL, take MEL asset-tag as snum. Also update mel_csgn.usedmelassettag
 */
 import java.util.*;
 import java.text.*;
@@ -171,6 +172,11 @@ void adminFunc(String itype)
 		auditlogs_pop.open(shwauditlogs_b);
 	}
 
+	if(itype.equals("trynotif_b"))
+	{
+		sendCsgn_Notif(3,glob_sel_csgn);
+	}
+
 	if(!sqlstm.equals(""))
 	{
 		sqlhand.gpSqlExecuter(sqlstm);
@@ -217,6 +223,7 @@ void adminFunc(String itype)
 		<vbox>
 			<button id="settoday_b" label="Set today" sclass="k9mo" onClick="adminFunc(self.getId())" />
 			<button id="setnew_b" label="Set NEW" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			<button id="trynotif_b" label="Set test notif email" sclass="k9mo" onClick="adminFunc(self.getId())" />
 		</vbox>
 	</div>
 </popup>
@@ -284,7 +291,8 @@ void adminFunc(String itype)
 	</hbox>
 	<separator height="3px" />
 	<div id="csgnasset_holder" />
-
+	<separator height="2px" />
+	<label id="uplcount_lbl" sclass="subhead1" />
 </div>
 
 <zscript>

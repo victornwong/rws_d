@@ -417,8 +417,6 @@ void importRDO(String ilc)
 			if(!atg.equals("")) // must have rw ass-tag to insert
 				sqlstm += "insert into rw_lc_equips (asset_tag,serial_no,lc_parent,billable,buyout,cust_location,do_no) values " +
 				"('" + atg + "','" + snm + "'," + ilc + ",0,0,'" + sadr + "','" + rdo + "');";
-
-			if(i > 10) break;
 		}
 	}
 	if(!sqlstm.equals(""))

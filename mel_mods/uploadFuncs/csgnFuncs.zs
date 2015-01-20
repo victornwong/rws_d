@@ -77,28 +77,40 @@ void uploadMEL_CSGN()
 	String[] clm = new String[11];
 
 	Listbox newlb = lbhand.makeVWListbox_Width(csgnasset_holder, csgnasshd, "csgnassets_lb", 20);
+	uplocount = 0;
+	unkwncount = 1; // to cater for unknown MEL serial-numbers
+	usedmelassettag = false;
 
 	for(i=MEL_EQU_ROWS_START; i<numrows; i++)
 	{
-		trow = sht0.getRow(i);
-		tcell = trow.getCell(0);
+		trow = sht0.getRow(i); if(trow == null) continue;
+		tcell = trow.getCell(0); if(tcell == null) continue;
+
 		clm[0] = "";
 		try { clm[0] = POI_GetCellContentString(tcell,evaluator,"").trim(); } catch (Exception e) {}
 		clm[0] = clm[0].toUpperCase();
 
-		// HARDCODED string checking
-		if(!clm[0].equals("") && !clm[0].equals("PACKING REMARK") && !clm[0].equals("REMARKS:"))
+		if(!clm[0].equals("") && !clm[0].equals("PACKING REMARK") && !clm[0].equals("REMARKS:")) // HARDCODED string checking
 		{
 			try
 			{
 				tcell = trow.getCell(1);
-				clm[1] = POI_GetCellContentString(tcell,evaluator,"").trim();
+				clm[1] = POI_GetCellContentString(tcell,evaluator,"").trim(); // get snum
+				clm[1] = clm[1].replaceAll(",",""); // 12/01/2015: sometimes snum imported as no. which contains , formatting
 				if(!clm[1].equals(""))
 				{
 					for(x=2; x<11; x++)
 					{
 						tcell = trow.getCell(x);
 						clm[x] = POI_GetCellContentString(tcell,evaluator,"").trim();
+						if(x == 2) // MEL asset-tag formatted as no., remove ","
+							clm[x] = clm[x].replaceAll(",","");
+					}
+
+					if(clm[1].toUpperCase().equals("NULL")) // if null/unknown MEL snums, take MEL asset-tag as snum
+					{
+						clm[1] = clm[2];
+						usedmelassettag = true;
 					}
 
 					if( !hm.containsKey(clm[1]) && !hm.containsKey(clm[2]) ) // make sure no dup s/num and mel-asset-tag
@@ -106,6 +118,7 @@ void uploadMEL_CSGN()
 						lbhand.insertListItems(newlb,clm,"false","");
 						hm.put(clm[1],1); // put s/num and mel-asset-tag into hashmap for dups checking
 						hm.put(clm[2],1);
+						uplocount++;
 					}
 					else
 					{
@@ -118,9 +131,14 @@ void uploadMEL_CSGN()
 			catch (Exception e) {}
 		}
 	}
+	uplcount_lbl.setValue("Items uploaded: " + uplocount.toString());
 
-	// java.io.ByteArrayInputStream
+	mf = (usedmelassettag) ? "1" : "0";
+	sqlstm = "update mel_csgn set usedmelassettag=" + mf + " where origid=" + glob_sel_csgn;
+	sqlhand.gpSqlExecuter(sqlstm); // upload mel_csgn.usedmelassettag flag
+	
 	/* DO LATER
+	java.io.ByteArrayInputStream
 	Sql sql = sqlhand.als_mysoftsql();
 	if(sql != null) // save uploaded worksheet
 	{
@@ -133,7 +151,6 @@ void uploadMEL_CSGN()
 		sql.close();
 	}
 	*/
-
 }
 
 void showConsignmentThings()
@@ -169,6 +186,7 @@ Object[] csgnlb_headers =
 	new listboxHeaderWidthObj("Status",true,"70px"), // 5
 	new listboxHeaderWidthObj("Notes",true,""),
 	new listboxHeaderWidthObj("Qty",true,"50px"),
+	new listboxHeaderWidthObj("UseMEL",true,"40px"),
 };
 
 class csgnlbClick implements org.zkoss.zk.ui.event.EventListener
@@ -200,7 +218,7 @@ void loadCSGN(int itype)
 
 	Listbox newlb = lbhand.makeVWListbox_Width(csgnholder, csgnlb_headers, "csgn_lb", 3);
 
-	sqlstm = "select mn.origid,mn.datecreated,mn.csgn,mn.mel_user,mn.mstatus,mn.extranotes,mn.rwlocation," +
+	sqlstm = "select mn.origid,mn.datecreated,mn.csgn,mn.mel_user,mn.mstatus,mn.extranotes,mn.rwlocation,mn.usedmelassettag," +
 	"(select count(origid) from mel_inventory where parent_id=mn.origid) as qty " +
 	"from mel_csgn mn ";
 
@@ -221,7 +239,7 @@ void loadCSGN(int itype)
 	newlb.setRows(21); newlb.setMold("paging");
 	newlb.addEventListener("onSelect", csgnclkier);
 	ArrayList kabom = new ArrayList();
-	String[] fl = { "origid", "datecreated", "csgn", "mel_user", "rwlocation", "mstatus", "extranotes","qty" };
+	String[] fl = { "origid", "datecreated", "csgn", "mel_user", "rwlocation", "mstatus", "extranotes","qty","usedmelassettag" };
 	for(d : rcs)
 	{
 		ngfun.popuListitems_Data(kabom,fl,d);
@@ -280,13 +298,34 @@ void reallySaveMEL_equiplist()
 
 void sendCsgn_Notif(int itype, String icsgn)
 {
+	r = getMELCSGN_rec(icsgn);
+	if(r == null)
+	{
+		guihand.showMessageBox("ERR: send email notification failed - cannot retrieve consignment record.");
+		return;
+	}
+
 	subj = topeople = "";
+	/*
 	emsg =
 	"------------------------------------------------------" +
 	"\nMEL CSGN REF : " + glob_sel_melcsgn +
 	"\nRW warehouse : " + glob_sel_loca +
 	"\nQty          : " + glob_csgn_qty +
 	"\nNotes        : " + glob_sel_notes +
+	"\n\nPlease login to check and process ASAP." +
+	"\n------------------------------------------------------";
+	*/
+
+	mf = (r.get("usedmelassettag") == null) ? "NO" : ( (r.get("usedmelassettag")) ? "YES" : "NO");
+
+	emsg =
+	"------------------------------------------------------" +
+	"\nMEL CSGN REF      : " + kiboo.checkNullString( r.get("csgn") ) +
+	"\nRW warehouse      : " + kiboo.checkNullString( r.get("rwlocation") ) +
+	"\nQty               : " + glob_csgn_qty +
+	"\nUse MEL asset-tag : " + mf +
+	"\nNotes             : " + kiboo.checkNullString( r.get("extranotes") ) +
 	"\n\nPlease login to check and process ASAP." +
 	"\n------------------------------------------------------";
 
@@ -300,6 +339,11 @@ void sendCsgn_Notif(int itype, String icsgn)
 		case 2: // cancel notif
 			subj = "[CANCELLED] MEL Consignment-note: " + icsgn;
 			topeople = luhand.getLookups_ConvertToStr("MEL_RW_COORD",2,",");
+			break;
+
+		case 3: // send test notif
+			subj = "[TESTING] mel consignment-note";
+			topeople = "victor@rentwise.com";
 			break;
 	}
 

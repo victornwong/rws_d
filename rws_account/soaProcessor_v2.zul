@@ -350,7 +350,7 @@ void generateExcelSOA(int itype)
 	
 	sttd = kiboo.getDateFromDatebox(statement_date);
 	sttds = "Statement date: " + sttd;
-	dfints = "Interest rate: " + customer_interest.getValue() + "%";
+	dfints = "Late payment charges: " + customer_interest.getValue() + "%";
 
 	excelInsertString(wsheet,0,0,custdetstr); // insert customer-det into worksheet
 	excelInsertString(wsheet,0,8,sttds); // insert statement date

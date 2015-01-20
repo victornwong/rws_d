@@ -9,7 +9,7 @@ void panel_Close() // main-panel onClose do something
 {
 	if(!glob_sel_grn.equals("")) // if GRN selected - save 'em specs
 	{
-		//saveSpecs();
+		saveSpecs();
 	}
 }
 

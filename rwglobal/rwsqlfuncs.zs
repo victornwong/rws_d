@@ -653,12 +653,6 @@ Object getFC_indta_rec(String iwhat)
 	return sqlhand.rws_gpSqlFirstRow(sqlstm);
 }
 
-Object getMELGRN_rec(String iwhat)
-{
-	sqlstm = "select * from mel_grn where origid=" + iwhat;
-	return sqlhand.gpSqlFirstRow(sqlstm);
-}
-
 boolean existRW_inLCTab(String iwhat)
 {
 	sqlstm = "select top 1 origid from rw_lc_records where rwno='" + iwhat + "' or lc_id='" + iwhat + "'";
@@ -869,4 +863,16 @@ String getUser_email(String iwho)
 	sqlstm = "select email from portaluser where username='" + iwho + "'";
 	r = sqlhand.gpSqlFirstRow(sqlstm);
 	return (r == null) ? null : r.get("email");
+}
+
+Object getMELGRN_rec(String iwhat)
+{
+	sqlstm = "select * from mel_grn where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
+}
+
+Object getMELCSGN_rec(String iwhat)
+{
+	sqlstm = "select * from mel_csgn where origid=" + iwhat;
+	return sqlhand.gpSqlFirstRow(sqlstm);
 }

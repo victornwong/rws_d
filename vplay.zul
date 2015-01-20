@@ -861,7 +861,7 @@ if(!unm.equals("padmin")) // default panels to load for users
 	reloadWallMod(1);
 }
 
-if(unm.equals("padmin") || unm.equals("shopa"))
+if( unm.equals("padmin") || unm.equals("shopa") || unm.equals("nurul") || unm.equals("farah") )
 {
 	profilepix.setSrc("/rwimg/avatars/padmin2.jpg");
 }
