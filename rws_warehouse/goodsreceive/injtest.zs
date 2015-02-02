@@ -13,7 +13,10 @@ int calcFocusDate(String dstr)
 	java.util.Calendar thedate = Calendar.getInstance();
 	thedate.setTime(GlobalDefs.dtf2.parse(dstr));
 	// ((2014-1950)*416) + ((9*32)+1) + (18 - 1);
-	retval = ((thedate.get(Calendar.YEAR)-1950)*416) + ((thedate.get(Calendar.MONTH)*32)+1) + (thedate.get(Calendar.DAY_OF_MONTH)-1);
+	//alert("year=" + thedate.get(Calendar.YEAR).toString() + "\nmonth=" + thedate.get(Calendar.MONTH).toString() +
+	//"\nday=" + thedate.get(Calendar.DAY_OF_MONTH).toString());
+
+	retval = ((thedate.get(Calendar.YEAR)-1950)*416) + ((thedate.get(Calendar.MONTH)+1)*32) + (thedate.get(Calendar.DAY_OF_MONTH));
 	return retval;
 }
 

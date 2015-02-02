@@ -231,7 +231,7 @@ void listROCLC(int itype)
 			if(sct.equals("")) return;
 			sqlstm += "where (lc.customer_name like '%" + sct + "%' or " +
 			"lc.order_type like '%" + sct + "%' or lc.remarks like '%" + sct + "%' or " +
-			"lc.rwno like '%" + sct + "%' or lc.lc_id like '%" + sct + "%') " +
+			"lc.rwno like '%" + sct + "%' or lc.lc_id like '%" + sct + "%' or lc.prev_lc like '%" + sct + "%') " +
 			"order by lc.rwno";
 			glob_commasep = "";
 			break;

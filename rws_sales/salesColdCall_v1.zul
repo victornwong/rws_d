@@ -97,7 +97,7 @@ void contFunc(Object iwhat)
 		bizr = a_businessroc.getValue().trim();
 		cstn = a_cust_name.getValue().trim();
 
-		topeople = "creditcontrol@rentwise.com,tony@rentwise.com"; // HARDCODED - change accordingly
+		topeople = "creditcontrol@rentwise.com,tony@rentwise.com,thamkl@rentwise.com"; // HARDCODED - change accordingly
 		subj = "Pre-pre-evaluation request by " + unm + " for " + cstn + " (" + bizr + ")";
 		msgb = "Pre-pre-evaluation request for this company:\n" + cstn + " (" + bizr + ")\n\n" +
 		"Please update the customer-grade in RWMS Sales Activities/Cold-Call module ASAP.";
