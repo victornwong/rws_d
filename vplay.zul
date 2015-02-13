@@ -28,14 +28,10 @@ import java.text.*;
 import org.zkoss.zk.ui.*;
 import org.victor.*;
 
-Generals kiboo = new Generals();
-ListboxHandler lbhand = new ListboxHandler();
-SqlFuncs sqlhand = new SqlFuncs();
-SecurityFuncs sechand = new SecurityFuncs();
-MenuFuncs menuhand = new MenuFuncs();
-GuiFuncs guihand = new GuiFuncs();
-luhand = new LookupFuncs();
-gridhand = new GridHandler();
+Generals kiboo = new Generals(); ListboxHandler lbhand = new ListboxHandler();
+SqlFuncs sqlhand = new SqlFuncs(); SecurityFuncs sechand = new SecurityFuncs();
+MenuFuncs menuhand = new MenuFuncs(); GuiFuncs guihand = new GuiFuncs();
+luhand = new LookupFuncs(); gridhand = new GridHandler();
 
 // Get access obj set by login-page
 useraccessobj = sechand.getUserAccessObject();
@@ -719,6 +715,7 @@ void doFunc(Object iwhat)
 
 									<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#ff0000" visible="false" onClick="adminpop.open(self)" />
 								</hbox>
+								
 							</vbox>
 
 							<separator width="10px" />
@@ -738,7 +735,7 @@ void doFunc(Object iwhat)
 								</hbox>
 								<!-- <div style="background:#3fbcd0;padding:2px" width="2000px" /> -->
 							</vbox>
-
+<image id="gongxipix" src="/rwimg/gongxi.gif" />
 						</hbox>
 						<separator height="3px" />
 						<div id="mainmenu_holder" width="${MAINBAR_WIDTH}" />

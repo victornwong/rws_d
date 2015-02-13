@@ -21,11 +21,8 @@ myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
+guihand = new GuiFuncs(); luhand = new LookupFuncs(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 glob_sel_warehouse = glob_sel_itemname = glob_sel_branchpreqs = "";
 
@@ -48,12 +45,8 @@ class stkmovclk implements org.zkoss.zk.ui.event.EventListener
 
 		if(ptsreq_holder.getFellowIfAny("p_partsreq_grid") != null) p_partsreq_grid.setParent(null);
 
-		kg = new Grid();
-		kg.setParent(ptsreq_holder);
-		kg.setId("p_partsreq_grid");
-		rws = new org.zkoss.zul.Rows();
-		rws.setId("prqrws");
-		rws.setParent(kg);
+		kg = new Grid(); kg.setParent(ptsreq_holder); kg.setId("p_partsreq_grid");
+		rws = new org.zkoss.zul.Rows(); rws.setId("prqrws"); rws.setParent(kg);
 
 		if(!csvn.equals("")) // show helpticket customer
 		{
@@ -65,8 +58,8 @@ class stkmovclk implements org.zkoss.zk.ui.event.EventListener
 				nrw.setParent(prqrws);
 				nrw.setSpans("1,3");
 				nrw.setStyle("background:#2e3436");
-				gpMakeLabel(nrw, "", "CSV: " + csvn , "color:#ffffff").setSclass("subhead1");
-				gpMakeLabel(nrw, "", jn, "color:#ffffff").setSclass("subhead1");
+				ngfun.gpMakeLabel(nrw, "", "CSV: " + csvn , "color:#ffffff").setSclass("subhead1");
+				ngfun.gpMakeLabel(nrw, "", jn, "color:#ffffff").setSclass("subhead1");
 		}
 
 		String[] hds = { "Parts","Desc","Qty","ToReplace" };
@@ -75,7 +68,7 @@ class stkmovclk implements org.zkoss.zk.ui.event.EventListener
 		nrw.setParent(prqrws);
 		for(i=0; i<hds.length; i++)
 		{
-			gpMakeLabel(nrw, "", hds[i], "color:#ffffff;font-weight:bold;text-shadow: 1px 1px #000000;");
+			ngfun.gpMakeLabel(nrw, "", hds[i], "color:#ffffff;font-weight:bold;text-shadow: 1px 1px #000000;");
 		}
 
 		ri = kiboo.checkNullString(rqk.get("req_items")).split("~");
@@ -95,19 +88,19 @@ class stkmovclk implements org.zkoss.zk.ui.event.EventListener
 					nrw = new org.zkoss.zul.Row();
 					nrw.setParent(prqrws);
 
-					gpMakeLabel(nrw, "", pn, "");
+					ngfun.gpMakeLabel(nrw, "", pn, "");
 
 					pds = "";
 					try { pds = rds[i]; } catch (Exception e) {}
-					gpMakeLabel(nrw, "", pds, "");
+					ngfun.gpMakeLabel(nrw, "", pds, "");
 
 					qty = "";
 					try { qty = rq[i]; } catch (Exception e) {}
-					gpMakeLabel(nrw,"",qty,"");
+					ngfun.gpMakeLabel(nrw,"",qty,"");
 
 					torp = "";
 					try { torp = tr[i]; } catch (Exception e) {}
-					gpMakeLabel(nrw,"",torp,"");
+					ngfun.gpMakeLabel(nrw,"",torp,"");
 				}
 			}
 		}
@@ -128,12 +121,8 @@ void showStockMovement(String iwarehouse, String itmname)
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(rcs.size() == 0) return;
 
-	kg = new Grid();
-	kg.setParent(stockmovement_holder);
-	kg.setId("stockmovement_grid");
-	rws = new org.zkoss.zul.Rows();
-	rws.setId("stkmvrws");
-	rws.setParent(kg);
+	kg = new Grid(); kg.setParent(stockmovement_holder); kg.setId("stockmovement_grid");
+	rws = new org.zkoss.zul.Rows(); rws.setId("stkmvrws"); rws.setParent(kg);
 	
 	String[] ohd = { "ReqId","Date","Requestor","CSV#","Post" };
 	nrw = new org.zkoss.zul.Row();
@@ -149,12 +138,11 @@ void showStockMovement(String iwarehouse, String itmname)
 		nrw.setParent(stkmvrws);
 		nrw.setStyle("background:#f9b12d");
 		nrw.addEventListener("onClick", stockmovement_clicker);
-
-		gpMakeLabel(nrw, "", d.get("origid").toString(),"" );
-		gpMakeLabel(nrw, "", dtf2.format( d.get("datecreated") ), "");
-		gpMakeLabel(nrw, "", d.get("username"), "");
-		gpMakeLabel(nrw, "", d.get("csv_no"), "");
-		gpMakeLabel(nrw, "", dtf2.format( d.get("post_date") ), "");
+		ngfun.gpMakeLabel(nrw, "", d.get("origid").toString(),"" );
+		ngfun.gpMakeLabel(nrw, "", dtf2.format( d.get("datecreated") ), "");
+		ngfun.gpMakeLabel(nrw, "", d.get("username"), "");
+		ngfun.gpMakeLabel(nrw, "", d.get("csv_no"), "");
+		ngfun.gpMakeLabel(nrw, "", dtf2.format( d.get("post_date") ), "");
 	}
 }
 
@@ -201,8 +189,7 @@ void showStockByBranch(String ibranch)
 		kabom.add( (d.get("startqty") == null) ? "" : d.get("startqty").toString() );
 		kabom.add( (d.get("movqty") == null) ? "" : d.get("movqty").toString() );
 		styl = (d.get("startqty") != d.get("movqty")) ? "background:#e95252;font-size:9px" : "";
-		strarray = kiboo.convertArrayListToStringArray(kabom);
-		lbhand.insertListItems(newlb,strarray,"false",styl);
+		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false",styl);
 		kabom.clear();
 	}
 
@@ -215,26 +202,23 @@ void showStockByBranch(String ibranch)
 	{
 		if(stocksummary_holder.getFellowIfAny("stksummarygrid") != null) stksummarygrid.setParent(null);
 		kg = new Grid();
-		kg.setWidth("500px");
-		kg.setParent(stocksummary_holder);
-		kg.setId("stksummarygrid");
+		kg.setWidth("500px"); kg.setParent(stocksummary_holder); kg.setId("stksummarygrid");
 		rws = new org.zkoss.zul.Rows();
-		rws.setId("sumrws");
-		rws.setParent(kg);
+		rws.setId("sumrws"); rws.setParent(kg);
 
 		nrw = new org.zkoss.zul.Row();
 		nrw.setParent(sumrws);
-		gpMakeLabel(nrw, "", "Category", "font-weight:bold");
-		gpMakeLabel(nrw, "", "Stock.Start", "font-weight:bold");
-		gpMakeLabel(nrw, "", "Stock.Left", "font-weight:bold");
+		ngfun.gpMakeLabel(nrw, "", "Category", "font-weight:bold");
+		ngfun.gpMakeLabel(nrw, "", "Stock.Start", "font-weight:bold");
+		ngfun.gpMakeLabel(nrw, "", "Stock.Left", "font-weight:bold");
 
 		for(d : smy)
 		{
 			nrw = new org.zkoss.zul.Row();
 			nrw.setParent(sumrws);
-			gpMakeLabel(nrw, "", d.get("category"), "");
-			gpMakeLabel(nrw, "", d.get("startstk").toString(), "");
-			gpMakeLabel(nrw, "", d.get("stkleft").toString(), "");
+			ngfun.gpMakeLabel(nrw, "", d.get("category"), "");
+			ngfun.gpMakeLabel(nrw, "", d.get("startstk").toString(), "");
+			ngfun.gpMakeLabel(nrw, "", d.get("stkleft").toString(), "");
 		}
 	}
 
@@ -285,8 +269,7 @@ void showBranchPartsRequests(Object iwhat, String ibranch)
 		pdt = (d.get("post_date") == null) ? "" : dtf2.format(d.get("datecreated"));
 		kabom.add(pdt);
 		kabom.add( (d.get("gcn_id") == null) ? "" : d.get("gcn_id").toString() );
-		strarray = kiboo.convertArrayListToStringArray(kabom);
-		lbhand.insertListItems(newlb,strarray,"false","");
+		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
 	}
 	glob_sel_warehouse = ibranch; // save for later
@@ -349,40 +332,33 @@ void savePartsReqToGCNTrans(String ibpreq, String ifc6)
 </zscript>
 
 <popup id="stkrequest_pop">
-<div style="background:#add8e6; -moz-box-shadow: 4px 5px 7px #000000; -webkit-box-shadow: 4px 5px 7px #000000;
-box-shadow: 4px 5px 7px #000000;padding:3px;margin:3px" width="500px" >
-	<div id="ptsreq_holder" />
-</div>
+	<div sclass="shadowbox" style="background:#add8e6;" width="500px" >
+		<div id="ptsreq_holder" />
+	</div>
 </popup>
 
 <popup id="manpartsreq_pop">
-<div style="background:#e58512; -moz-box-shadow: 4px 5px 7px #000000; -webkit-box-shadow: 4px 5px 7px #000000;
-box-shadow: 4px 5px 7px #000000;padding:3px;margin:3px" width="400px" >
-
-	<label id="mpartsreq_lbl" sclass="subhead1" />
-	<separator height="3px" />
-	<div id="manageptsreq_holder" />
-	<separator height="2px" />
-	<hbox>
-		<button id="savegcntrans_b" label="Submit for GCN" onClick="partsReqFunc(self)" />
-		<button id="setpartsreqnew_b" label="Set NEW - roll-back stock" visible="false" onClick="partsReqFunc(self)" />
-	</hbox>
-	<separator height="5px" />
-	<label id="gcntrans_lbl" multiline="true" style="font-weight:bold;color:#ffffff;text-shadow: 1px 1px #000000;" />
-</div>
+	<div sclass="shadowbox" style="background:#e58512" width="400px" >
+		<label id="mpartsreq_lbl" sclass="subhead1" />
+		<separator height="3px" />
+		<div id="manageptsreq_holder" />
+		<separator height="2px" />
+		<hbox>
+			<button id="savegcntrans_b" label="Submit for GCN" onClick="partsReqFunc(self)" />
+			<button id="setpartsreqnew_b" label="Set NEW - roll-back stock" visible="false" onClick="partsReqFunc(self)" />
+		</hbox>
+		<separator height="5px" />
+		<label id="gcntrans_lbl" multiline="true" style="font-weight:bold;color:#ffffff;text-shadow: 1px 1px #000000;" />
+	</div>
 </popup>
 
-<style>
-.subhead1 {	font-size:16px; font-weight:bold; color:#ffffff; text-shadow: 1px 1px #000000; }
-.subhead2 { font-size:24px; font-weight:bold; color:#ffffff; text-shadow: 1px 1px #000000; }
-</style>
+<style src="/real-world.css" />
 
 <div width="1200px">
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
 <panelchildren>
 
-<div style="background:#add8e6; -moz-box-shadow: 4px 5px 7px #000000; -webkit-box-shadow: 4px 5px 7px #000000;
-box-shadow: 4px 5px 7px #000000;padding:3px;margin:3px" >
+<div sclass="shadowbox" style="background:#add8e6;" >
 	<hbox>
 		<label value="Branch / Outsource partner" />
 		<listbox id="os_selector" mold="select" rows="1" />
@@ -394,32 +370,31 @@ box-shadow: 4px 5px 7px #000000;padding:3px;margin:3px" >
 </div>
 <separator height="3px" />
 
-<div style="background:#2e3436; -moz-box-shadow: 4px 5px 7px #000000; -webkit-box-shadow: 4px 5px 7px #000000;
-box-shadow: 4px 5px 7px #000000;padding:3px;margin:3px" id="workbox" visible="false" >
-<hbox>
-	<vbox>
-		<label id="branch_lbl" sclass="subhead2" />
-		<separator height="2px" bar="true" />
-		<div id="branchstocks_holder" width="600px" />
-	</vbox>
-	<vbox>
-		<label id="stockitemname_lbl" sclass="subhead2" />
-		<separator height="2px" bar="true" />
-		<div id="stockmovement_holder" />
-	</vbox>
-</hbox>
-
-<separator height="3px" />
-<label sclass="subhead1" value="Summary" />
-<div id="stocksummary_holder" />
-
+<div sclass="shadowbox" style="background:#2e3436" id="workbox" visible="false" >
+	<hbox>
+		<vbox>
+			<label id="branch_lbl" sclass="subhead2" />
+			<separator height="2px" bar="true" />
+			<div id="branchstocks_holder" width="600px" />
+		</vbox>
+		<vbox>
+			<label id="stockitemname_lbl" sclass="subhead2" />
+			<separator height="2px" bar="true" />
+			<div id="stockmovement_holder" />
+		</vbox>
+	</hbox>
+	<separator height="3px" />
+	<label sclass="subhead1" value="Summary" />
+	<div id="stocksummary_holder" />
 </div>
 
 <zscript>
 <![CDATA[
 
-luhand.populateListbox_ByLookup(os_selector, "dd_branches", 2);
-os_selector.setSelectedIndex(3);
+ngfun.fillListbox_uniqField("rw_partner_stockitems", "warehouse", os_selector);
+
+//luhand.populateListbox_ByLookup(os_selector, "dd_branches", 2);
+//os_selector.setSelectedIndex(3);
 
 if(useraccessobj.accesslevel == 9)
 {

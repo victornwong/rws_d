@@ -132,6 +132,9 @@ background-image: url('alsimg/wallpaper_s3_bv.jpg');
 <datebox id="hiddendatebox" format="yyyy-MM-dd" visible="false" onCreate="self.value = new Date()" />
 <grid>
 	<rows>
+	<row spans="2">
+		<image src="/rwimg/new-year-wishes.gif" />
+	</row>
 	<row>
 		<hbox>
 		<separator width="290px" />

@@ -573,7 +573,7 @@ Asgn = assigned/unassigned asset
 
 			<tabpanel> <!-- ASSETS -->
 				<div style="background:#2e3436">
-					<hbox>
+					<hbox id="assetmang_menu">
 						<button id="newasset_b" label="New asset" sclass="k9mo" style="color:#909d2a" onClick="assFunc(self)" />
 						<button id="repasspop_b" label="Replace" sclass="k9mo" style="color:#ff0000" onClick="assFunc(self)" />
 						<button id="remasset_b" label="Remove" sclass="k9mo" style="color:#ff0000" onClick="assFunc(self)" />
@@ -628,7 +628,7 @@ replaceassform = dynamicForm(repassetform_holder, "repassbom_metgrid", "26");
 assigncustomer_b.setVisible(false);
 batchlc_b.setVisible(false);
 batchlcsuck_b.setVisible(false);
-
+assetmang_menu.setVisible(false);
 
 if(useraccessobj.accesslevel == 9)
 {

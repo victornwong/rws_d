@@ -307,21 +307,30 @@ void adminFunc(Object iwhat)
 
 		sqlstm  = "delete from rw_qcaudit where origid=" + glob_sel_audit + ";";
 		sqlstm += "delete from rw_qcaudit_items where parent_id=" + glob_sel_audit + ";";
-		refreshqc = true;
 	}
 
 	if(itype.equals("clrgco_b"))
 	{
+		if (Messagebox.show("Will clear the links..", "Are you sure?", 
+		Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
 		sqlstm = "update rw_qcaudit set gcn_no=null where origid=" + glob_sel_audit + ";";
 		if(!glob_sel_gcono.equals("")) // clear GCO's qc_id too
 			sqlstm += "update rw_goodscollection set qc_id=null where origid=" + glob_sel_gcono + ";";
-
-		refreshqc = true;
 	}
 
-	if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
+	if(itype.equals("setdraft_b"))
+	{
+		sqlstm = "update rw_qcaudit set astatus='DRAFT' where origid=" + glob_sel_audit;
+	}
+
+	if(!sqlstm.equals(""))
+	{
+		sqlhand.gpSqlExecuter(sqlstm);
+		listAudits(lastlisttype);
+	}
+
 	if(refresh) listAuditItems(glob_sel_audit,aitems_holder);
-	if(refreshqc) listAudits(lastlisttype);
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 
 	if(itype.equals("deladt_b") && !sqlstm.equals(""))
@@ -335,108 +344,106 @@ void adminFunc(Object iwhat)
 </zscript>
 
 <popup id="adminpop">
-<vbox>
-	<button id="clrgco_b" label="Clear GCO" class="k9" onClick="adminFunc(self)" />
-	<button id="deladt_b" label="DELETE" class="k9" onClick="adminFunc(self)" />
-</vbox>
+	<vbox>
+		<button id="setdraft_b" label="Set DRAFT" class="k9" onClick="adminFunc(self)" />
+		<button id="clrgco_b" label="Clear GCO" class="k9" onClick="adminFunc(self)" />
+		<button id="deladt_b" label="DELETE" class="k9" onClick="adminFunc(self)" />
+	</vbox>
 </popup>
 
 <popup id="adtmeta_pop">
-<div sclass="shadowbox" style="background:#f10c4f;" width="550px">
-	<label style="font-weight:bold;color:#ffffff" value="Remarks" />
-	<textbox id="adtremarks_tb" multiline="true" width="99%" height="60px" />
-	<separator height="2px" />
-	<button id="updadt_b" label="Update audit-form" onClick="doFunc(self)" />
-</div>
+	<div sclass="shadowbox" style="background:#f10c4f;" width="550px">
+		<label style="font-weight:bold;color:#ffffff" value="Remarks" />
+		<textbox id="adtremarks_tb" multiline="true" width="99%" height="60px" />
+		<separator height="2px" />
+		<button id="updadt_b" label="Update audit-form" onClick="doFunc(self)" />
+	</div>
 </popup>
 
 <popup id="itemdet_pop">
-<div sclass="shadowbox" style="background:#f10c4f;" width="550px">
-	<div id="itmdetform_holder" />
-	<separator height="2px" />
-	<button id="upditem_b" label="Update.." onClick="itemFunc(self)" />
-</div>
+	<div sclass="shadowbox" style="background:#f10c4f;" width="550px">
+		<div id="itmdetform_holder" />
+		<separator height="2px" />
+		<button id="upditem_b" label="Update.." onClick="itemFunc(self)" />
+	</div>
 </popup>
 
 <popup id="impmrn_pop">
-<div sclass="shadowbox" style="background:#56815e;" width="450px">
-<hbox>
-	<label value="MRN" style="color:#ffffff" />
-	<textbox id="itmrn_tb" width="60px" />
-	<button label="Dig" class="k9" onClick="showFCMRNitems(itmrn_tb.getValue())" />
-</hbox>
-<separator height="2px" />
-<div id="impmrnitems_holder" />
-<separator height="2px" />
-<button id="impmrn_b" label="Import items" class="k9" onClick="itemFunc(self)" />
-</div>
+	<div sclass="shadowbox" style="background:#56815e;" width="450px">
+		<hbox>
+			<label value="MRN" style="color:#ffffff" />
+			<textbox id="itmrn_tb" width="60px" />
+			<button label="Dig" class="k9" onClick="showFCMRNitems(itmrn_tb.getValue())" />
+		</hbox>
+		<separator height="2px" />
+		<div id="impmrnitems_holder" />
+		<separator height="2px" />
+		<button id="impmrn_b" label="Import items" class="k9" onClick="itemFunc(self)" />
+	</div>
 </popup>
 
 <popup id="imptgrn_pop">
-<div sclass="shadowbox" style="background:#56815e;" width="450px">
-<hbox>
-	<label value="Temp.GRN" style="color:#ffffff" />
-	<textbox id="itgrn_tb" width="60px" />
-	<button label="Dig" class="k9" onClick="showFCTempGRNitems(itgrn_tb.getValue())" />
-</hbox>
-<separator height="2px" />
-<div id="imptgrnitems_holder" />
-<separator height="2px" />
-<button id="realimptgrn_b" label="Import items" class="k9" onClick="itemFunc(self)" />
-</div>
+	<div sclass="shadowbox" style="background:#56815e;" width="450px">
+		<hbox>
+			<label value="Temp.GRN" style="color:#ffffff" />
+			<textbox id="itgrn_tb" width="60px" />
+			<button label="Dig" class="k9" onClick="showFCTempGRNitems(itgrn_tb.getValue())" />
+		</hbox>
+		<separator height="2px" />
+		<div id="imptgrnitems_holder" />
+		<separator height="2px" />
+		<button id="realimptgrn_b" label="Import items" class="k9" onClick="itemFunc(self)" />
+	</div>
 </popup>
 
 <popup id="impgcn_pop">
-<div sclass="shadowbox" style="background:#56815e;" width="450px">
-
-<hbox>
-	<label value="GCN" style="color:#ffffff" />
-	<textbox id="igcn_tb" width="60px" />
-	<button label="Dig" onClick="showGCNItems(igcn_tb)" />
-</hbox>
-<separator height="2px" />
-<div id="impgcnitems_holder" />
-<separator height="2px" />
-<button id="realimpgcn_b" label="Import items" onClick="itemFunc(self)" />
-</div>
+	<div sclass="shadowbox" style="background:#56815e;" width="450px">
+		<hbox>
+			<label value="GCN" style="color:#ffffff" />
+			<textbox id="igcn_tb" width="60px" />
+			<button label="Dig" onClick="showGCNItems(igcn_tb)" />
+		</hbox>
+		<separator height="2px" />
+		<div id="impgcnitems_holder" />
+		<separator height="2px" />
+		<button id="realimpgcn_b" label="Import items" onClick="itemFunc(self)" />
+	</div>
 </popup>
 
-<!-- update file description popup -->
-<popup id="updatefiledesc_popup">
-<groupbox width="400px">
-	<caption id="updatefiledesc_label" />
-	<label value="Description" class="k9" />
-	<textbox id="update_file_description" multiline="true" height="70px" width="99%" class="k9" />
+<popup id="updatefiledesc_popup"> <!-- update file description popup -->
+	<groupbox width="400px">
+		<caption id="updatefiledesc_label" />
+		<label value="Description" class="k9" />
+		<textbox id="update_file_description" multiline="true" height="70px" width="99%" class="k9" />
+		<separator height="3px" />
+		<hbox>
+			<button label="Update" class="k9" onClick="updateFileDescription(documents_holder,AUDITITEM_PREFIX,glob_sel_audit)" />
+			<button label="Close" class="k9" onClick="updatefiledesc_popup.close()" />
+		</hbox>
+	</groupbox>
+</popup>
+
+<popup id="uploadfile_popup"> <!-- upload a file popup -->
+	<groupbox>
+	<caption label="Upload a file" />
+		<grid>
+			<rows>
+				<row>
+					<label value="Filename" class="k9" />
+					<textbox id="fileupl_file_title" width="200px" class="k9" />
+				</row>
+				<row>
+					<label value="Description" class="k9" />
+					<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" class="k9" />
+				</row>
+			</rows>
+		</grid>
+	</groupbox>
 	<separator height="3px" />
 	<hbox>
-		<button label="Update" class="k9" onClick="updateFileDescription(documents_holder,AUDITITEM_PREFIX,glob_sel_audit)" />
-		<button label="Close" class="k9" onClick="updatefiledesc_popup.close()" />
+		<button label="Select file" onClick="uploadFile(documents_holder,AUDITITEM_PREFIX,glob_sel_audit)" class="k9" />
+		<button label="Close" onClick="uploadfile_popup.close()" class="k9" />
 	</hbox>
-</groupbox>
-</popup>
-
-<!-- upload a file popup -->
-<popup id="uploadfile_popup">
-<groupbox>
-<caption label="Upload a file" />
-	<grid>
-		<rows>
-			<row>
-				<label value="Filename" class="k9" />
-				<textbox id="fileupl_file_title" width="200px" class="k9" />
-			</row>
-			<row>
-				<label value="Description" class="k9" />
-				<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" class="k9" />
-			</row>
-		</rows>
-	</grid>
-</groupbox>
-<separator height="3px" />
-<hbox>
-	<button label="Select file" onClick="uploadFile(documents_holder,AUDITITEM_PREFIX,glob_sel_audit)" class="k9" />
-	<button label="Close" onClick="uploadfile_popup.close()" class="k9" />
-</hbox>
 </popup>
 
 <popup id="manupdgcopop">
