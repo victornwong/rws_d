@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?page id="exbirtreportviewer1_win"?>
 <zk>
-<zscript src="../alsglobal/alsglobaldefs.zs" />
-<zscript src="../alsglobal/alsglobal_birtreport.zs" />
+<zscript src="../rwglobal/rwglobaldefs.zs" />
 <zscript>
 <![CDATA[
 MYVERSION = "v1.0";
 /*
+<zscript src="../alsglobal/alsglobal_birtreport.zs" />
+ 
 Title		: BIRT report viewer EXTERNAL
 Written by	: Victor Wong
 Dated		: 16/05/2011

@@ -246,7 +246,7 @@ void showGoodsCollection(int itype)
 	Listbox newlb = lbhand.makeVWListbox_Width(collections_holder, gdcols_headers, "goodscol_lb", 5);
 
 	scsql = "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' ";
-	if(!scht.equals("")) scsql += " and customer_name like '%" + scht + "%' ";
+	if(!scht.equals("")) scsql += " and (customer_name like '%" + scht + "%' or collection_notes like '%" + scht + "%' or location like '%" + scht + "%') ";
 
 	switch(itype)
 	{

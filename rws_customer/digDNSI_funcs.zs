@@ -49,8 +49,15 @@ void digDNSI(Object iwhat, Object iwhere, Object stdt, Object eddt)
 	sdate = kiboo.getDateFromDatebox(stdt);
 	edate = kiboo.getDateFromDatebox(eddt);
 	itype = iwhat.getId();
+	st = kiboo.replaceSingleQuotes(searchtext_tb.getValue().trim());
 	Listbox newlb = lbhand.makeVWListbox_Width(iwhere, dnsi_hds, "dnsi_lb", 10);
 	newlb.setRows(22); newlb.setMold("paging");
+
+	byname = "";
+	if(!st.equals(""))
+	{
+		byname = " and a.name like '%" + st + "%' ";
+	}
 
 	// Dig DN
 	sqlstm = "select convert(datetime, focus5012.dbo.ConvertFocusDate(d.date_), 112) as vdate, " +
@@ -59,7 +66,9 @@ void digDNSI(Object iwhat, Object iwhere, Object stdt, Object eddt)
 	"left join mr000 a on a.masterid = d.bookno left join u0111 dnu on dnu.extraid = d.extraoff " +
 	"where d.vouchertype=3840 " +
 	"and convert(datetime, focus5012.dbo.ConvertFocusDate(d.date_), 112) between '" + sdate + "' and '" + edate + "' " +
-	"and dnu.remarksyh like '%" + itype + "%'";
+	"and dnu.remarksyh like '%" + itype + "%' " + byname;
+
+	//debugbox.setValue(sqlstm);
 
 	recs = sqlhand.rws_gpSqlGetRows(sqlstm);
 	if(recs.size() > 0)
@@ -85,7 +94,9 @@ void digDNSI(Object iwhat, Object iwhere, Object stdt, Object eddt)
 	"where d.vouchertype=3328 " +
 	"and convert(datetime, focus5012.dbo.ConvertFocusDate(d.date_), 112) between '" + sdate + "' and '" + edate + "' " +
 	"and (siu.remarksyh like '%" + itype + "%' or siu.narrationyh like '%" + itype + "%' or " +
-	"di.spec1yh like '%" + itype + "%' or di.spec2yh like '%" + itype + "%'); ";
+	"di.spec1yh like '%" + itype + "%' or di.spec2yh like '%" + itype + "%') " + byname;
+
+	//debugbox.setValue(debugbox.getValue() + " \n\n" + sqlstm);
 
 	recs = sqlhand.rws_gpSqlGetRows(sqlstm);
 	if(recs.size() == 0) return;

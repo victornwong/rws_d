@@ -85,8 +85,12 @@ boolean impFC6_SOROC_record(String ivn, String ijob, int itype)
 	etastr = (r.get("eta") == null) ? "eta=''," : ("eta='" + r.get("eta") + "',");
 	etdstr = (r.get("etd") == null) ? "etd=''," : ("etd='" + r.get("etd") + "',");
 
+	i_deladdress = kiboo.replaceSingleQuotes( r.get("deliverytoyh") );
+	i_remarks = kiboo.replaceSingleQuotes( r.get("remarksyh") );
+	i_notes = kiboo.replaceSingleQuotes( r.get("deliverynotes") );
+
 	sqlstm = "update rw_jobs set rwroc='" + r.get("voucherno") + "', fc6_custid=" + r.get("bookno").toString() + ", customer_name='" + r.get("customer_name") + "'," +
-	"notes='" + r.get("deliverynotes") + "\n" + r.get("remarksyh") + "\n" + r.get("ordertypeyh") + "', deliver_address='" + r.get("deliverytoyh") + "'," +
+	"notes='" + i_notes + "\n" + i_remarks + "\n" + r.get("ordertypeyh") + "', deliver_address='" + i_deladdress + "'," +
 	etastr + etdstr +
 	"contact='" + kiboo.checkNullString(r.get("contactyh")) + "'," +
 	"contact_tel='" + kiboo.checkNullString(r.get("telyh")) + "'," +

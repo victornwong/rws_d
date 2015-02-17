@@ -67,6 +67,8 @@ guihand = new GuiFuncs(); luhand = new LookupFuncs(); ngfun = new NGfuncs(); rws
 <div id="sisholder" />
 </div>
 
+<label id="debugbox" multiline="true" />
+
 <div id="kasiexport" visible="false" />
 
 <zscript>
