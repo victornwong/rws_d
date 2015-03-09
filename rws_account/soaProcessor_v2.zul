@@ -11,7 +11,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "SOA Template Processor";
-MYVERSION = "v0.2";
+MYVERSION = "v0.2.1";
 MYPANEL = "soaproc2";
 /*
 Title		: Statement of Account template processor
@@ -31,6 +31,7 @@ order by cust.name
 
 --
 14/11/2013: tie to extra customer's contact-points to send SOA directly
+26/02/2015: tweak and optimize
 
 */
 import java.util.*;
@@ -55,25 +56,18 @@ myincludeid = Executions.getCurrent().getParameter("myid");
 useraccessobj = sechand.getUserAccessObject();
 if(useraccessobj == null) Executions.sendRedirect(MAINLOGIN_PAGE);
 
-kiboo = new Generals();
-sqlhand = new SqlFuncs();
-lbhand = new ListboxHandler();
-guihand = new GuiFuncs();
-luhand = new LookupFuncs();
-dmshand = new DMSFuncs();
+kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler(); guihand = new GuiFuncs();
+luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 
 Object mainUpload_Data = null;
 ArrayList soaData = new ArrayList();
 
-global_selected_customerid = "";
-global_selected_customername = "";
+global_selected_customerid = global_selected_customername = glob_processed_filename = "";
 
 DecimalFormat nf2 = new DecimalFormat("0.00");
 DecimalFormat nf3 = new DecimalFormat("###,##0.00");
 DateFormat dtfm = new SimpleDateFormat("yyyy-MM-dd");
 DateFormat dtfmyr = new SimpleDateFormat("dd-MMM-yyyy");
-
-glob_processed_filename = "";
 
 public class headerposition
 {
@@ -223,10 +217,8 @@ void emailDocumentFromDS(String ireplyto, Object iextcnts, Object idocs, String 
 	
 	// 06/12/2013: HARDCODE, send a copy to creditcontrol@rentwise.com
 	cntseml += ",creditcontrol@rentwise.com";
-
 	gmail_sendEmailWithAttachment_2("", GMAIL_username, GMAIL_password, GMAIL_username, cntseml,
 	isubject, iemsg, tmpfnames,ireplyto);
-
 }
 
 // itype: 1=with narration, 2=no narration
@@ -250,7 +242,15 @@ void generateExcelSOA(int itype)
 	try
 	{
 		//ByteArrayInputStream mybytes = new ByteArrayInputStream(mainUpload_Data.thefiledata);
-		HSSFWorkbook excelWB = new HSSFWorkbook(mainUpload_Data.thefiledata);
+		inps = null;
+
+		if(!(mainUpload_Data.thefiledata instanceof java.io.ByteArrayInputStream))
+			inps = new ByteArrayInputStream(mainUpload_Data.thefiledata);
+		else
+			inps = mainUpload_Data.thefiledata;
+
+		HSSFWorkbook excelWB = new HSSFWorkbook(inps);
+		
 		FormulaEvaluator evaluator = excelWB.getCreationHelper().createFormulaEvaluator();
 		numsheets = excelWB.getNumberOfSheets();
 
@@ -258,9 +258,7 @@ void generateExcelSOA(int itype)
 		numrows = sheet.getPhysicalNumberOfRows();
 		numc = 0;
 		FOC6_COL_READ = 10;
-		soa_inv_total = "";
-		soa_recp_total = "";
-		soa_balance_total = "";
+		soa_inv_total = soa_recp_total = soa_balance_total = "";
 		
 		// hardcoded to read company-name from B9
 		/*
@@ -271,7 +269,7 @@ void generateExcelSOA(int itype)
 		*/
 
 		// hardcoded to read from row 9 onwards..
-		for(rw=9; rw<1000; rw++)
+		for(rw=9; rw<numrows; rw++)
 		{
 			String[] thed = new String[9];
 			checkrow = sheet.getRow(rw);
@@ -295,7 +293,6 @@ void generateExcelSOA(int itype)
 			}
 
 			if(thed[0].equals("")) break;
-
 			//soaObj ikdo = new soaObj(thed[0],thed[1],thed[2],thed[3],thed[4],thed[5],thed[6]);
 			soaData.add(thed);
 			numc++;
@@ -308,9 +305,8 @@ void generateExcelSOA(int itype)
 		return;
 	}
 
-	// prep customer-details
 	custdetstr = "";
-	custr = getFocus_CustomerRec(global_selected_customerid);
+	custr = getFocus_CustomerRec(global_selected_customerid); // prep customer-details
 	if(custr != null)
 	{
 		custdetstr = custr.get("name") + "\n" +
@@ -640,187 +636,155 @@ int calcDayDiff(java.util.Date id1, java.util.Date id2)
 </zscript>
 
 <popup id="email_pop">
-<div style="background:#f9b12d;-moz-box-shadow: 4px 5px 7px #000000;-webkit-box-shadow: 4px 5px 7px #000000;
-	box-shadow: 4px 5px 7px #000000;padding:3px;margin:3px" width="450px" >
-
-<grid>
-	<rows>
-		<row>
-			<label value="Subject" />
-			<textbox id="emailsubj_tb" width="99%" />
-		</row>
-		<row spans="2">
-			<label value="Email message" />
-		</row>
-		<row spans="2">
-			<textbox id="emailmsg_tb" multiline="true" width="99%" height="60px" />
-		</row>
-	</rows>
-</grid>
-<separator height="2px" />
-<button id="realemaildoc_b" label="Send attachments and email-message" onClick="doFunc(self)" />
-</div>
+	<div sclass="shadowbox" style="background:#f9b12d;" width="450px" >
+		<grid>
+			<rows>
+				<row>
+					<label value="Subject" />
+					<textbox id="emailsubj_tb" width="99%" />
+				</row>
+				<row spans="2">
+					<label value="Email message" />
+				</row>
+				<row spans="2">
+					<textbox id="emailmsg_tb" multiline="true" width="99%" height="60px" />
+				</row>
+			</rows>
+		</grid>
+		<separator height="2px" />
+		<button id="realemaildoc_b" label="Send attachments and email-message" onClick="doFunc(self)" />
+	</div>
 </popup>
 
 <popup id="pickcustomer_popup">
-<div style="background:#f9b12d;-moz-box-shadow: 4px 5px 7px #000000;-webkit-box-shadow: 4px 5px 7px #000000;
-	box-shadow: 4px 5px 7px #000000;padding:3px;margin:3px">
-<hbox>
-	<label style="font-size:9px">Customer name</label>
-	<textbox id="searchcust_tb" style="font-size:9px" />
-	<button label="Find" style="font-size:9px" onClick="findCustomers()" />
-</hbox>
-<separator height="2px" />
-<hbox>
-	<div id="foundcusts_holder" width="400px" />
-	<separator width="5px" />
-	<div width="400px" id="custfound_wa" visible="false" >
-		<label id="fcustomername" style="font-size:13px;font-weight:bold;text-decoration:underline" />
+	<div sclass="shadowbox" style="background:#f9b12d;">
+		<hbox>
+			<label sclass="k9">Customer name</label>
+			<textbox id="searchcust_tb" sclass="k9" />
+			<button label="Find" sclass="k9" onClick="findCustomers()" />
+		</hbox>
 		<separator height="2px" />
-		<label id="fcustomerdetails" multiline="true" width="99%" height="100px" style="font-weight:bold" />
-		<separator height="3px" />
-		<button label="Select this customer" style="font-size:9px" onClick="assignCustomer()" />
+		<hbox>
+			<div id="foundcusts_holder" width="400px" />
+			<separator width="5px" />
+			<div width="400px" id="custfound_wa" visible="false" >
+				<label id="fcustomername" style="font-size:13px;font-weight:bold;text-decoration:underline" />
+				<separator height="2px" />
+				<label id="fcustomerdetails" multiline="true" width="99%" height="100px" style="font-weight:bold" />
+				<separator height="3px" />
+				<button label="Select this customer" sclass="k9" onClick="assignCustomer()" />
+			</div>
+		</hbox>
+		<label id="selectcustid" visible="false" />
 	</div>
-</hbox>
-<label id="selectcustid" visible="false" />
-</div>
-</popup> <!-- ENDOF pickcustomer_popup -->
+</popup>
 
-<!-- update file description popup -->
 <popup id="updatefiledesc_popup">
-<groupbox width="400px">
-	<caption id="updatefiledesc_label" />
-	<label value="Description" style="font-size:9px" />
-	<textbox id="update_file_description" multiline="true" height="70px" width="99%" style="font-size:9px" />
+	<groupbox width="400px">
+		<caption id="updatefiledesc_label" />
+		<label value="Description" sclass="k9" />
+		<textbox id="update_file_description" multiline="true" height="70px" width="99%" sclass="k9" />
+		<separator height="3px" />
+		<hbox>
+			<button label="Update" sclass="k9" onClick="updateFileDescription(documents_holder,FC6CUST_PREFIX,global_selected_customerid)" />
+			<button label="Close" sclass="k9" onClick="updatefiledesc_popup.close()" />
+		</hbox>
+	</groupbox>
+</popup>
+
+<popup id="uploadfile_popup">
+	<groupbox>
+	<caption label="Upload a file" />
+		<grid>
+			<rows>
+				<row>
+					<label value="Filename" sclass="k9" />
+					<textbox id="fileupl_file_title" width="200px" sclass="k9" />
+				</row>
+				<row>
+					<label value="Description" sclass="k9" />
+					<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" sclass="k9" />
+				</row>
+			</rows>
+		</grid>
+	</groupbox>
 	<separator height="3px" />
 	<hbox>
-		<button label="Update" style="font-size:9px" onClick="updateFileDescription(documents_holder,FC6CUST_PREFIX,global_selected_customerid)" />
-		<button label="Close" style="font-size:9px" onClick="updatefiledesc_popup.close()" />
+		<button label="Select file" onClick="uploadFile(documents_holder,FC6CUST_PREFIX,global_selected_customerid)" sclass="k9" />
+		<button label="Close" onClick="uploadfile_popup.close()"  sclass="k9" />
 	</hbox>
-</groupbox>
 </popup>
 
-<!-- upload a file popup -->
-<popup id="uploadfile_popup">
-<groupbox>
-<caption label="Upload a file" />
-	<grid>
-		<rows>
-			<row>
-				<label value="Filename" style="font-size:9px" />
-				<textbox id="fileupl_file_title" width="200px" style="font-size:9px" />
-			</row>
-			<row>
-				<label value="Description" style="font-size:9px" />
-				<textbox id="fileupl_file_description" multiline="true" height="60px" width="200px" style="font-size:9px" />
-			</row>
-		</rows>
-	</grid>
-</groupbox>
-<separator height="3px" />
-<hbox>
-	<button label="Select file" onClick="uploadFile(documents_holder,FC6CUST_PREFIX,global_selected_customerid)" style="font-size:9px" />
-	<button label="Close" onClick="uploadfile_popup.close()"  style="font-size:9px" />
-</hbox>
-</popup>
-
-<style>
-
-.subhead2 {
-	font-size:24px;
-	font-weight:bold;
-	text-shadow: 1px 1px #000000;
-}
-
-.subhead1 {
-	font-size:18px;
-	font-weight:bold;
-	text-shadow: 1px 1px #000000;
-}
-
-</style>
-
+<style src="/real-world.css" />
 
 <div width="1200px">
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
 <panelchildren>
 
-<div style="background:#1b528c; -moz-box-shadow: 4px 5px 7px #000000; -webkit-box-shadow: 4px 5px 7px #000000;
-	box-shadow: 4px 5px 7px #000000;padding:3px;margin:3px" >
+<div sclass="shadowbox" style="background:#1b528c;" >
 
-<hbox>
-	<button id="selcustomer_b" label="Select customer" onClick="pickcustomer_popup.open(self)" />
-	<button id="uploadsoa_b" label="Upload SOA from FOCUS6" onClick="doFunc(self)" />
-	<button id="gensoa_narr_b" label="Gen SOA with narration" onClick="doFunc(self)" />
-	<button id="gensoa_nonarr_b" label="Gen SOA without narration" onClick="doFunc(self)" />
-</hbox>
-<separator height="5px" />
-<hbox>
-<grid width="500px">
-	<rows>
-		<row>
-			<label value="Interest rate" />
-			<label id="customer_interest" />
-			<label>Statement date</label>
-			<datebox id="statement_date" format="yyyy-MM-dd" onCreate="self.value = new java.util.Date()" />
-		</row>
-		<row>
-			<label value="Uploaded file" />
-			<label id="upload_filename" />
-			<label>Generated</label>
-			<label id="generated_lbl" style="text-decoration:blink" />
-		</row>
-	</rows>
-</grid>
-
-</hbox>
-
-<separator height="10px" />
-
-<div style="background:#e58512;padding:2px">
-<label id="customername" sclass="subhead1" style="color:#ffffff" />
-</div>
-<separator height="3px" />
-
-<hbox>
-
-<div style="background:#555753; -moz-box-shadow: 4px 5px 7px #000000; -webkit-box-shadow: 4px 5px 7px #000000;
-box-shadow: 4px 5px 7px #000000;padding:3px;margin:3px">
-	<label sclass="subhead1" style="color:#ffffff">ATTACHMENT / DOCUMENTS</label>
-	<separator height="3px" />
 	<hbox>
-		<button id="viewdoc_btn" label="View file" style="font-size:9px" onClick="viewFile()" />
-		<button id="deletedoc_btn" label="Delete" style="font-size:9px"
-			onClick="deleteFile(documents_holder,FC6CUST_PREFIX,global_selected_customerid)" />
+		<button id="selcustomer_b" label="Select customer" onClick="pickcustomer_popup.open(self)" />
+		<button id="uploadsoa_b" label="Upload SOA from FOCUS6" onClick="doFunc(self)" />
+		<button id="gensoa_narr_b" label="Gen SOA with narration" onClick="doFunc(self)" />
+		<button id="gensoa_nonarr_b" label="Gen SOA without narration" onClick="doFunc(self)" />
 	</hbox>
+	<separator height="5px" />
+	<hbox>
+		<grid width="500px">
+			<rows>
+				<row>
+					<label value="Interest rate" />
+					<label id="customer_interest" />
+					<label>Statement date</label>
+					<datebox id="statement_date" format="yyyy-MM-dd" onCreate="kiboo.setTodayDatebox(self);" />
+				</row>
+				<row>
+					<label value="Uploaded file" />
+					<label id="upload_filename" />
+					<label>Generated</label>
+					<label id="generated_lbl" style="text-decoration:blink" />
+				</row>
+			</rows>
+		</grid>
+	</hbox>
+	<separator height="10px" />
+
+	<div style="background:#e58512;padding:2px">
+		<label id="customername" sclass="subhead1" style="color:#ffffff" />
+	</div>
 	<separator height="3px" />
-	<div id="documents_holder" width="550px" />
-</div>
 
-<div style="background:#555753; -moz-box-shadow: 4px 5px 7px #000000; -webkit-box-shadow: 4px 5px 7px #000000;
-box-shadow: 4px 5px 7px #000000;padding:3px;margin:3px">
+	<hbox>
+		<div sclass="shadowbox" style="background:#555753;">
+			<label sclass="subhead1" style="color:#ffffff">ATTACHMENT / DOCUMENTS</label>
+			<separator height="3px" />
+			<hbox>
+				<button id="viewdoc_btn" label="View file" sclass="k9" onClick="viewFile()" />
+				<button id="deletedoc_btn" label="Delete" sclass="k9"
+					onClick="deleteFile(documents_holder,FC6CUST_PREFIX,global_selected_customerid)" />
+			</hbox>
+			<separator height="3px" />
+			<div id="documents_holder" width="550px" />
+		</div>
 
-	<label sclass="subhead1" style="color:#ffffff" value="Contact Person" />
-	<separator height="3px" />
-	<button id="emaildoc_b" label="Email document to selected contact-persons" onClick="doFunc(self)" />
-	<separator height="3px" />
-
-	<div id="extconts_holder" width="600px" />
-
-</div>
-
-</hbox>
-
+		<div sclass="shadowbox" style="background:#555753;">
+			<label sclass="subhead1" style="color:#ffffff" value="Contact Person" />
+			<separator height="3px" />
+			<button id="emaildoc_b" label="Email document to selected contact-persons" onClick="doFunc(self)" />
+			<separator height="3px" />
+			<div id="extconts_holder" width="600px" />
+		</div>
+	</hbox>
 </div>
 
 <label id="debugbox" multiline="true" />
-
 <div id="kasiexport" visible="false" />
 
 <zscript>
 <![CDATA[
 
-kiboo.setTodayDatebox(statement_date);
+//kiboo.setTodayDatebox(statement_date);
 
 ]]>
 </zscript>
@@ -828,4 +792,3 @@ kiboo.setTodayDatebox(statement_date);
 </panel>
 </div>
 </zk>
-

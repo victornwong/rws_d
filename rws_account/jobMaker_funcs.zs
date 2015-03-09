@@ -345,10 +345,8 @@ void checkMakeItemsGrid()
 		for(i=0;i<colws.length;i++)
 		{
 			ico0 = new org.zkoss.zul.Column();
-			ico0.setWidth(colws[i]);
-			ico0.setLabel(colls[i]);
-			ico0.setAlign("center");
-			ico0.setStyle("background:#97b83a");
+			ico0.setWidth(colws[i]); ico0.setLabel(colls[i]);
+			ico0.setAlign("center"); ico0.setStyle("background:#97b83a");
 			ico0.setParent(icols);
 		}
 
@@ -393,8 +391,8 @@ void showJobItems(Object tjrc)
 		desb = gpMakeTextbox(irow,"IDE" + glob_icomponents_counter.toString(),soms,"font-size:9px;font-weight:bold;","99%");
 		desb.setMultiline(true);
 		desb.setHeight("70px");
-		desb.setDroppable("true");
-		//desb.addEventListener("onDrop",new dropModelName());
+		//desb.setDroppable("mydrop");
+		desb.addEventListener("onDrop",dropMname);
 
 		soms = "";
 		try { soms = colors[i]; } catch (Exception e) {}
@@ -421,14 +419,13 @@ void showJobItems(Object tjrc)
 	jobItems(ji_calc_b); // Do items total/rental calcs
 }
 
-// drag-drop mode-name into item-description
-class dropModelName implements org.zkoss.zk.ui.event.EventListener
+class dropModelName implements org.zkoss.zk.ui.event.EventListener // drag-drop mode-name into item-description
 {
 	public void onEvent(Event event) throws UiException
 	{
 		Component dragged = event.dragged;
 		kk = event.getTarget();
-		kk.setValue(kk.getValue() + " " + dragged.getLabel());
+		kk.setValue(dragged.getLabel());
 	}
 }
 dropMname = new dropModelName();

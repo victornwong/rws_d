@@ -132,31 +132,28 @@ background-image: url('alsimg/wallpaper_s3_bv.jpg');
 <datebox id="hiddendatebox" format="yyyy-MM-dd" visible="false" onCreate="self.value = new Date()" />
 <grid>
 	<rows>
-	<row spans="2">
-		<image src="/rwimg/new-year-wishes.gif" />
-	</row>
-	<row>
-		<hbox>
-		<separator width="290px" />
-		<label value="Username" />
-		</hbox>
-		<textbox id="tb_username" width="120px" />
-	</row>
-	<row>
-		<hbox>
-		<separator width="290px" />
-		<label value="Password" />
-		</hbox>
-		<textbox id="tb_password" type="password" width="120px" onOk="loginToSystem()" />	
-	</row>
-	<row>
-	<label multiline="true" style="font-size:9px" >
-	</label>
-		<hbox>
-		<button id="loginbutt" label="Login" onClick="loginToSystem(self)" />
-		<!-- <button id="tablogin" label="Tab login" onClick="loginToSystem(self)" /> -->
-		</hbox>
-	</row>
+		<row>
+			<hbox>
+				<separator width="290px" />
+				<label value="Username" />
+			</hbox>
+			<textbox id="tb_username" width="120px" />
+		</row>
+		<row>
+			<hbox>
+				<separator width="290px" />
+				<label value="Password" />
+			</hbox>
+			<textbox id="tb_password" type="password" width="120px" onOk="loginToSystem()" />	
+		</row>
+		<row>
+		<label multiline="true" style="font-size:9px" >
+		</label>
+			<hbox>
+				<button id="loginbutt" label="Login" onClick="loginToSystem(self)" />
+				<!-- <button id="tablogin" label="Tab login" onClick="loginToSystem(self)" /> -->
+			</hbox>
+		</row>
 	</rows>
 </grid>
 <div>

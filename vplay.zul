@@ -735,7 +735,6 @@ void doFunc(Object iwhat)
 								</hbox>
 								<!-- <div style="background:#3fbcd0;padding:2px" width="2000px" /> -->
 							</vbox>
-<image id="gongxipix" src="/rwimg/gongxi.gif" />
 						</hbox>
 						<separator height="3px" />
 						<div id="mainmenu_holder" width="${MAINBAR_WIDTH}" />
@@ -750,8 +749,8 @@ void doFunc(Object iwhat)
 
 		<west title="Wall" size="25%" collapsible="true" border="0" style="background:#254257;">
 			<div>
-				<hbox id="wallbutts" visible="false">
-					<button label="Annc" sclass="k9" onClick="reloadWallMod(1)" />
+				<hbox id="wallbutts">
+					<button label="iBoard" sclass="k9" onClick="reloadWallMod(1)" />
 				</hbox>
 				<div id="wallmod_holder" />
 			</div>
@@ -855,13 +854,17 @@ if(!unm.equals("padmin")) // default panels to load for users
 	if(randomInt > 80) profilepix.setSrc("/rwimg/avatars/padmin.jpg");
 	dbgb.setValue(randomInt.toString());
 	*/
-	reloadWallMod(1);
+	//reloadWallMod(1);
 }
 
 if( unm.equals("padmin") || unm.equals("shopa") || unm.equals("nurul") || unm.equals("farah") )
 {
 	profilepix.setSrc("/rwimg/avatars/padmin2.jpg");
 }
+
+/*
+Executions.getCurrent().sendRedirect(url, "_blank");
+ */
 
 ]]>
 </zscript>

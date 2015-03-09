@@ -70,11 +70,15 @@ Object[] audhds =
 	new listboxHeaderWidthObj("User",true,"70px"),
 	new listboxHeaderWidthObj("Status",true,"70px"),
 	new listboxHeaderWidthObj("Start",true,"80px"),
-	new listboxHeaderWidthObj("Complete",true,"80px"),
+	new listboxHeaderWidthObj("Complete",true,"80px"), // 5
 	new listboxHeaderWidthObj("TempGRN",true,"70px"),
 	new listboxHeaderWidthObj("MRN",true,"70px"),
 	new listboxHeaderWidthObj("GCO",true,"70px"),
 	new listboxHeaderWidthObj("Remarks",true,""),
+	new listboxHeaderWidthObj("C.Itm",true,"50px"),
+	new listboxHeaderWidthObj("C.Date",true,"70px"),
+	new listboxHeaderWidthObj("SI",true,"50px"),
+	new listboxHeaderWidthObj("C.Amt",true,"70px"),
 };
 gcoposi = 8;
 mrnposi = 7;
@@ -116,17 +120,19 @@ void listAudits(int itype)
 {
 	lastlisttype = itype;
 	sdate = kiboo.getDateFromDatebox(startdate);
-    edate = kiboo.getDateFromDatebox(enddate);
-    scht = kiboo.replaceSingleQuotes(searhtxt_tb.getValue()).trim();
-    badt = kiboo.replaceSingleQuotes(adtno_tb.getValue().trim());
+	edate = kiboo.getDateFromDatebox(enddate);
+	scht = kiboo.replaceSingleQuotes(searhtxt_tb.getValue()).trim();
+	badt = kiboo.replaceSingleQuotes(adtno_tb.getValue().trim());
 	Listbox newlb = lbhand.makeVWListbox_Width(audits_holder, audhds, "audits_lb", 22);
 
-	sqlstm = "select * from rw_qcaudit ";
+	sqlstm = "select *,(select count(origid) from rw_qcaudit_items where charge=1 and parent_id=rwa.origid) as chargeitems," +
+	"(select sum(charge_amount) from rw_qcaudit_items where charge=1 and parent_id=rwa.origid) as chargeamount " +
+	"from rw_qcaudit rwa ";
 
 	switch(itype)
 	{
 		case 1:
-		sqlstm += "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' ";
+		sqlstm += "where rwa.datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' ";
 		break;
 
 		case 2:
@@ -134,22 +140,22 @@ void listAudits(int itype)
 
 		case 3:
 		if(badt.equals("")) return;
-		sqlstm += "where origid=" + badt;
+		sqlstm += "where rwa.origid=" + badt;
 		break;
 	}
 
-	sqlstm += " order by origid";
+	sqlstm += " order by rwa.origid";
 
 	trs = sqlhand.gpSqlGetRows(sqlstm);
 	if(trs.size() == 0) return;
 	newlb.setMold("paging");
 	newlb.addEventListener("onSelect", doclikor);
 	ArrayList kabom = new ArrayList();
-	String[] fl = { "origid", "datecreated", "username", "astatus", "startaudit", "completed", "tempgrn", "tempgrn", "gcn_no", "remarks" };
+	String[] fl = { "origid", "datecreated", "username", "astatus", "startaudit", "completed", "tempgrn", "tempgrn", "gcn_no", "remarks", "chargeitems", "chargedate" , "si_no", "chargeamount" };
 	focsql = sqlhand.rws_Sql();
 	for(d : trs)
 	{
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 		ki = lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 
 		slq = "select voucherno from v_link4 where vouchertype=1280 and sortlinkid=" + 
@@ -173,15 +179,16 @@ Object[] aitmhds =
 	new listboxHeaderWidthObj("S/Num",true,""),
 	new listboxHeaderWidthObj("Qty",true,"30px"),
 	new listboxHeaderWidthObj("Status",true,"70px"),
-	new listboxHeaderWidthObj("Grade",true,"70px"),
+	new listboxHeaderWidthObj("Grade",true,"70px"), // 5
 	new listboxHeaderWidthObj("Charge",true,"50px"),
-	new listboxHeaderWidthObj("C.Amt",true,"70px"),
+	new listboxHeaderWidthObj("C.Amt",true,"70px"), // 7
 	new listboxHeaderWidthObj("Per Item Remarks",true,""),
 	new listboxHeaderWidthObj("ADT",true,"60px"),
 	new listboxHeaderWidthObj("origid",false,""),
 };
 aitmorigidpos = 10;
 aitmgradepos = 5;
+aitmchargepos = 7;
 
 class aitmclk implements org.zkoss.zk.ui.event.EventListener
 {
@@ -228,7 +235,7 @@ void listAuditItems(String iwhat, Div iwhere)
 	String[] fl = { "asset_tag", "item", "serial_num", "qty", "istatus", "regrade", "charge", "charge_amount", "remarks", "parent_id", "origid" };
 	for(d : trs)
 	{
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 		styl = "";
 		if(d.get("charge") != null) styl = (d.get("charge")) ? "background:#FC7932" : "";
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false",styl);
@@ -262,6 +269,7 @@ void showGCNItems(Object itb)
 
 	if(itag.length > 0)
 	{
+		ArrayList kabom = new ArrayList();
 		for(i=0; i<itag.length; i++)
 		{
 			tmtg = "";
@@ -271,11 +279,11 @@ void showGCNItems(Object itb)
 			tmds = "";
 			try { tmds = idsc[i]; } catch (Exception e) {}
 
-			ArrayList kabom = new ArrayList();
 			kabom.add( tmtg );
 			kabom.add( tmsn );
 			kabom.add( tmds );
 			lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+			kabom.clear();
 		}
 	}
 }
@@ -307,7 +315,7 @@ void showFCTempGRNitems(String itb)
 	String[] fl = { "asstag", "snum", "pname", "qty2" };
 	for(d : r)
 	{
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
 	}
@@ -334,7 +342,7 @@ void showFCMRNitems(String iwhat)
 	String[] fl = { "assettag", "serial", "pname", "qty2" };
 	for(d : r)
 	{
-		popuListitems_Data(kabom,fl,d);
+		ngfun.popuListitems_Data(kabom,fl,d);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
 	}

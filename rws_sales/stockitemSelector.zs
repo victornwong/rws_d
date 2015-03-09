@@ -45,7 +45,7 @@ void showStockSelection(int itype, String iwhat)
 	for(d : r)
 	{
 		popuListitems_Data(kabom,fl,d);
-		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"true","");
+		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"mydrop","");
 		kabom.clear();
 	}
 }

@@ -18,7 +18,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "LC Management";
-MYVERSION = "v0.4.4";
+MYVERSION = "v0.4.5";
 MYPANEL = "billtrkcpan";
 /*
 @Title LC billing tracking and so on
@@ -30,8 +30,7 @@ MYPANEL = "billtrkcpan";
 08/07/2014: toggler super_reminder flag for LC - hilite to remind user
 25/07/2014: nurul req import assets from other LC omit buyout and already GCN
 10/09/2014: farah req add hotswap-flag
-17/09/2014: nurul req to show equip qty, want to update like 1 recrd MSoffice = 16 qty, this will get
-	sum-up in the EVF reports
+17/09/2014: nurul req to show equip qty, want to update like 1 recrd MSoffice = 16 qty, this will get sum-up in the EVF reports
 22/09/2014: huiping req to add sales_related status .. for watever
 24/09/2014: modif contbill_Assets.replaceLCAsset() to use replaceAssetAuditLog() - terse audit-log for replacements
 27/10/2014: add rw_lc_equips.assigned, user able to set assigned/un for assets
@@ -39,6 +38,7 @@ MYPANEL = "billtrkcpan";
 06/11/2014: pull in sqlstm from eolmanager.zul to list expire LCs, show also the no. of GCO raised per LC
 07/01/2015: Mahes req, new LC status, REFRESH_COL, refresh collected
 09/01/2015: Farah req import from RDO - the items
+09/03/2015: huping/nurul req, import assets with billable-flag on
 
 */
 import java.util.*;
@@ -376,9 +376,9 @@ BUTT_WIDTH2 = "190px";
 				<label value="Copy assets from LC" sclass="k9b" />
 				<textbox id="copylcid" />
 			</hbox>
-
 			<button id="copyassflc_b" label="Copy semua" sclass="k9mo" onClick="assFunc(self)" />
-			<button id="copyassflc_filt_b" label="Sedut dengan filter" sclass="k9mo" onClick="assFunc(self)" />
+			<button id="copyassflc_billable_b" label="Sedut semua Billable je" sclass="k9mo" onClick="assFunc(self)" />
+			<button id="copyassflc_filt_b" label="Sedut semua kecuali GCN dan Buyout" sclass="k9mo" onClick="assFunc(self)" />
 		</vbox>
 	</div>
 </popup>

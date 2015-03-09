@@ -271,7 +271,9 @@ void assFunc(Object iwhat)
 		actualSuckContractcare();
 	}
 
-	if(itype.equals("copyassflc_b") || itype.equals("copyassflc_filt_b")) // copy assets from another LC. 25/07/2014: omit gcn/buyout
+	// copy assets from another LC. 25/07/2014: omit gcn/buyout
+	// 09/03/2015: huping/nurul req, import assets with billable-flag on
+	if(itype.equals("copyassflc_b") || itype.equals("copyassflc_filt_b") || itype.equals("copyassflc_billable_b"))
 	{
 		if(glob_selected_lc.equals("")) return;
 		olc = kiboo.replaceSingleQuotes( copylcid.getValue().trim() );
@@ -280,10 +282,11 @@ void assFunc(Object iwhat)
 		rc = sqlhand.gpSqlFirstRow(sqlr);
 		if(rc != null)
 		{
-			if(itype.equals("copyassflc_b")) copyAssetsFromLC(glob_selected_lc, rc.get("origid").toString() );
-			if(itype.equals("copyassflc_filt_b")) copyAssetsFromLC_omitgcnbuyout(glob_selected_lc, rc.get("origid").toString() );
+			if(itype.equals("copyassflc_b")) superCopyAssetsFromLC(1,glob_selected_lc, rc.get("origid").toString());
+			if(itype.equals("copyassflc_filt_b")) superCopyAssetsFromLC(2,glob_selected_lc, rc.get("origid").toString());
+			if(itype.equals("copyassflc_billable_b")) superCopyAssetsFromLC(3,glob_selected_lc, rc.get("origid").toString());
 
-			add_RWAuditLog(LC_PREFIX + glob_selected_lc, "", "Copy assets from LC " + olc , useraccessobj.username);
+			add_RWAuditLog(LC_PREFIX + glob_selected_lc, "", "Copy assets from LC " + olc + " [" + itype + "]" , useraccessobj.username);
 		}
 	}
 
@@ -346,8 +349,48 @@ String update_AssetLocation_byDOAddress(String ilc, String iatg)
 	return retv;
 }
 
+// 09/03/2015: consolidate all the functions into this one.
+// 09/03/2015: huping/nurul req, import assets with billable-flag on
+// 25/07/2014: import assets from other LC omitting those with GCO or buyout flag
+void superCopyAssetsFromLC(int itype, String idest, String isrc)
+{
+	sqlstm = "insert into rw_lc_equips (" + 
+	"lc_parent,asset_tag,serial_no,type,brand,model,capacity,color,coa1,ram,hdd,others," +
+	"cust_location,qty,replacement,replacement_date,rma_qty,remarks,collected," +
+	"RM_Asset,RM_Month,latest_replacement,roc_no,do_no,cn_no,asset_status," +
+	"coa2,coa3,coa4,ram2,ram3,ram4,hdd2,hdd3,hdd4," +
+	"osversion,offapps,poweradaptor,battery,estatus,gfxcard,mouse,keyboard,monitor,billable,buyout,hotswap) " +
+	"select " + idest + ",asset_tag,serial_no,type,brand,model,capacity,color,coa1,ram,hdd,others," +
+	"cust_location,qty,replacement,replacement_date,rma_qty,remarks,collected," +
+	"RM_Asset,RM_Month,latest_replacement,roc_no,do_no,cn_no,asset_status," +
+	"coa2,coa3,coa4,ram2,ram3,ram4,hdd2,hdd3,hdd4," +
+	"osversion,offapps,poweradaptor,battery,estatus,gfxcard,mouse,keyboard,monitor,billable,buyout,hotswap " +
+	"from rw_lc_equips WHERE lc_parent=" + isrc;
+
+	wherest = "";
+
+	switch(itype)
+	{
+		case 1: // copy all assets from src to dest
+			break;
+
+		case 2: // import and ommit GCO or buyout flag
+			wherest = " and (buyout is null or buyout=0) and (gcn_id is null or gcn_id=0)";
+			break;
+
+		case 3: // import assets with billable-flag on
+			wherest = " and billable=1";
+			break;
+	}
+
+	sqlstm += wherest;
+	sqlhand.gpSqlExecuter(sqlstm);
+	showAssets(glob_selected_lc);
+}
+
 void copyAssetsFromLC(String idest, String isrc)
 {
+	/*
 	sqlstm = "insert into rw_lc_equips (" + 
 	"lc_parent,asset_tag,serial_no,type,brand,model,capacity,color,coa1,ram,hdd,others," +
 	"cust_location,qty,replacement,replacement_date,rma_qty,remarks,collected," +
@@ -363,11 +406,13 @@ void copyAssetsFromLC(String idest, String isrc)
 
 	sqlhand.gpSqlExecuter(sqlstm);
 	showAssets(glob_selected_lc);
+	*/
 }
 
 // 25/07/2014: import assets from other LC omitting those with GCO or buyout flag
 void copyAssetsFromLC_omitgcnbuyout(String idest, String isrc)
 {
+	/*
 	sqlstm = "insert into rw_lc_equips (" + 
 	"lc_parent,asset_tag,serial_no,type,brand,model,capacity,color,coa1,ram,hdd,others," +
 	"cust_location,qty,replacement,replacement_date,rma_qty,remarks,collected," +
@@ -380,9 +425,30 @@ void copyAssetsFromLC_omitgcnbuyout(String idest, String isrc)
 	"coa2,coa3,coa4,ram2,ram3,ram4,hdd2,hdd3,hdd4," +
 	"osversion,offapps,poweradaptor,battery,estatus,gfxcard,mouse,keyboard,monitor,billable,buyout,hotswap " +
 	"from rw_lc_equips WHERE (buyout is null or buyout=0) and (gcn_id is null or gcn_id=0) and lc_parent=" + isrc;
-
 	sqlhand.gpSqlExecuter(sqlstm);
 	showAssets(glob_selected_lc);
+	*/
+}
+
+// 09/03/2015: huping/nurul req, import assets with billable-flag on
+void copyAssetsFromLC_onlyBillable(String idest, String isrc)
+{
+	/*
+	sqlstm = "insert into rw_lc_equips (" + 
+	"lc_parent,asset_tag,serial_no,type,brand,model,capacity,color,coa1,ram,hdd,others," +
+	"cust_location,qty,replacement,replacement_date,rma_qty,remarks,collected," +
+	"RM_Asset,RM_Month,latest_replacement,roc_no,do_no,cn_no,asset_status," +
+	"coa2,coa3,coa4,ram2,ram3,ram4,hdd2,hdd3,hdd4," +
+	"osversion,offapps,poweradaptor,battery,estatus,gfxcard,mouse,keyboard,monitor,billable,buyout,hotswap) " +
+	"select " + idest + ",asset_tag,serial_no,type,brand,model,capacity,color,coa1,ram,hdd,others," +
+	"cust_location,qty,replacement,replacement_date,rma_qty,remarks,collected," +
+	"RM_Asset,RM_Month,latest_replacement,roc_no,do_no,cn_no,asset_status," +
+	"coa2,coa3,coa4,ram2,ram3,ram4,hdd2,hdd3,hdd4," +
+	"osversion,offapps,poweradaptor,battery,estatus,gfxcard,mouse,keyboard,monitor,billable,buyout,hotswap " +
+	"from rw_lc_equips WHERE billable=1 and lc_parent=" + isrc;
+	sqlhand.gpSqlExecuter(sqlstm);
+	showAssets(glob_selected_lc);
+	*/
 }
 
 void suckFCAssetDetails(String iasid, String iastg)
@@ -712,8 +778,6 @@ void checkRMA_Reps()
 	//alert(sqlstm);
 
 	rcs = sqlhand.rws_gpSqlGetRows(sqlstm);
-
-alert(sqlstm);
 
 	if(rcs.size() == 0) return;
 	Listbox newlb = lbhand.makeVWListbox_Width(rmarep_holder, rephds, "reprma_lb", 20);

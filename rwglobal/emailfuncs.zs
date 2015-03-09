@@ -403,5 +403,3 @@ boolean gmail_sendEmailWithAttachment_2(String ismtp, String iusername, String i
 	
 	return retval;
 }
-
-

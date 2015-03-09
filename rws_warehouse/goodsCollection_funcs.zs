@@ -363,9 +363,8 @@ void showGoodsCollection(int itype)
 		}
 
 		mns = ""; // get MRNs if any..
-		//try { mns = grnToMRN_str(d.get("tempgrn")); } catch (Exception e) {}
+		try { mns = grnToMRN_str(d.get("tempgrn")); } catch (Exception e) {}
 		lbhand.setListcellItemLabel(ki,mrn_posi,mns);
-
 		kabom.clear();
 	}
 }
