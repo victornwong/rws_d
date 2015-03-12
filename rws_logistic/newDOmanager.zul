@@ -9,11 +9,12 @@
 <zscript src="../rwglobal/fc6_CustomerSelector.zs" />
 <zscript src="../rws_warehouse/goodsreceive/injtest.zs" />
 <zscript src="./newDO_funcs.zs" />
+<zscript src="./newDO_injectDO.zs" />
 
 <zscript>
 <![CDATA[
-MYTITLE = "DO Management (This is not linked to FOCUS)";
-MYVERSION = "v0.2";
+MYTITLE = "DO Management (Upload to FOCUS)";
+MYVERSION = "v0.3";
 MYPANEL = "newodmangerpan";
 /*
 @Title DO handling which will minus FC6 inventory
@@ -24,6 +25,7 @@ Total redesign from last year's module - pickup job-sheet and check asset-tags a
 Uses rwsdb2.DeliveryOrder and DeliveryOrderMaster
 
 31/12/2014: Lai req, add serial-numbers col
+12/03/2015: FC6 DO injection codes added
 
 */
 import java.util.*;
@@ -471,6 +473,7 @@ void closePanel()
 			<button id="clrjobid_b" label="Clear job-id" sclass="k9mo" onClick="adminFunc(self.getId())" />
 			<button id="clrdelstat_b" label="Clear delivery stat" sclass="k9mo" onClick="adminFunc(self.getId())" />
 			<button id="clrrefpackstat_b" label="Clear refurb/packing stat" sclass="k9mo" onClick="adminFunc(self.getId())" />
+			<button id="postinvt_b" label="POST INVENTORY" sclass="k9mo" style="color:#D02727" onClick="doFunc(self.getId())" />
 		</vbox>
 	</div>
 </popup> <!-- ENDOF adminPop -->
@@ -529,7 +532,6 @@ void closePanel()
 			<button id="commitdo_b" label="COMMIT" sclass="k9mo" style="color:#D02727" onClick="doFunc(self.getId())" />
 			<button id="printdo_b" label="PRINT" sclass="k9mo" onClick="doFunc(self.getId())" />
 			<button id="canceldo_b" label="CANCEL" sclass="k9mo" onClick="doFunc(self.getId())" />
-			<button id="postinvt_b" label="POST INVENTORY" sclass="k9mo" style="color:#D02727" onClick="doFunc(self.getId())" />
 			<separator width="10px" />
 			<button label="Refurb/packing" sclass="k9mo" onClick="refurb_pop.open(self)" />
 			<button label="Delivery status" sclass="k9mo" onClick="deliverystat_pop.open(self)" />

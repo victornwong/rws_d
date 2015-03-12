@@ -750,6 +750,7 @@ void doFunc(Object iwhat)
 		<west title="Wall" size="25%" collapsible="true" border="0" style="background:#254257;">
 			<div>
 				<hbox id="wallbutts">
+					<button label="Notifs" sclass="k9" onClick="reloadWallMod(2)" />
 					<button label="iBoard" sclass="k9" onClick="reloadWallMod(1)" />
 				</hbox>
 				<div id="wallmod_holder" />
@@ -792,6 +793,9 @@ void reloadWallMod(int itype)
 	{
 		case 1: // announcements wall-mod
 			fnm = "wallmods/annoucements_v1.zul";
+			break;
+		case 2: // notifications wall-mod
+			fnm = "wallmods/notifications_v1.zul";
 			break;
 	}
 
@@ -857,7 +861,12 @@ if(!unm.equals("padmin")) // default panels to load for users
 	//reloadWallMod(1);
 }
 
-if( unm.equals("padmin") || unm.equals("shopa") || unm.equals("nurul") || unm.equals("farah") )
+if(unm.equals("shopa") || unm.equals("nurul") || unm.equals("farah") )
+{
+	profilepix.setSrc("/rwimg/avatars/huhkecik.jpg");
+}
+
+if(unm.equals("padmin"))
 {
 	profilepix.setSrc("/rwimg/avatars/padmin2.jpg");
 }

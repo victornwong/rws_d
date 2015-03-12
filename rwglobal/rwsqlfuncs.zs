@@ -15,7 +15,8 @@ int calcFocusDate(String dstr)
 	java.util.Calendar thedate = Calendar.getInstance();
 	thedate.setTime(GlobalDefs.dtf2.parse(dstr));
 	// ((2014-1950)*416) + ((9*32)+1) + (18 - 1);
-	retval = ((thedate.get(Calendar.YEAR)-1950)*416) + ((thedate.get(Calendar.MONTH)*32)+1) + (thedate.get(Calendar.DAY_OF_MONTH)-1);
+	//retval = ((thedate.get(Calendar.YEAR)-1950)*416) + ((thedate.get(Calendar.MONTH)*32)+1) + (thedate.get(Calendar.DAY_OF_MONTH)-1);
+	retval = ((thedate.get(Calendar.YEAR)-1950)*416) + ((thedate.get(Calendar.MONTH)+1)*32) + (thedate.get(Calendar.DAY_OF_MONTH));
 	return retval;
 }
 
@@ -876,3 +877,12 @@ Object getMELCSGN_rec(String iwhat)
 	sqlstm = "select * from mel_csgn where origid=" + iwhat;
 	return sqlhand.gpSqlFirstRow(sqlstm);
 }
+
+void injectNotif(String unm, String ntx)
+{
+	today = kiboo.todayISODateString();
+	injstm = "insert into rw_notifs (datecreated,notif_text,poster,astatus) values " +
+	"('" + today + "','" + ntx + "','" + unm + "','PENDING');";
+	sqlhand.gpSqlExecuter(injstm);
+}
+
