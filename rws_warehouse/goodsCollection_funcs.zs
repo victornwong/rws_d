@@ -597,3 +597,72 @@ void genGCO_template(String igco)
 	downloadFile(kasiexport,tfname,outfn);
 }
 
+// 17/03/2015: req by Nurul, generate GCO items list
+void genGCOItems_list()
+{
+	sdate = kiboo.getDateFromDatebox(gco_startdate);
+	edate = kiboo.getDateFromDatebox(gco_enddate);
+
+	sqlstm = "select origid as gcono,datecreated,customer_name,username,items_code,items_desc,items_coll from rw_goodscollection " +
+	"where datecreated between '" + sdate + "' and '" + edate + "' order by origid;";
+
+	r = sqlhand.gpSqlGetRows(sqlstm);
+	if(r.size() == 0)
+	{
+		guihand.showMessageBox("No records..");
+		return;
+	}
+
+	Workbook wb = new HSSFWorkbook();
+	Sheet sheet = wb.createSheet("gcoitems");
+	Font wfont = wb.createFont();
+	wfont.setFontHeightInPoints((short)8);
+	wfont.setFontName("Arial");
+	rowcount = 1;
+	String[] hds = { "GCO", "Date", "Customer", "User", "AssetTag", "Desc", "Collect" };
+
+	for(i=0;i<hds.length;i++)
+	{
+		POI_CellSetAllBorders(wb,excelInsertString(sheet,0,i,hds[i]),wfont,true,"");
+	}
+
+	for(d : r)
+	{
+		gcono = d.get("gcono").toString();
+		dtc = kiboo.dtf2.format(d.get("datecreated"));
+		unm = d.get("username");
+		cnm = kiboo.checkNullString(d.get("customer_name"));
+
+		itag = sqlhand.clobToString(d.get("items_code")).split("~");
+		idsc = sqlhand.clobToString(d.get("items_desc")).split("~");
+		icol = kiboo.checkNullString(d.get("items_coll")).split("~");
+
+		for(i=0; i<itag.length; i++)
+		{
+			excelInsertString(sheet,rowcount,0,gcono);
+			excelInsertString(sheet,rowcount,1,dtc);
+			excelInsertString(sheet,rowcount,2,cnm);
+			excelInsertString(sheet,rowcount,3,unm);
+
+			ks = "";
+			try { ks = itag[i]; } catch (Exception e) {}
+			excelInsertString(sheet,rowcount,4,ks);
+
+			ks = "";
+			try { ks = idsc[i]; } catch (Exception e) {}
+			excelInsertString(sheet,rowcount,5,ks);
+
+			ks = "0";
+			try { ks = icol[i]; } catch (Exception e) {}
+			excelInsertString(sheet,rowcount,6, ((ks.equals("0")) ? "N" : "Y") );
+
+			rowcount++;
+		}
+	}
+
+	outfn = session.getWebApp().getRealPath("tmp/gcoitemslist.xls");
+	FileOutputStream fileOut = new FileOutputStream(outfn);
+	wb.write(fileOut); // Write Excel-file
+	fileOut.close();
+	downloadFile(kasiexport,"gcoitemslist.xls",outfn);
+}

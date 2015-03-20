@@ -19,7 +19,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "Goods Collection Note / Order";
-MYVERSION = "v0.2.6";
+MYVERSION = "v0.2.7";
 MYPANEL = "goodscolpa";
 /*
 @Title Goods/assets collection management
@@ -37,7 +37,7 @@ Collection-list status : complete, partial, pending
 07/11/2014: filter to list by status
 08/12/2014: req by farah/huiping: able to import assets from DO - uses codes from LC module
 10/12/2014: req huiping, CANCEL status, check gco not COMPLETE/PARTIAL, then ask for reason and audit-log
-
+17/03/2015: req by Nurul, generate GCO items list
 */
 import java.util.*;
 import java.text.*;
@@ -89,15 +89,10 @@ void impLCAssets_callback(ArrayList isats, ArrayList issn, ArrayList isdes)
 {
 	// TODO hardcoded for goodsColletion_v1.zul, glob_sel_status
 	if(!glob_sel_status.equals("NEW")) return;
-	
 	//alert(isats + " :: " + issn + " :: " + isdes);
-
 	alli = collectAssetTags();
 	addm = false;
-
-	ast = isats.toArray();
-	asn = issn.toArray();
-	ads = isdes.toArray();
+	ast = isats.toArray(); asn = issn.toArray(); ads = isdes.toArray();
 
 	for(i=0;i<ast.length;i++)
 	{
@@ -572,13 +567,25 @@ BOXWIDTH = "800px";
 	</div>
 </popup>
 
+<popup id="gcoitems_pop">
+	<div sclass="shadowbox" style="background:#50CCA6;">
+		<hbox>
+			<label value="GCO start" sclass="k9b" />
+			<datebox id="gco_startdate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
+			<label value="End" sclass="k9b" />
+			<datebox id="gco_enddate" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self);" />
+			<button label="Generate GCO items list" sclass="k9" onClick="genGCOItems_list()" />
+		</hbox>
+	</div>
+</popup>
+
 <style src="/real-world.css" />
 <style>
-.GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
-{
-border: none; overflow: hidden; zoom: 1;
-border-top: none; border-left: none; border-right: none; border-bottom: none;
-}
+	.GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
+	{
+	border: none; overflow: hidden; zoom: 1;
+	border-top: none; border-left: none; border-right: none; border-bottom: none;
+	}
 </style>
 
 <div width="1200px">
@@ -615,6 +622,7 @@ border-top: none; border-left: none; border-right: none; border-bottom: none;
 			<!-- <button id="complete_b" label="Complete" onClick="doFunc(self)" /> -->
 			<button id="setnew_b" label="SET NEW" sclass="k9mo" style="color:#F52222" onClick="adminFunc(self)" visible="false" />
 			<button label="Export EXCEL" sclass="k9mo" onClick="exportGCOList()" />
+			<button label="Generate GCO items list" sclass="k9mo" onClick="gcoitems_pop.open(self)" />
 			<separator width="20px" />
 			<button id="opadt_b" sclass="k9mo" label="View ADT/QC" onClick="loadADT_things(); viewadt_pop.open(glob_sel_gcoli);" />
 			<button id="vwtgrn_b" sclass="k9mo" label="View T.GRN" onClick="doFunc(self)" />
