@@ -85,13 +85,12 @@ void procInstalmentPrintout(int itype)
 	tcellstyle.setFont(wfont);
 	tcellstyle.setBorderLeft(CellStyle.BORDER_THIN);
 	tcellstyle.setBorderRight(CellStyle.BORDER_THIN);
-	
+
 	CellStyle pistyle =  excelWB.createCellStyle();
 	pistyle.cloneStyleFrom(tcellstyle);
 	pistyle.setAlignment(CellStyle.ALIGN_LEFT);
-	
-	// Insert 'em inv items
-	if(rwitems.size() > 0)
+
+	if(rwitems.size() > 0) // Insert 'em inv items
 	{
 		kc = 1;
 		for( d : rwitems)
