@@ -244,7 +244,7 @@ void listROCLC(int itype)
 			break;
 
 		case 3 : // load latest entered
-			sqlstm = "select top 28 lc.origid, lc.lc_id, lc.rocno, lc.customer_name,lc.period,lc.lstartdate,lc.lenddate,lc.lstatus, lc.super_reminder," +
+			sqlstm = "select top 15 lc.origid, lc.lc_id, lc.rocno, lc.customer_name,lc.period,lc.lstartdate,lc.lenddate,lc.lstatus, lc.super_reminder," +
 			"(select count(origid) from rw_lc_equips where lc_parent=lc.origid) as aqty, lc.inst_type, lc.rwno, " +
 			"(select count(lce1.gcn_id) from rw_lc_equips lce1 " +
 			"where lce1.lc_parent=lc.origid and (lce1.gcn_id is not null or lce1.gcn_id<>0)) as gcocount," +
@@ -368,4 +368,24 @@ Object[] dlrhds =
 	}
 }
 
+// 14/05/2015: copy LC metadata/assets - req by shopa
+// call from copyFromOtherLC_meta_pop
+void copyLCmetadata()
+{
+	frmlc = kiboo.replaceSingleQuotes(whichlcid.getValue().trim());
+	if(frmlc.equals("")) return;
+	try { kk = Integer.parseInt(frmlc); } catch (Exception e) { guihand.showMessageBox("ERR: need LC/RWI number.."); return; }
+
+	sqlstm = "if exists(select origid from rw_lc_records where lc_id='" + frmlc + "') " +
+	"insert into rw_lc_records (datecreated,username,lc_id,rocno,fc6_custid, " +
+	"customer_name,rwno,invoice_date,period,lstartdate,lenddate,lstatus, " +
+	"contract_filed,remarks,qty_dt,qty_mt,qty_nb,qty_pt,qty_ms,rm_month,rm_contract,inst_type,prev_roc,prev_lc,order_type) " +
+	"select getdate(),'" + useraccessobj.username + "',lc_id,rocno,fc6_custid, " +
+	"customer_name,rwno,invoice_date,period,lstartdate,lenddate,lstatus, " +
+	"contract_filed,remarks,qty_dt,qty_mt,qty_nb,qty_pt,qty_ms,rm_month,rm_contract,inst_type,prev_roc,prev_lc,order_type " +
+	"from rw_lc_records where lc_id='" + frmlc + "';";
+
+	sqlhand.gpSqlExecuter(sqlstm);
+	listROCLC(3); // load some latest recs to show what's copied..
+}
 

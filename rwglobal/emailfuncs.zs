@@ -28,9 +28,9 @@ int simpleSendEmail(String ismtpserver, String ifrom, String ito, String isubj, 
 
 	try
 	{
-        MimeMessage msg = new MimeMessage(mailsession);
-        msg.setFrom();
-        msg.setRecipients(Message.RecipientType.TO,ito);
+    MimeMessage msg = new MimeMessage(mailsession);
+    msg.setFrom();
+    msg.setRecipients(Message.RecipientType.TO,ito);
 		msg.setSubject(isubj);
 		msg.setSentDate(new Date());
 

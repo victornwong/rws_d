@@ -112,7 +112,7 @@ void contFunc(Object iwhat)
 		sqlstm = "update rw_activities_contacts set customer_grade='" + cgd + "' where origid=" + glob_sel_acticont;
 
 		// 01/12/2014: james req to send notif email to requesting-user and himself when grade is updated
-		topeople = "james.thomas@rentwise.com";
+		topeople = "james.thomas@rentwise.com,sales@rentwise.com";
 		ur = sechand.getPortalUser_Rec_username(glob_sel_username);
 		if(ur != null)
 		{

@@ -18,7 +18,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "LC Management";
-MYVERSION = "v0.4.5";
+MYVERSION = "v0.4.6";
 MYPANEL = "billtrkcpan";
 /*
 @Title LC billing tracking and so on
@@ -39,6 +39,7 @@ MYPANEL = "billtrkcpan";
 07/01/2015: Mahes req, new LC status, REFRESH_COL, refresh collected
 09/01/2015: Farah req import from RDO - the items
 09/03/2015: huping/nurul req, import assets with billable-flag on
+14/05/2015: shopa req, cpy metadata from other LC
 
 */
 import java.util.*;
@@ -202,7 +203,8 @@ void doFunc(Object iwhat)
 
 	if(itype.equals("stactive_b") || itype.equals("sttermin_b") || itype.equals("stextens_b") ||
 	itype.equals("stinerti_b") || itype.equals("stbuyout_b") || itype.equals("stinactive_b") || itype.equals("stpartial_b") ||
-	itype.equals("partret_b") || itype.equals("creditn_b") || itype.equals("refresh_b") || itype.equals("refcoll_b") || itype.equals("termcoll_b") )
+	itype.equals("partret_b") || itype.equals("creditn_b") || itype.equals("refresh_b") || itype.equals("refcoll_b") || itype.equals("termcoll_b") ||
+	itype.equals("legis_b") )
 	{
 		if(glob_selected_lc.equals("")) return;
 		sqlstm = "update rw_lc_records set lstatus='" + iwhat.getLabel() + "' where origid=" + glob_selected_lc;
@@ -336,6 +338,18 @@ BUTT_WIDTH2 = "190px";
 
 ]]>
 </zscript>
+
+<popup id="copyFromOtherLC_meta_pop">
+	<div sclass="shadowbox" style="background:#204a87">
+		<vbox>
+			<hbox>
+				<label value="Duplicate LC metadata" sclass="k9b" />
+				<textbox id="whichlcid" width="60px" />
+			</hbox>
+			<button label="Dup it" sclass="k9mo" onClick="copyFromOtherLC_meta_pop.close(); copyLCmetadata()" />
+		</vbox>
+	</div>
+</popup>
 
 <popup id="report_pop">
 	<div sclass="shadowbox" style="background:#9db91d">
@@ -588,6 +602,7 @@ BUTT_WIDTH2 = "190px";
 			<button id="refresh_b" label="REFRESH" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
 			<button id="refcoll_b" label="REFRESH_COL" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
 			<button id="termcoll_b" label="TERMINATED_COL" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
+			<button id="legis_b" label="LEGAL_ISSUE" width="${STATBUTT_WIDTH}" onClick="doFunc(self)" />
 		</vbox>
 	</div>
 </popup>
@@ -825,15 +840,28 @@ G.Stat = GCO status
 				</rows>
 			</grid>
 
-			<button id="newroc_b" label="New LC/ROC entry" sclass="k9mo" onClick="doFunc(self)" />
-			<button id="rocsetstat_b" label="Set status" sclass="k9mo" onClick="lcsetstat_pop.open(self)" />
-			<button id="shwauditlogs_b" label="LC/ROC Logs" sclass="k9mo" onClick="doFunc(self)" />
-			<button label="Dig LC/ROC Logs" sclass="k9mo" onClick="digauditlog_pop.open(self)" />
-			<button label="Check dup records" sclass="k9mo" onClick="listDupLC_records(winsholder)" />
-			<button label="Replacements" sclass="k9mo" onClick="replacementpop.open(self)" />
-			<button id="listhotswap_b" label="List HOTSWAPS" sclass="k9" onClick="listHotswaps()" />
-			<separator width="20px" />
-			<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#ff0000" visible="false" onClick="adminpop.open(self)" />
+			<grid sclass="GridLayoutNoBorder">
+				<rows>
+					<row style="background:#2e3436;">
+						<hbox>
+							<button id="newroc_b" label="New LC/ROC entry" sclass="k9mo" onClick="doFunc(self)" />
+							<button id="rocsetstat_b" label="Set status" sclass="k9mo" onClick="lcsetstat_pop.open(self)" />
+							<button id="shwauditlogs_b" label="LC/ROC Logs" sclass="k9mo" onClick="doFunc(self)" />
+							<button label="Dig LC/ROC Logs" sclass="k9mo" onClick="digauditlog_pop.open(self)" />
+							<button label="Check dup records" sclass="k9mo" onClick="listDupLC_records(winsholder)" />
+							<button label="Replacements" sclass="k9mo" onClick="replacementpop.open(self)" />
+							<button id="listhotswap_b" label="List HOTSWAPS" sclass="k9" style="color:#729B1D" onClick="listHotswaps()" />
+							<separator width="20px" />
+							<button id="admin_b" label="ADMIN" sclass="k9mo" style="color:#ff0000" visible="false" onClick="adminpop.open(self)" />
+						</hbox>
+					</row>
+					<row style="background:#2e3436;">
+						<hbox>
+							<button id="cpyfrmlc_b" label="Duplicate from LC" sclass="k9mo" style="color:#729B1D" onClick="copyFromOtherLC_meta_pop.open(self);" />
+						</hbox>
+					</row>
+				</rows>
+			</grid>
 
 		</hbox>
 		<separator height="3px" />
