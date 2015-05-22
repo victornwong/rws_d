@@ -102,7 +102,7 @@ String[] rma_colls = { ""    ,"RMA No." ,"Dated","--" };
 void doFunc(Object iwhat)
 {
 	itype = iwhat.getId();
-	todaydate =  kiboo.todayISODateTimeString();
+	todaydate = kiboo.todayISODateTimeString();
 	refresh = refup = false;
 	msgtext = sqlstm = "";
 

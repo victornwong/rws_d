@@ -314,7 +314,7 @@ boolean gmail_sendEmailWithAttachment(String ismtp, String iusername, String ipw
 	props.put("mail.smtp.host", "smtp.gmail.com");
 	props.put("mail.smtp.port", "587");
 
-	javax.mail.Session mailsession = javax.mail.Session.getInstance(props, new MS_MyAuth(username,password) );
+	javax.mail.Session mailsession = javax.mail.Session.getInstance(props, new MS_MyAuth(iusername,ipwd) );
 
 	try {
 

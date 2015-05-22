@@ -15,11 +15,11 @@
 MYTITLE = "MEL - Consignment Note Management";
 MYVERSION = "v0.1";
 MYPANEL = "meluplcsgnpanel";
-/*
-@Title MEL upload consignment note
-@Author Victor Wong
-@Since 09/12/2014
-@Notes
+/**
+ * @title MEL upload consignment note
+ * @author Victor Wong
+ * @since 09/12/2014
+ * @notes
 */
 import java.util.*;
 import java.text.*;

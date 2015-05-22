@@ -10,17 +10,19 @@
 <zscript src="../rwglobal/jobNotes_funcs.zs" />
 <zscript src="../rwglobal/uploadedWorksheet_v1.zs" />
 <zscript src="../rwglobal/emailfuncs.zs" />
+<zscript src="./rentalSlots_func.zs" />
 <zscript>
 <![CDATA[
 MYTITLE = "BillingEvo2 (Rental buku management)";
 MYVERSION = "v0.1";
 MYPANEL = "billnevo2";
-/*
-@Title Billing Evolution 2 - rental book management
-@Author Victor Wong
-@Since 14/05/2015
-@Notes
-A new design to keep track of each rental installment - rental book thing
+/**
+ * @Title Billing Evolution 2 - rental book management
+ * @Author Victor Wong
+ * @Since 14/05/2015
+ * @Notes
+ * A new design to keep track of each rental installment - rental book thing
+ * 
 */
 import java.util.*;
 import java.text.*;
@@ -36,15 +38,69 @@ gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 SLOTS_GRID_ID = "theslots";
 SLOTS_GRID_ROWS_ID = "slot_rows";
 
-glob_sel_lcorigid = "";
+glob_sel_slot_obj = null;
+glob_sel_lcorigid = glob_sel_lcnumber = glob_sel_customer = "";
 
-// iholder: DIV id, islotid: slots-grid id
-void checkCreateSlotsGrid(Div iholder, String islotid)
+/**
+ * Get rentalbook slots if any and display 'em
+ * @param ilco selected LC origid
+ */
+void showRentalSlots(String ilco)
 {
-	String[] colhed = { "","No.","NextBill","Inv.No","Inv.Date" };
-	String[] colwds = { "20px", "30px", "80px", "100px", "80px" };
-	ngfun.checkMakeGrid(colwds, colhed, iholder, islotid, SLOTS_GRID_ROWS_ID, "", "350px", true);
+	k9 = "font-size:9px";
+	sqlstm = "select fc_invoice,invoice_date,notif_date,remarks from rw_rentalbook " +
+	"where parent_lc=" + ilco + " order by sorter;";
+	screcs = sqlhand.gpSqlGetRows(sqlstm);
+
+	for(d : screcs) // go through the loaded recs and make slots - take not if new columns added, insert_BlankSlot() need to chg
+	{
+		nrw = new org.zkoss.zul.Row(); nrw.setParent(slot_rows);
+		ngfun.gpMakeCheckbox(nrw,"","","");
+		ngfun.gpMakeLabel(nrw,"","",k9);
+
+		kd = kiboo.dtf2.format(d.get("notif_date"));
+		if(kd.equals("1900-01-01")) kd = "";
+		ngfun.gpMakeLabel(nrw,"",kd,k9); // next billing reminder date
+		
+		ngfun.gpMakeLabel(nrw,"",kiboo.checkNullString(d.get("fc_invoice")),k9); // invoice no. grabbed from FC6 when uploaded
+		
+		kd = kiboo.dtf2.format(d.get("invoice_date"));
+		if(kd.equals("1900-01-01")) kd = "";
+		ngfun.gpMakeLabel(nrw,"",kd,k9); // invoice date from FC6
+		
+		kk = ngfun.gpMakeLabel(nrw,"",kiboo.checkNullString(d.get("remarks")),k9); // remarks
+		kk.setMultiline(true);
+		nrw.addEventListener("onDoubleClick", slotdclicker); // slotdclicker def in rentalSlots_func.zs
+	}
+	refreshSlot_Num();
 }
+
+/**
+ * onClick event listener for listbox in billingShowLC()
+ */
+class lcrentlOnC implements org.zkoss.zk.ui.event.EventListener
+{
+	public void onEvent(Event event) throws UiException
+	{
+		if(!glob_sel_lcorigid.equals("")) // got prev selected LC, auto-save 'em slots if any
+		{
+			saveSlots();
+		}
+
+		isel = event.getReference();
+		glob_sel_lcorigid = lbhand.getListcellItemLabel(isel,0);
+		glob_sel_lcnumber = lbhand.getListcellItemLabel(isel,1);
+		glob_sel_customer = lbhand.getListcellItemLabel(isel,2);
+
+		cgd = slotsholder.getFellowIfAny(SLOTS_GRID_ID); // if got prev grid, remove it
+		if(cgd != null) cgd.setParent(null);
+
+		selectedlc_lbl.setValue(glob_sel_lcnumber + " : " + glob_sel_customer);
+		checkCreateSlotsGrid(slotsholder,SLOTS_GRID_ID);
+		showRentalSlots(glob_sel_lcorigid);
+	}
+}
+lcrentalclk = new lcrentlOnC();
 
 Object[] lccols_headers =
 {
@@ -52,23 +108,13 @@ Object[] lccols_headers =
 	new listboxHeaderWidthObj("LC",true,"70px"),
 	new listboxHeaderWidthObj("Customer",true,""),
 	new listboxHeaderWidthObj("User",true,"60px"),
-	new listboxHeaderWidthObj("EndDate",true,"70px"),
-	new listboxHeaderWidthObj("OrderType",true,""),
+	new listboxHeaderWidthObj("End date",true,"70px"),
+	new listboxHeaderWidthObj("Order type",true,""),
 };
-
-class lcrentlOnC implements org.zkoss.zk.ui.event.EventListener
-{
-	public void onEvent(Event event) throws UiException
-	{
-		isel = event.getReference();
-		glob_sel_lcorigid = lbhand.getListcellItemLabel(isel,0);
-
-		checkCreateSlotsGrid(slotsholder,SLOTS_GRID_ID);
-	}
-}
-lcrentalclk = new lcrentlOnC();
-
-// Billing punya show LC. Only list LC with certain status
+/**
+ * Billing punya show LC. Only list LC with certain status(active,inertia)
+ * @param itype listing type (later usage)
+ */
 void billingShowLC(int itype)
 {
 	st = kiboo.replaceSingleQuotes(searhtxt_tb.getValue().trim());
@@ -95,104 +141,49 @@ void billingShowLC(int itype)
 	}
 }
 
-void slotsFunc(String itype)
-{
-	todaydate =  kiboo.todayISODateTimeString();
-	sqlstm = msgtext = "";
-	refresh = false;
-
-	if(itype.equals("ins1slot_b")) // insert 1 slot
-	{
-		insert_BlankSlot(1);
-		refreshSlot_Num();
-	}
-
-	if(itype.equals("ins12slot_b")) // insert 12 slots
-	{
-		insert_BlankSlot(12);
-		refreshSlot_Num();
-	}
-
-	if(itype.equals("remslot_b")) // remove ticked slots
-	{
-		iterateSlots(slot_rows,1);
-		refreshSlot_Num();
-	}
-
-	if(itype.equals("untick_b")) // untick checkboxes
-	{
-		iterateSlots(slot_rows,2);
-	}
-}
-
-// Abit hardcoded to iterate over grid-rows and perform some func
-// irows: the grid ROWS id, itype: what func
-void iterateSlots(Object irows, int itype)
-{
-	cds = irows.getChildren().toArray();
-	for(i=0; i<cds.length; i++)
-	{
-		cx = cds[i].getChildren().toArray();
-
-		switch(itype)
-		{
-			case 1: // remove ticked slots
-				if(cx[0].isChecked()) cds[i].setParent(null); // TODO need to check if there's already invoice, not allow to remove
-				break;
-
-			case 2: // untick checkboxes
-				cx[0].setChecked(false);
-				break;
-		}
-	}
-}
-
-class slotdclik implements org.zkoss.zk.ui.event.EventListener
-{
-	public void onEvent(Event event) throws UiException
-	{
-		seli = event.getTarget();
-		alert(seli);
-	}
-}
-slotdclicker = new slotdclik();
-
-// icount: how many to insert
-void insert_BlankSlot(int icount)
-{
-	k9 = "font-size:9px";
-	for(i=0; i<icount; i++)
-	{
-		nrw = new org.zkoss.zul.Row();
-		nrw.setParent(slot_rows); // HARDCODED: see how to refer to SLOTS_GRID_ROWS_ID instead for future expansion
-		ngfun.gpMakeCheckbox(nrw,"","","");
-		ngfun.gpMakeLabel(nrw,"","NNN",k9);
-
-		ngfun.gpMakeLabel(nrw,"","0000-00-00",k9);
-		ngfun.gpMakeLabel(nrw,"","ddddd",k9);
-		ngfun.gpMakeLabel(nrw,"","0000-00-00",k9);
-		//doi = new Datebox(); doi.setStyle("font-size:9px"); doi.setFormat("yyyy-MM-dd"); doi.setParent(nrw);
-
-		nrw.addEventListener("onDoubleClick", slotdclicker);
-	}
-}
-
-// Refresh the numbering column of grid
-void refreshSlot_Num()
-{
-	cds = null;
-	try { cds = slot_rows.getChildren().toArray(); } catch (Exception e) { return; }
-	lncount = 1;
-	for(i=0; i<cds.length; i++)
-	{
-		cx = cds[i].getChildren().toArray();
-		cx[1].setValue(lncount.toString() + ".");
-		lncount++;
-	}
-}
-
 ]]>
 </zscript>
+
+<popup id="slotsedit_pop">
+	<div sclass="shadowbox" style="background:#f57900;" width="350px" >
+		<grid sclass="GridLayoutNoBorder">
+			<rows>
+				<row style="background:#f57900;">
+					<label value="Next billing reminder" sclass="k9" />
+					<datebox id="i_notif_date_dt" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
+				</row>
+				<row style="background:#f57900;" >
+					<label value="Inv No" sclass="k9" />
+					<textbox id="i_fc_invoice_tb" sclass="k9" />
+				</row>
+				<row style="background:#f57900;" >
+					<label value="Inv Date" sclass="k9" />
+					<datebox id="i_invoice_date_dt" format="yyyy-MM-dd" style="font-size:9px" onCreate="kiboo.setTodayDatebox(self)" />
+				</row>
+
+				<row style="background:#f57900;">
+					<label value="Invoice remarks" sclass="k9" />
+					<textbox id="i_remarks_tb" sclass="k9" multiline="true" width="99%" height="70px" />
+				</row>
+			</rows>
+		</grid>
+		<separator height="3px" />
+		<hbox>
+			<button label="Update" sclass="k9mo" onClick="slotsedit_pop.close(); updSlotDetails()" />
+			<button label="Clear" sclass="k9mo" onClick='i_remarks_tb.setValue(""); kiboo.setTodayDatebox(i_notif_date_dt);' />
+			<button label="Cancel" sclass="k9mo" onClick="slotsedit_pop.close()" />
+		</hbox>
+	</div>
+</popup>
+
+<popup id="slotsfunc_pop">
+	<div sclass="shadowbox" style="background:#7AC320;" >
+		<vbox>
+			<button id="ins1slot_b" label="Insert 1 month" sclass="k9mo" onClick="slotsFunc(self.getId())" />
+			<button id="ins12slot_b" label="Insert 12 months" sclass="k9mo" onClick="slotsFunc(self.getId())" />
+		</vbox>
+	</div>
+</popup>
 
 <style src="/real-world.css" />
 <style>
@@ -219,19 +210,33 @@ void refreshSlot_Num()
 	<div id="lcholder" />
 	<separator height="3px" />
 
-	<div sclass="shadowbox" style="background:#86B1C1">
+	<div sclass="shadowbox" style="background:#849324">
+		<label id="selectedlc_lbl" sclass="subhead1" />
+
 		<hbox>
-			<button id="untick_b" label="Untick" sclass="k9mo" onClick="slotsFunc(self.getId())" />
-			<button id="ins1slot_b" label="Insert slot" sclass="k9mo" onClick="slotsFunc(self.getId())" />
-			<button id="ins12slot_b" label="Insert 12 slots" sclass="k9mo" onClick="slotsFunc(self.getId())" />
-			<button id="remslot_b" label="Remove" sclass="k9mo" onClick="slotsFunc(self.getId())" />
-			<separator width="10px" />
-			<button label="Upload billing" sclass="k9mo" />
+			<vbox>
+				<div sclass="shadowbox" style="background:#339693">
+					<hbox>
+						<button id="untick_b" label="Untick" sclass="k9mo" onClick="slotsFunc(self.getId())" />
+						<button label="Slots" sclass="k9mo" onClick="slotsfunc_pop.open(self)" />
+						<button id="remslot_b" label="Remove" sclass="k9mo" onClick="slotsFunc(self.getId())" />
+						<separator width="10px" />
+						<button label="Save slots" sclass="k9mo" onClick='saveSlots(); guihand.showMessageBox("Rental slots saved..");' />
+						<button label="Upload billing" sclass="k9mo" style="color:#8454B7" />
+					</hbox>
+				</div>
+				<div sclass="shadowbox" style="background:#339693">
+					<div id="slotsholder" />
+				</div>
+			</vbox>
+
+			<vbox>
+			<!--
+				<div sclass="shadowbox" style="background:#339693">
+				</div>
+				-->
+			</vbox>
 		</hbox>
-		<separator height="5px" bar="true" />
-
-		<div id="slotsholder" />
-
 	</div>
 
 <zscript>

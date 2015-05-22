@@ -65,6 +65,11 @@ import java.sql.SQLException;
 
 import java.util.regex.*;
 
+import com.itextpdf.text.pdf.PdfReader;
+import com.itextpdf.text.pdf.parser.PdfReaderContentParser;
+import com.itextpdf.text.pdf.parser.SimpleTextExtractionStrategy;
+import com.itextpdf.text.pdf.parser.TextExtractionStrategy;
+
 import org.victor.*;
 
 sechand = new SecurityFuncs();
@@ -183,15 +188,21 @@ void testDBF()
 */
 }
 
-void doregex()
+void doregex(String istring, String ipattern)
 {
-	String mydata = wowow.getValue();
-	Pattern pattern = Pattern.compile("([NAM])([0-9][0-9][0-9][0-9][0-9][0-9]?[0-9])");
-	Matcher matcher = pattern.matcher(mydata);
+	//String mydata = wowow.getValue();
+	//mypatt = ipattern.getValue();
+	// Pattern pattern = Pattern.compile("([NAM])([0-9][0-9][0-9][0-9][0-9][0-9]?[0-9])");
+	// "Issue To(.*?)PO No"
+	Pattern pattern = Pattern.compile(ipattern);
+	Matcher matcher = pattern.matcher(istring);
+	
 	if(matcher.find())
 	{
-		resul.setValue(matcher.group(1) + matcher.group(2));
+		resul.setValue(resul.getValue() + "\n" + matcher.group(1).trim());
 	}
+	else
+		resul.setValue("Nada...");
 }
 
 int calcFocusDate(String dstr)
@@ -204,17 +215,87 @@ int calcFocusDate(String dstr)
 	return retval;
 }
 
+void procInvoicePDF()
+{
+	ifn = session.getWebApp().getRealPath("tmp/taxinvoices/RWI_15677-PDF.pdf");
+	PdfReader reader = new PdfReader(ifn);
+	PdfReaderContentParser parser = new PdfReaderContentParser(reader);
+	//PrintWriter out = new PrintWriter(new FileOutputStream(txt));
+	TextExtractionStrategy strategy;
+	StringBuffer buff = new StringBuffer();  
+	for (int i = 1; i <= reader.getNumberOfPages(); i++)
+	{
+		strategy = parser.processContent(i, new SimpleTextExtractionStrategy());
+		buff.append(strategy.getResultantText()); 
+		//alert(strategy.getResultantText());
+	}
+	//out.flush();
+	//out.close();
+	reader.close();
+	//alert(buff.toString());
+	tis = buff.toString().replaceAll("\n"," ");
+	thestring.setValue(tis);
+	doregex(tis,"Email: (.*?) ");
+	doregex(tis,"Issue To: (.*?) PO No");
+	doregex(tis,"Invoice No.: (.*?) ");
+
+/*
+	Pattern pattern = Pattern.compile("Issue To(.*?)PO No");
+	Matcher matcher = pattern.matcher(buff.toString());
+	// "(\\[)(.*?)(\\])");
+	// Issue To: AMALGAMATED INDUSTRIAL STEEL BERHAD PO No
+	listMatches = new ArrayList();
+	while(matcher.find())
+	{
+		listMatches.add(matcher.group(1).trim());
+	}
+
+	ks = "";
+	for(String s : listMatches)
+	{
+		ks += s + "::";
+	}
+	alert(ks);
+*/
+}
+
 ]]>
 </zscript>
 
 <?component name="tipcolor" macroURI="/macros/macrocomp1.zul" ?>
 
 <div width="1200px">
-<panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" height="600px" >
+<panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
 <panelchildren>
 
+<button label="Proc pdf invoice" onClick="procInvoicePDF()" />
+<separator height="5px" />
+
+<grid width="400px">
+	<rows>
+		<row>
+			<label value="the text" />
+			<textbox id="wowow" />
+		</row>
+		<row>
+			<label value="the pattern" />
+			<textbox id="ipattern" />
+		</row>
+		<row spans="2">
+			<button label="proc" onClick="doregex(wowow.getValue(),ipattern.getValue())" />
+		</row>
+		<row>
+			<label id="thestring" multiline="true" />
+			<label id="resul" multiline="true" />
+		</row>
+	</rows>
+</grid>
+
+
+<!--
 <textbox id="inputdate" />
 <button label="Parse date" onClick="calcFocusDate(inputdate.getValue())" />
+-->
  
  <!--
 <timeline height="300px" width="100%">
@@ -231,10 +312,6 @@ int calcFocusDate(String dstr)
 <!--
 <image id="butt" src="../rwimg/button.png" draggable="true" onDrag="showdropme()" />
 <button label="testDBF" onClick="testDBF()" />
-
-<textbox id="wowow" />
-<button label="proc" onClick="doregex()" />
-<textbox id="resul" />
 
 <separator height="3px" />
 
