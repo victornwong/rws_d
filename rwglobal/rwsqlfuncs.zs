@@ -10,6 +10,11 @@ import groovy.sql.Sql;
 
 // 10/07/2013: moved some funcs here TODO byte-compile later
 
+/**
+ * Based on FOCUS sql-procedure, port the calculation here
+ * @param  dstr date-string YYYY-MM-DD
+ * @return      integer value compatible with FOCUS
+ */
 int calcFocusDate(String dstr)
 {
 	java.util.Calendar thedate = Calendar.getInstance();
@@ -20,12 +25,23 @@ int calcFocusDate(String dstr)
 	return retval;
 }
 
+/**
+ * [getGRN_rec_NEW description]
+ * @param  iwhat the origid
+ * @return       data-record object
+ */
 Object getGRN_rec_NEW(String iwhat)
 {
 	sqlstm = "select * from rw_grn where origid=" + iwhat;
 	return sqlhand.gpSqlFirstRow(sqlstm);
 }
 
+/**
+ * Fill a listbox with distinct column items from a table RWMS
+ * @param itbn database table name
+ * @param ifl  field-name
+ * @param ilb  listbox obj
+ */
 void fillListbox_uniqField(String itbn, String ifl, Listbox ilb)
 {
 	sqlstm = "select distinct " + ifl + " from " + itbn;
@@ -41,9 +57,16 @@ void fillListbox_uniqField(String itbn, String ifl, Listbox ilb)
 			lbhand.insertListItems(ilb,kabom,"false","");
 		}
 	}
-	ilb.setSelectedIndex(0);
+	ilb.setSelectedIndex(0); // default select item 1 in listbox
 }
 
+/**
+ * Fill a listbox with distinct column items from a table Focus
+ * chopped from fillListbox_uniqField()
+ * @param itbn database table name
+ * @param ifl  field-name
+ * @param ilb  listbox obj
+ */
 void rws_fillListbox_uniqField(String itbn, String ifl, Listbox ilb)
 {
 	sqlstm = "select distinct " + ifl + " from " + itbn +
@@ -63,7 +86,7 @@ void rws_fillListbox_uniqField(String itbn, String ifl, Listbox ilb)
 	ilb.setSelectedIndex(0);
 }
 
-// TODO move this to listboxhandler.java
+// TODO move this to listboxhandler.j
 void setListcell_Style(Listitem ilbitem, int icolumn, String istyle)
 {
 	List prevrc = ilbitem.getChildren();
@@ -238,6 +261,11 @@ void clearUI_Field(Object[] iob)
 	}
 }
 
+/**
+ * Uses t-sql to get week-of-month
+ * @param  thedate date string YYYY-MM-DD
+ * @return         week-of-month
+ */
 int getWeekOfMonth(String thedate)
 {
 	sqlstm = "SELECT DATEPART(WEEK, '" + thedate + "') - DATEPART(WEEK, DATEADD(MM, " + 
@@ -427,17 +455,6 @@ void gpmakeGridHeaderColumns_Width(String[] icols, String[] iwidths, Object ipar
 		hcolm.setParent(colms);	
 	}
 	colms.setParent((Component)iparent);
-}
-
-
-// Add something to rw_systemaudit, datecreated will have time too
-// ilinkc=linking_code, isubc=linking_sub, iwhat=audit_notes
-void add_RWAuditLog(String ilinkc, String isubc, String iwhat, String iuser)
-{
-	todaydate =  kiboo.todayISODateTimeString();
-	sqlstm = "insert into rw_systemaudit (datecreated,linking_code,linking_sub,audit_notes,username) values " +
-	"('" + todaydate + "','" + ilinkc + "','" + isubc + "','" + iwhat + "','" + iuser + "')";
-	sqlhand.gpSqlExecuter(sqlstm);
 }
 
 Object getStockItem_rec(String istkcode)
@@ -886,3 +903,19 @@ void injectNotif(String unm, String ntx)
 	sqlhand.gpSqlExecuter(injstm);
 }
 
+/**
+ * Simplified string regex func to extract string by pattern
+ * @param istring  the whole thing
+ * @param ipattern the pattern to extract substring
+ */
+String doregex(String istring, String ipattern)
+{
+	Pattern pattern = Pattern.compile(ipattern);
+	Matcher matcher = pattern.matcher(istring);
+	retval = "";
+	if(matcher.find())
+	{
+		retval = kiboo.replaceSingleQuotes(matcher.group(1).trim());
+	}
+	return retval;
+}

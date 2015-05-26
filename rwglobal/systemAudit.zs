@@ -1,9 +1,25 @@
 import java.util.*;
 import java.text.*;
+/**
+ * Funcs to process rw_systemaudit
+ * @author Victor Wong
+ * @since 01/08/2013
+ */
 
-// Funcs to process rw_systemaudit
-// Written by Victor Wong (01/08/2013)
-// void add_RWAuditLog(String ilinkc, String isubc, String iwhat, String iuser) -- rwsqlfuncs.zs
+/**
+ * Add something to rw_systemaudit, datecreated will have time too
+ * @param ilinkc linking_code
+ * @param isubc  linking_sub
+ * @param iwhat  audit_notes
+ * @param iuser  username
+ */
+void add_RWAuditLog(String ilinkc, String isubc, String iwhat, String iuser)
+{
+	todaydate =  kiboo.todayISODateTimeString();
+	sqlstm = "insert into rw_systemaudit (datecreated,linking_code,linking_sub,audit_notes,username) values " +
+	"('" + todaydate + "','" + ilinkc + "','" + isubc + "','" + iwhat + "','" + iuser + "')";
+	sqlhand.gpSqlExecuter(sqlstm);
+}
 
 // Can be used in other mods to show system-audit logs
 void showSystemAudit(Div ihold, String ilinkc, String isubc)

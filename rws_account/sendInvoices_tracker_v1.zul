@@ -42,13 +42,24 @@ kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
 guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
+EMAILINVOICE_PREFIX = "EMLINV";
 TAXINVOICES_FOLDER = "tmp/taxinvoices";
 RESEND_TAXINVOICES_FOLDER = "tmp/taxinvoices/resend";
+
+RESEND_EMAILMSG = "Dear Sir/Madam\n\n" +
+"Attached, herewith is the DUPLICATE softcopy attachment of GST Tax Compliant Rental Invoice for your perusal.\n\n" +
+"Should there be any further clarification, kindly liaise with Credit Control Dept at " +
+"creditcontrol@rentwise.com, telephone no. 03-33416552 ext:8514/8516.";
+
+EMAILMSG = "Dear Sir/Madam\n\n" +
+"Attached, herewith is the softcopy attachment of GST Tax Compliant Rental Invoice for your perusal.\n\n" +
+"Should there be any further clarification, kindly liaise with Credit Control Dept at " +
+"creditcontrol@rentwise.com, telephone no. 03-33416552 ext:8514/8516.";
 
 glob_sel_obj = null;
 last_showthing = 0;
 
-glob_sel_tracker = "";
+glob_sel_tracker = glob_sel_customer_name = glob_sel_invoiceno = glob_sel_email = "";
 
 /**
  * onClick event listener for listbox in showSentInvoices()
@@ -59,6 +70,9 @@ class sentinvlOnC implements org.zkoss.zk.ui.event.EventListener
 	{
 		isel = event.getReference();
 		glob_sel_tracker = lbhand.getListcellItemLabel(isel,0);
+		glob_sel_customer_name = lbhand.getListcellItemLabel(isel,3);
+		glob_sel_invoiceno = lbhand.getListcellItemLabel(isel,2);
+		glob_sel_email = lbhand.getListcellItemLabel(isel,4);
 	}
 }
 sentinvcliker = new sentinvlOnC();
@@ -72,8 +86,8 @@ class sentinvdblclik implements org.zkoss.zk.ui.event.EventListener
 	{
 		glob_sel_obj = event.getTarget();
 		glob_sel_tracker = lbhand.getListcellItemLabel(glob_sel_obj,0);
-		eml = lbhand.getListcellItemLabel(glob_sel_obj,4); // email colm
-		k_email.setValue(eml);
+		glob_sel_email = lbhand.getListcellItemLabel(glob_sel_obj,4); // email colm
+		k_email.setValue(glob_sel_email);
 		trackerpop.open(glob_sel_obj);
 	}
 }
@@ -93,7 +107,7 @@ Object[] sndinvtckcols_headers =
 };
 
 /**
- * 
+ * List out tracking records from rw_email_tracker
  * @param itype type of listout (1=by datecreated, 2=by sent-date)
  */
 void showSentInvoices(int itype)
@@ -105,17 +119,23 @@ void showSentInvoices(int itype)
 
 	Listbox newlb = lbhand.makeVWListbox_Width(sentinv_holder, sndinvtckcols_headers, "sentinvoices_lb", 20);
 
+	bysearchtext = "";
+
 	sqlstm = "select * from rw_email_invoice ";
+	if(!st.equals(""))
+	{
+		bysearchtext = "and (customer_name like '%" + st + "%' or email like '%" + st + "%' or filename like '%" + st + "%') ";
+	}
 
 	switch(itype)
 	{
 		case 1 : // by datecreated
 		default:
-			sqlstm += "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' order by datecreated;";
+			sqlstm += "where datecreated between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' " + bysearchtext + " order by datecreated;";
 			break;
 
 		case 2: // by sent-date
-			sqlstm += "where sentdate between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' order by sentdate;";
+			sqlstm += "where sentdate between '" + sdate + " 00:00:00' and '" + edate + " 23:59:00' " +  bysearchtext + " order by sentdate;";
 			break;
 	}
 
@@ -133,23 +153,6 @@ void showSentInvoices(int itype)
 		kabom.clear();
 	}
 	lbhand.setDoubleClick_ListItems(newlb,sentinvdoubleclik);
-}
-
-/**
- * Simplified string regex func to extract string by pattern
- * @param istring  the whole thing
- * @param ipattern the pattern to extract substring
- */
-String doregex(String istring, String ipattern)
-{
-	Pattern pattern = Pattern.compile(ipattern);
-	Matcher matcher = pattern.matcher(istring);
-	retval = "";
-	if(matcher.find())
-	{
-		retval = kiboo.replaceSingleQuotes(matcher.group(1).trim());
-	}
-	return retval;
 }
 
 /**
@@ -202,31 +205,35 @@ void procImportTaxInvoices(File[] flist)
 				extractTaxInvoiceMeta(TAXINVOICES_FOLDER, fn, invmeta);
 				if(!invmeta[0].equals("")) // process valid invoice-no only
 				{
-					kfn = fn.replaceAll(".pdf","");
-					kfn += "_sent" + fndate + ".pdf";
+					kfn = fn.replaceAll(".pdf",""); // remove .pdf extension from filename
+					kfn += "_sent" + fndate + ".pdf"; // append _sent and date
 
 					attchfn[0] = session.getWebApp().getRealPath(TAXINVOICES_FOLDER) + "/" + kfn;
 
 					oldfile = new File( session.getWebApp().getRealPath(TAXINVOICES_FOLDER) + "/" + fn );
 					newfile = new File( attchfn[0] );
 
-					if(oldfile.renameTo(newfile)) // make sure file can be renamed..
+					if(!invmeta[3].equals("")) // got customer email address
 					{
-						if( gmail_sendEmailWithAttachment_2("", GMAIL_rwms_username, GMAIL_rwms_password, GMAIL_rwms_username,
-							"shopa@rentwise.com","RE: Electronic TAX INVOICE ","Testing je..", attchfn, GMAIL_rwms_username) )
+						if(oldfile.renameTo(newfile)) // make sure file can be renamed..
 						{
-							sqlstm += "insert into rw_email_invoice (datecreated,invoice_no,invoice_date,customer_name,email,filename,username,sentdate) values " +
-							"('" + todaydate + "','" + invmeta[0] + "','" + invmeta[1] + "','" + invmeta[2] + "','" + invmeta[3] + "','" + 
-							kfn + "','" + useraccessobj.username + "','" + todaydate + "');";
+							// TODO chg hardcoded email-addr
+							if( gmail_sendEmailWithAttachment_2("", GMAIL_rwms_username, GMAIL_rwms_password, GMAIL_rwms_username,
+								"jamban@rentwise.com","RE: Electronic TAX INVOICE ", EMAILMSG, attchfn, GMAIL_rwms_username) )
+							{
+								sqlstm += "insert into rw_email_invoice (datecreated,invoice_no,invoice_date,customer_name,email,filename,username,sentdate) values " +
+								"('" + todaydate + "','" + invmeta[0] + "','" + invmeta[1] + "','" + invmeta[2] + "','" + invmeta[3] + "','" + 
+								kfn + "','" + useraccessobj.username + "','" + todaydate + "');";
+							}
+							else
+							{
+								msgtext += "\nCANNOT email: " + newfile;
+							}
 						}
 						else
 						{
-							msgtext += "\nCANNOT email: " + newfile;
+							msgtext += "\nCANNOT rename file: " + oldfile;
 						}
-					}
-					else
-					{
-						msgtext += "\nCANNOT rename file: " + oldfile;
 					}
 				}
 			}
@@ -244,7 +251,6 @@ void procImportTaxInvoices(File[] flist)
 	}
 
 	if(!msgtext.equals("")) alert(msgtext);
-
 	// ks = ""; for(d : flist) { ks += (d.isFile()) ? d.getName() + "\n" : ""; } alert(ks);
 }
 
@@ -324,7 +330,6 @@ void adminFunc(String itype)
 /**
  * Resend tax-invoice to customer. Will add watermark "DUPLICATE" into PDF
  */
-
 void resendTaxInvoices()
 {
 	if(!lbhand.check_ListboxExist_SelectItem(sentinv_holder, "sentinvoices_lb")) return;
@@ -346,6 +351,7 @@ void resendTaxInvoices()
 		int number_of_pages = rdpdfwater.getNumberOfPages();
 		PdfStamper stamp = new PdfStamper(rdpdfwater, new FileOutputStream(waterfn));
 		int i = 0;
+
 		watermark_image.setAbsolutePosition(100, 200);
 		PdfContentByte add_watermark;
 		while (i < number_of_pages)
@@ -355,14 +361,15 @@ void resendTaxInvoices()
 			add_watermark.addImage(watermark_image);
 		}
 		stamp.close();
-
 		attchfn[0] = waterfn;
 
+		// TODO use glob_sel_email for the hardcoded test email-addr
 		if(gmail_sendEmailWithAttachment_2("", GMAIL_rwms_username, GMAIL_rwms_password, GMAIL_rwms_username,
-			"victor@rentwise.com","RE: RESEND Electronic TAX INVOICE ","Testing je..", attchfn, GMAIL_rwms_username) )
+			"victor@rentwise.com","RE: RESEND Electronic TAX INVOICE ", RESEND_EMAILMSG, attchfn, GMAIL_rwms_username) )
 		{
 			sqlstm += "update rw_email_invoice set resenddate='" + todaydate + "', username='" + useraccessobj.username + "' where origid=" + origd + ";";
-			// TODO put in audit-trail
+			lgstr = "Resend tax-invoice " + glob_sel_invoiceno + " , customer: " + glob_sel_customer_name;
+			add_RWAuditLog(EMAILINVOICE_PREFIX,"",lgstr,useraccessobj.username);
 		}
 		else
 		{
@@ -375,9 +382,41 @@ void resendTaxInvoices()
 		sqlhand.gpSqlExecuter(sqlstm);
 		showSentInvoices(last_showthing);
 	}
-
 	if(!msgtext.equals("")) alert(msgtext);
+}
 
+/**
+ * Dig audit-report customized for email-gst-invoice-tracker. Chopped from rws_customer/contBill_assets.zs
+ * @param iwhat search string
+ */
+void digAuditLog(String iwhat)
+{
+	Object[] dalhds =
+	{
+		new listboxHeaderWidthObj("Dated",true,"70px"),
+		new listboxHeaderWidthObj("User",true,""),
+		new listboxHeaderWidthObj("Audit notes",true,""),
+	};
+	kk = kiboo.replaceSingleQuotes(iwhat);
+	if(kk.equals("")) return;
+
+	sqlstm = "select sdt.datecreated, sdt.audit_notes, sdt.username from rw_systemaudit sdt " +
+	"where sdt.audit_notes like '%" + kk + "%' " +
+	"order by sdt.datecreated desc";
+
+	rcs = sqlhand.gpSqlGetRows(sqlstm);
+	if(rcs.size() == 0) return;
+	Listbox newlb = lbhand.makeVWListbox_Width(diglogs_holder, dalhds, "diglogs_lb", 20);
+	ArrayList kabom = new ArrayList();
+	String[] fl = { "datecreated", "username" };
+	for(d : rcs)
+	{
+		ngfun.popuListitems_Data(kabom,fl,d);
+		kn = (d.get("audit_notes") == null) ? "" : sqlhand.clobToString(d.get("audit_notes"));
+		kabom.add(kn);
+		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
+		kabom.clear();
+	}
 }
 
 ]]>
@@ -402,6 +441,17 @@ void resendTaxInvoices()
 				</row>
 			</rows>
 		</grid>
+	</div>
+</popup>
+
+<popup id="digauditlog_pop">
+	<div sclass="shadowbox" style="background:#97b83a;" width="700px">
+		<hbox>
+			<label value="What" sclass="k9" />
+			<textbox id="digaudit_tb" sclass="k9" />
+			<button label="Dig" sclass="k9" onClick="digAuditLog( digaudit_tb.getValue().trim() )" />
+		</hbox>
+		<div id="diglogs_holder" />
 	</div>
 </popup>
 
@@ -434,6 +484,7 @@ void resendTaxInvoices()
 			<textbox id="searhtxt_tb" sclass="k9" />
 			<button label="by date-imported" sclass="k9mo" onClick="showSentInvoices(1)" />
 			<button label="by sent-date" sclass="k9mo" onClick="showSentInvoices(2)" />
+			<button label="Dig audit-logs" sclass="k9mo" onClick="digauditlog_pop.open(self)" />
 			<separator width="20px" />
 			<button id="adminbutt" label="ADMIN" sclass="k9mo" style="color:#D52121" visible="false" onClick="adminpop.open(self)" />
 		</hbox>

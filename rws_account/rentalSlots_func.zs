@@ -47,6 +47,11 @@ void slotsFunc(String itype)
 		iterateSlots(slot_rows,2);
 	}
 
+	if(itype.equals("viewpdfinv_b"))
+	{
+		iterateSlots(slot_rows,3);
+	}
+
 	if(refresh)
 	{
 		refreshSlot_Num();
@@ -59,17 +64,17 @@ void slotsFunc(String itype)
  */
 void saveSlots()
 {
-	if(glob_sel_lcorigid.equals("")) return;
+	if(glob_selected_lc.equals("")) return;
 	slt = slotsholder.getFellowIfAny(SLOTS_GRID_ROWS_ID);
 	if(slt == null) return;
 	hx = slt.getChildren().toArray();
 	if(hx.length == 0) return;
-	sqlstm = "delete from rw_rentalbook where parent_lc=" + glob_sel_lcorigid + ";";
+	sqlstm = "delete from rw_rentalbook where parent_lc=" + glob_selected_lc + ";";
 	for(i=0; i<hx.length; i++)
 	{
 		jk = hx[i].getChildren().toArray();
 		sqlstm += "insert into rw_rentalbook (parent_lc,sorter,notif_date,fc_invoice,invoice_date,remarks) values " +
-		"(" + glob_sel_lcorigid + "," + jk[G_SLOT_NO].getValue() + ",'" + jk[G_NEXT_BILL].getValue() + "','" + jk[G_INV_NO].getValue() + "','" +
+		"(" + glob_selected_lc + "," + jk[G_SLOT_NO].getValue() + ",'" + jk[G_NEXT_BILL].getValue() + "','" + jk[G_INV_NO].getValue() + "','" +
 		jk[G_INV_DATE].getValue() + "','" + jk[G_REMARKS].getValue() + "');";
 	}
 
@@ -126,6 +131,19 @@ void iterateSlots(Object irows, int itype)
 			case 2: // untick checkboxes
 				cx[G_TICKER].setChecked(false);
 				break;
+
+			case 3: // view PDF invoice if any
+				if(cx[G_TICKER].isChecked())
+				{
+					fncm = cx[6].getValue(); // tax-invoice pdf filename
+					if(!fncm.equals(""))
+					{
+						//outfn = session.getWebApp().getRealPath(TEMPFILEFOLDER + fncm);
+						theparam = "pfn=/taxinvoices/" + fncm;
+						uniqid = kiboo.makeRandomId("lvf");
+						guihand.globalActivateWindow(mainPlayground,"miscwindows","documents/viewfile_Local_v1.zul", uniqid, theparam, useraccessobj);
+					}
+				}
 		}
 	}
 	if(!ks.equals("")) guihand.showMessageBox(ks);
@@ -164,10 +182,15 @@ void insert_BlankSlot(int icount)
 		ngfun.gpMakeLabel(nrw,"","",k9); // invoice date from FC6
 		kk = ngfun.gpMakeLabel(nrw,"","",k9); // remarks
 		kk.setMultiline(true);
-		//doi = new Datebox(); doi.setStyle("font-size:9px"); doi.setFormat("yyyy-MM-dd"); doi.setParent(nrw);
+
+		// from email tax-invoice tracker rw_email_invoice
+		ngfun.gpMakeLabel(nrw,"","",k9); // pdf-filename if any - search based on invoice number
+		ngfun.gpMakeLabel(nrw,"","",k9); // emailed pdf date
+		ngfun.gpMakeLabel(nrw,"","",k9); // resend date
 
 		nrw.addEventListener("onDoubleClick", slotdclicker);
 	}
+	//doi = new Datebox(); doi.setStyle("font-size:9px"); doi.setFormat("yyyy-MM-dd"); doi.setParent(nrw);
 }
 
 /**
@@ -189,13 +212,13 @@ void refreshSlot_Num()
 /**
  * Make grid using hardcoded header defs
  * @param iholder grid DIV holder
- * @param islotid [description]
+ * @param islotid grid-id
  * HARDCODED SLOTS_GRID_ROWS_ID in billingEvo2.zul
  */
 void checkCreateSlotsGrid(Div iholder, String islotid)
 {
-	String[] colhed = { "","No.","Next bill","Inv No","Inv Date","Remarks" };
-	String[] colwds = { "20px", "30px", "80px", "100px", "80px", "" };
-	ngfun.checkMakeGrid(colwds, colhed, iholder, islotid, SLOTS_GRID_ROWS_ID, "", "500px", true);
+	String[] colhed = { "","No.","Next bill","Inv No","Inv Date","Remarks","PDF","Emailed","Resend" };
+	String[] colwds = { "20px", "30px", "80px", "100px", "80px", "", "", "80px", "80px" };
+	ngfun.checkMakeGrid(colwds, colhed, iholder, islotid, SLOTS_GRID_ROWS_ID, "", "800px", true);
 }
 
