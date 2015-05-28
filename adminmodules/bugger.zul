@@ -217,7 +217,7 @@ int calcFocusDate(String dstr)
 
 void procInvoicePDF()
 {
-	ifn = session.getWebApp().getRealPath("tmp/taxinvoices/RWI_15677-PDF.pdf");
+	ifn = session.getWebApp().getRealPath("tmp/taxinvoices/RWI_15008-tcim_sent2015-05-27.pdf");
 	PdfReader reader = new PdfReader(ifn);
 	PdfReaderContentParser parser = new PdfReaderContentParser(reader);
 	//PrintWriter out = new PrintWriter(new FileOutputStream(txt));
@@ -235,7 +235,7 @@ void procInvoicePDF()
 	//alert(buff.toString());
 	tis = buff.toString().replaceAll("\n"," ");
 	thestring.setValue(tis);
-	doregex(tis,"Email: (.*?) ");
+	doregex(tis,"Email: (.*?) a\\)");
 	doregex(tis,"Issue To: (.*?) PO No");
 	doregex(tis,"Invoice No.: (.*?) ");
 
@@ -271,7 +271,7 @@ void procInvoicePDF()
 <button label="Proc pdf invoice" onClick="procInvoicePDF()" />
 <separator height="5px" />
 
-<grid width="400px">
+<grid width="600px">
 	<rows>
 		<row>
 			<label value="the text" />

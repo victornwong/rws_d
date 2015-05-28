@@ -103,6 +103,9 @@ Object getJobNote_rec(String iwhat)
 	return sqlhand.gpSqlFirstRow(sqlstm); 
 }
 
+/**
+ * Job-note listbox click listener
+ */
 class jnClick implements org.zkoss.zk.ui.event.EventListener
 {
 	public void onEvent(Event event) throws UiException
@@ -123,16 +126,21 @@ class jnClick implements org.zkoss.zk.ui.event.EventListener
 }
 jnclidker = new jnClick();
 
-// ijnholder: job-notes holder, ijnlbid=job-notes listbox id
+/**
+ * [showJobNotes description]
+ * @param ilnkc     linking-code for job-note
+ * @param ijnholder job-notes holder
+ * @param ijnlbid   job-notes listbox id
+ */
 void showJobNotes(String ilnkc, Div ijnholder, String ijnlbid)
 {
-Object[] jnlb_hds =
-{
-	new listboxHeaderWidthObj("oid",false,"1px"),
-	new listboxHeaderWidthObj("Dated",true,"60px"),
-	new listboxHeaderWidthObj("User",true,"60px"),
-	new listboxHeaderWidthObj("Subject",true,""),
-};
+	Object[] jnlb_hds =
+	{
+		new listboxHeaderWidthObj("oid",false,"1px"),
+		new listboxHeaderWidthObj("Dated",true,"60px"),
+		new listboxHeaderWidthObj("User",true,"60px"),
+		new listboxHeaderWidthObj("Subject",true,""),
+	};
 	JN_holder = ijnholder; // save for later use
 	JN_listboxid = ijnlbid;
 	JN_linkcode = ilnkc;

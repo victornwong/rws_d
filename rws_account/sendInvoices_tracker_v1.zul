@@ -42,6 +42,8 @@ kiboo = new Generals(); sqlhand = new SqlFuncs(); lbhand = new ListboxHandler();
 guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
+DEBUGGING = 0;
+
 EMAILINVOICE_PREFIX = "EMLINV";
 TAXINVOICES_FOLDER = "tmp/taxinvoices";
 RESEND_TAXINVOICES_FOLDER = "tmp/taxinvoices/resend";
@@ -59,7 +61,7 @@ EMAILMSG = "Dear Sir/Madam\n\n" +
 glob_sel_obj = null;
 last_showthing = 0;
 
-glob_sel_tracker = glob_sel_customer_name = glob_sel_invoiceno = glob_sel_email = "";
+glob_sel_tracker = glob_sel_customer_name = glob_sel_invoiceno = glob_sel_email = glob_sel_pdffilename = "";
 
 /**
  * onClick event listener for listbox in showSentInvoices()
@@ -73,6 +75,7 @@ class sentinvlOnC implements org.zkoss.zk.ui.event.EventListener
 		glob_sel_customer_name = lbhand.getListcellItemLabel(isel,3);
 		glob_sel_invoiceno = lbhand.getListcellItemLabel(isel,2);
 		glob_sel_email = lbhand.getListcellItemLabel(isel,4);
+		glob_sel_pdffilename = lbhand.getListcellItemLabel(isel,5);
 	}
 }
 sentinvcliker = new sentinvlOnC();
@@ -156,7 +159,7 @@ void showSentInvoices(int itype)
 }
 
 /**
- * Hardcoded to extract tax-invoices PDF metadata
+ * Hardcoded to extract tax-invoices PDF metadata - have to change accordingly of tax-invoice
  * @param ipath     path storing 'em tax-invoices PDFs
  * @param ifilename filename to process
  * @param iretvals  return values array (indices: 0=invoice-no, 1=invoice-date, 2=customer-name, 3=email)
@@ -178,7 +181,7 @@ void extractTaxInvoiceMeta(String ipath, String ifilename, String[] iretvals)
 	iretvals[0] = doregex(tis,"Invoice No.: (.*?) "); // invoice-no
 	iretvals[1] = doregex(tis,"Date: (.*?) "); // invoice-date
 	iretvals[2] = doregex(tis,"Issue To: (.*?) PO No"); // customer-name
-	iretvals[3] = doregex(tis,"Email: (.*?) ");
+	iretvals[3] = doregex(tis,"Email: (.*?) a\\)");
 	if(iretvals[3].indexOf("@") == -1) iretvals[3] = ""; // not actually an email
 }
 
@@ -217,9 +220,13 @@ void procImportTaxInvoices(File[] flist)
 					{
 						if(oldfile.renameTo(newfile)) // make sure file can be renamed..
 						{
-							// TODO chg hardcoded email-addr
+							topeople = "victor@rentwise.com";
+							if(DEBUGGING == 0) topeople = invmeta[3]; // non-debugging, set real TO addr
+							// { alert("no debugging"); }
+							subj = "RE: Electronic TAX INVOICE - " + invmeta[0];
+
 							if( gmail_sendEmailWithAttachment_2("", GMAIL_rwms_username, GMAIL_rwms_password, GMAIL_rwms_username,
-								"jamban@rentwise.com","RE: Electronic TAX INVOICE ", EMAILMSG, attchfn, GMAIL_rwms_username) )
+								topeople, subj, EMAILMSG, attchfn, GMAIL_rwms_username) )
 							{
 								sqlstm += "insert into rw_email_invoice (datecreated,invoice_no,invoice_date,customer_name,email,filename,username,sentdate) values " +
 								"('" + todaydate + "','" + invmeta[0] + "','" + invmeta[1] + "','" + invmeta[2] + "','" + invmeta[3] + "','" + 
@@ -266,7 +273,46 @@ void batchEmailTaxInvoices()
 }
 
 /**
- * [doFunc description]
+ * Send single email tax-invoice
+ * @param itk email-tracker record ID - origid
+ */
+void singleEmailTaxInvoice(String itk)
+{
+	msgtext = "";
+	String[] attchfn = new String[1];
+
+	if(glob_sel_pdffilename.equals(""))
+	{
+		msgtext = "Don't seem to have a PDF tax-invoice..";
+	}
+	else
+	if(glob_sel_email.equals(""))
+	{
+		msgtext = "No email address, where to send to?";
+	}
+	else
+	{
+		subj = "RE: Electronic TAX INVOICE (RESEND) - " + glob_sel_invoiceno;
+		attchfn[0] = session.getWebApp().getRealPath(TAXINVOICES_FOLDER) + "/" + glob_sel_pdffilename;
+		topeople = "victor@rentwise.com";
+		if(DEBUGGING == 0) topeople = glob_sel_email; // non-debugging, set real TO addr
+
+		if( gmail_sendEmailWithAttachment_2("", GMAIL_rwms_username, GMAIL_rwms_password, GMAIL_rwms_username,
+			topeople, subj, EMAILMSG, attchfn, GMAIL_rwms_username) )
+		{
+			msgtext = "Original tax-invoice re-sent..";
+		}
+		else
+		{
+			msgtext = "CANNOT re-send origianl tax-invoice";
+		}
+	}
+
+	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
+}
+
+/**
+ * General functions dispenser
  * @param itype button-ID
  */
 void doFunc(String itype)
@@ -281,7 +327,16 @@ void doFunc(String itype)
 	{
 		eml = kiboo.replaceSingleQuotes(k_email.getValue());
 		sqlstm = "update rw_email_invoice set email='" + eml + "' where origid=" + glob_sel_tracker;
-		//add_RWAuditLog(LC_PREFIX + ilc, prevass, lgstr, useraccessobj.username);
+		lgstr = "Update email address for tax-invoice " + glob_sel_invoiceno + " , customer: " + glob_sel_customer_name;
+		add_RWAuditLog(EMAILINVOICE_PREFIX,"",lgstr,useraccessobj.username);
+	}
+
+	if(itype.equals("sendasorig_b")) // authorized user re-send original tax-invoice - without "DUPLICATE" watermark
+	{
+		if(Messagebox.show("Re-send ORIGINAL tax-invoice", "Are you sure?",
+			Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) !=  Messagebox.YES) return;
+
+		singleEmailTaxInvoice(glob_sel_tracker);
 	}
 
 	if(!sqlstm.equals(""))
@@ -328,11 +383,14 @@ void adminFunc(String itype)
 }
 
 /**
- * Resend tax-invoice to customer. Will add watermark "DUPLICATE" into PDF
+ * Resend tax-invoice to customer. Add watermark "DUPLICATE" into PDF
  */
 void resendTaxInvoices()
 {
 	if(!lbhand.check_ListboxExist_SelectItem(sentinv_holder, "sentinvoices_lb")) return;
+
+	if(Messagebox.show("Re-sending tax-invoice (DUPLICATE)", "Are you sure?",
+		Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) != Messagebox.YES) return;
 
 	todaydate = kiboo.todayISODateTimeString();
 	String[] attchfn = new String[1];
@@ -343,10 +401,13 @@ void resendTaxInvoices()
 	kx = sentinvoices_lb.getSelectedItems().toArray();
 	for(j=0; j<kx.length; j++)
 	{
-		pfn = lbhand.getListcellItemLabel(kx[j],5); // pdf filename from listbox
 		origd = lbhand.getListcellItemLabel(kx[j],0); // tracker origid to update resenddate colm
+		eml = lbhand.getListcellItemLabel(kx[j],4); // invoice-no
+		pfn = lbhand.getListcellItemLabel(kx[j],5); // pdf filename from listbox
+		invn = lbhand.getListcellItemLabel(kx[j],2); // invoice-no
 		thefn = session.getWebApp().getRealPath(TAXINVOICES_FOLDER) + "/" + pfn;
 		waterfn = session.getWebApp().getRealPath(RESEND_TAXINVOICES_FOLDER) + "/" + pfn;
+
 		PdfReader rdpdfwater = new PdfReader(thefn);
 		int number_of_pages = rdpdfwater.getNumberOfPages();
 		PdfStamper stamp = new PdfStamper(rdpdfwater, new FileOutputStream(waterfn));
@@ -362,10 +423,12 @@ void resendTaxInvoices()
 		}
 		stamp.close();
 		attchfn[0] = waterfn;
+		subj = "RE: RESEND Electronic TAX INVOICE - " + invn;
+		topeople = "victor@rentwise.com";
+		if(DEBUGGING == 0) topeople = eml; // non-debugging, set real TO addr
 
-		// TODO use glob_sel_email for the hardcoded test email-addr
 		if(gmail_sendEmailWithAttachment_2("", GMAIL_rwms_username, GMAIL_rwms_password, GMAIL_rwms_username,
-			"victor@rentwise.com","RE: RESEND Electronic TAX INVOICE ", RESEND_EMAILMSG, attchfn, GMAIL_rwms_username) )
+			topeople, subj, RESEND_EMAILMSG, attchfn, GMAIL_rwms_username) )
 		{
 			sqlstm += "update rw_email_invoice set resenddate='" + todaydate + "', username='" + useraccessobj.username + "' where origid=" + origd + ";";
 			lgstr = "Resend tax-invoice " + glob_sel_invoiceno + " , customer: " + glob_sel_customer_name;
@@ -401,7 +464,7 @@ void digAuditLog(String iwhat)
 	if(kk.equals("")) return;
 
 	sqlstm = "select sdt.datecreated, sdt.audit_notes, sdt.username from rw_systemaudit sdt " +
-	"where sdt.audit_notes like '%" + kk + "%' " +
+	"where sdt.linking_code='" + EMAILINVOICE_PREFIX + "' and sdt.audit_notes like '%" + kk + "%' " +
 	"order by sdt.datecreated desc";
 
 	rcs = sqlhand.gpSqlGetRows(sqlstm);
@@ -416,6 +479,26 @@ void digAuditLog(String iwhat)
 		kabom.add(kn);
 		lbhand.insertListItems(newlb,kiboo.convertArrayListToStringArray(kabom),"false","");
 		kabom.clear();
+	}
+}
+
+/**
+ * Open selected tax-invoice PDFs in viewer window
+ */
+void viewTaxInvoices()
+{
+	if(!lbhand.check_ListboxExist_SelectItem(sentinv_holder, "sentinvoices_lb")) return;
+
+	lx = sentinvoices_lb.getSelectedItems().toArray();
+	for(i=0; i<lx.length; i++)
+	{
+		fncm = lbhand.getListcellItemLabel(lx[i],5); // refer to sndinvtckcols_headers
+		if(!fncm.equals(""))
+		{
+			theparam = "pfn=/taxinvoices/" + fncm;
+			uniqid = kiboo.makeRandomId("lvf");
+			guihand.globalActivateWindow(mainPlayground,"miscwindows","documents/viewfile_Local_v1.zul", uniqid, theparam, useraccessobj);
+		}
 	}
 }
 
@@ -467,12 +550,13 @@ void digAuditLog(String iwhat)
 <div width="1200px">
 <panel id="${MYPANEL}" title="${MYTITLE} ${MYVERSION}" border="normal" collapsible="true" closable="true" >
 <panelchildren style="background:#4A71A4">
-
+	<label id="debugflag_lbl" sclass="k9" />
 	<separator height="5px" />
 	<hbox>
 		<separator width="10px" />
 		<button label="Kasi email tax-invoices" style="font-size:18px;font-weight:bold" onClick="batchEmailTaxInvoices()" />
 		<button label="Kasi resend tax-invoices" style="font-size:18px;font-weight:bold" onClick="resendTaxInvoices()" />
+		<button label="View tax-invoices" style="font-size:18px;font-weight:bold" onClick="viewTaxInvoices()" />
 	</hbox>
 	<separator height="5px" />
 	<div sclass="shadowbox" style="background:#849324" id="maintop_div" >
@@ -485,6 +569,7 @@ void digAuditLog(String iwhat)
 			<button label="by date-imported" sclass="k9mo" onClick="showSentInvoices(1)" />
 			<button label="by sent-date" sclass="k9mo" onClick="showSentInvoices(2)" />
 			<button label="Dig audit-logs" sclass="k9mo" onClick="digauditlog_pop.open(self)" />
+			<button id="sendasorig_b" label="Send as original" sclass="k9mo" style="color:#DA0C0C" visible="false" onClick="doFunc(self.getId())" />
 			<separator width="20px" />
 			<button id="adminbutt" label="ADMIN" sclass="k9mo" style="color:#D52121" visible="false" onClick="adminpop.open(self)" />
 		</hbox>
@@ -497,10 +582,17 @@ void digAuditLog(String iwhat)
 <zscript>
 <![CDATA[
 
+// TODO only authorized user can re-send original tax-invoice - to ensure no duplicate tax-invoice sent to customer
+sendasorig_b.setVisible(true);
+
 if(useraccessobj.accesslevel >= 9)
 {
 	adminbutt.setVisible(true);
 }
+
+ddg = Executions.getCurrent().getParameter("dbg");
+if(ddg != null) DEBUGGING = Integer.parseInt(ddg); // set debugging flag if any
+if(DEBUGGING == 1) debugflag_lbl.setValue("(debugging on)");
 
 ]]>
 </zscript>

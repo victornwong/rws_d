@@ -13,6 +13,7 @@ G_NEXT_BILL = 2;
 G_INV_NO = 3;
 G_INV_DATE = 4;
 G_REMARKS = 5;
+G_PDFFILENAME = 6;
 
 /**
  * Slots func dispenser
@@ -135,7 +136,7 @@ void iterateSlots(Object irows, int itype)
 			case 3: // view PDF invoice if any
 				if(cx[G_TICKER].isChecked())
 				{
-					fncm = cx[6].getValue(); // tax-invoice pdf filename
+					fncm = cx[G_PDFFILENAME].getValue(); // tax-invoice pdf filename
 					if(!fncm.equals(""))
 					{
 						//outfn = session.getWebApp().getRealPath(TEMPFILEFOLDER + fncm);
