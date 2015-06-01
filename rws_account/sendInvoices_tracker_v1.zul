@@ -22,6 +22,11 @@ MYPANEL = "emailsendinvt";
  * @notes
  * uses table rw_email_invoice to track 'em sent pdf tax invoices. extract customer-name, invoice-no and email addr
  * from pdf invoices.
+ *
+ * Modifications:
+ * 
+ *  01/06/2015: Mahes change email message body
+ *  01/06/2105: Auto attach Reissuance.pdf as requested to every email
 */
 import java.util.*;
 import java.text.*;
@@ -43,25 +48,45 @@ guihand = new GuiFuncs(); luhand = new LookupFuncs(); dmshand = new DMSFuncs();
 gridhand = new GridHandler(); ngfun = new NGfuncs(); rwsqlfun = new RWMS_sql();
 
 DEBUGGING = 0;
+DEBUGGING_EMAIL = "creditcontrol@rentwise.com,victor@rentwise.com";
 
 EMAILINVOICE_PREFIX = "EMLINV";
 TAXINVOICES_FOLDER = "tmp/taxinvoices";
 RESEND_TAXINVOICES_FOLDER = "tmp/taxinvoices/resend";
 
-RESEND_EMAILMSG = "Dear Sir/Madam\n\n" +
-"Attached, herewith is the DUPLICATE softcopy attachment of GST Tax Compliant Rental Invoice for your perusal.\n\n" +
-"Should there be any further clarification, kindly liaise with Credit Control Dept at " +
+RESEND_EMAILMSG = "Dear Sir/Madam,\n\n" +
+"Attached, herewith is the softcopy attachment of GST Tax Compliant Rental Invoices for your perusal." +
+" Hence, please also be informed that these GST Compliant Rental Invoices will supersede the previous Rental " +
+"Invoices and enclosed is the Letter which is self explanatory.\n\n" +
+"Should there be any further clarification, kindly liaise with Credit Control Dept at " + 
 "creditcontrol@rentwise.com, telephone no. 03-33416552 ext:8514/8516.";
 
-EMAILMSG = "Dear Sir/Madam\n\n" +
-"Attached, herewith is the softcopy attachment of GST Tax Compliant Rental Invoice for your perusal.\n\n" +
-"Should there be any further clarification, kindly liaise with Credit Control Dept at " +
+EMAILMSG = "Dear Sir/Madam,\n\n" +
+"Attached, herewith is the softcopy attachment of GST Tax Compliant Rental Invoices for your perusal." +
+" Hence, please also be informed that these GST Compliant Rental Invoices will supersede the previous Rental " +
+"Invoices and enclosed is the Letter which is self explanatory.\n\n" +
+"Should there be any further clarification, kindly liaise with Credit Control Dept at " + 
 "creditcontrol@rentwise.com, telephone no. 03-33416552 ext:8514/8516.";
 
 glob_sel_obj = null;
 last_showthing = 0;
 
 glob_sel_tracker = glob_sel_customer_name = glob_sel_invoiceno = glob_sel_email = glob_sel_pdffilename = "";
+
+Object[] sndinvtckcols_headers =
+{
+	new listboxHeaderWidthObj("REC",true,"80px"),
+	new listboxHeaderWidthObj("Inv Date",true,"70px"),
+	new listboxHeaderWidthObj("Inv No",true,""),
+	new listboxHeaderWidthObj("Customer",true,""),
+	new listboxHeaderWidthObj("Email",true,""),
+	new listboxHeaderWidthObj("Filename",true,""),
+	new listboxHeaderWidthObj("Sent",true,""),
+	new listboxHeaderWidthObj("Resend",true,""),
+	new listboxHeaderWidthObj("User",true,""),
+};
+IDX_ORIGID = 0; IDX_INVDATE = 1; IDX_INVNO = 2; IDX_CUSTOMER = 3;
+IDX_EMAIL = 4; IDX_FILENAME = 5; IDX_SENT = 6; IDX_RESEND = 7; IDX_USER = 8;
 
 /**
  * onClick event listener for listbox in showSentInvoices()
@@ -70,12 +95,15 @@ class sentinvlOnC implements org.zkoss.zk.ui.event.EventListener
 {
 	public void onEvent(Event event) throws UiException
 	{
-		isel = event.getReference();
-		glob_sel_tracker = lbhand.getListcellItemLabel(isel,0);
-		glob_sel_customer_name = lbhand.getListcellItemLabel(isel,3);
-		glob_sel_invoiceno = lbhand.getListcellItemLabel(isel,2);
-		glob_sel_email = lbhand.getListcellItemLabel(isel,4);
-		glob_sel_pdffilename = lbhand.getListcellItemLabel(isel,5);
+		glob_sel_obj = event.getReference();
+		if(glob_sel_obj != null)
+		{
+			glob_sel_tracker = lbhand.getListcellItemLabel(glob_sel_obj,IDX_ORIGID);
+			glob_sel_customer_name = lbhand.getListcellItemLabel(glob_sel_obj,IDX_CUSTOMER);
+			glob_sel_invoiceno = lbhand.getListcellItemLabel(glob_sel_obj,IDX_INVNO);
+			glob_sel_email = lbhand.getListcellItemLabel(glob_sel_obj,IDX_EMAIL);
+			glob_sel_pdffilename = lbhand.getListcellItemLabel(glob_sel_obj,IDX_FILENAME);
+		}
 	}
 }
 sentinvcliker = new sentinvlOnC();
@@ -88,26 +116,16 @@ class sentinvdblclik implements org.zkoss.zk.ui.event.EventListener
 	public void onEvent(Event event) throws UiException
 	{
 		glob_sel_obj = event.getTarget();
-		glob_sel_tracker = lbhand.getListcellItemLabel(glob_sel_obj,0);
-		glob_sel_email = lbhand.getListcellItemLabel(glob_sel_obj,4); // email colm
-		k_email.setValue(glob_sel_email);
-		trackerpop.open(glob_sel_obj);
+		if(glob_sel_obj != null)
+		{
+			glob_sel_tracker = lbhand.getListcellItemLabel(glob_sel_obj,IDX_ORIGID);
+			glob_sel_email = lbhand.getListcellItemLabel(glob_sel_obj,IDX_EMAIL); // email colm
+			k_email.setValue(glob_sel_email);
+			trackerpop.open(glob_sel_obj);
+		}
 	}
 }
 sentinvdoubleclik = new sentinvdblclik(); // pre-def global event listener
-
-Object[] sndinvtckcols_headers =
-{
-	new listboxHeaderWidthObj("origid",false,""),
-	new listboxHeaderWidthObj("Inv Date",true,"70px"),
-	new listboxHeaderWidthObj("Inv No",true,""),
-	new listboxHeaderWidthObj("Customer",true,""),
-	new listboxHeaderWidthObj("Email",true,""),
-	new listboxHeaderWidthObj("Filename",true,""),
-	new listboxHeaderWidthObj("Sent",true,""),
-	new listboxHeaderWidthObj("Resend",true,""),
-	new listboxHeaderWidthObj("User",true,""),
-};
 
 /**
  * List out tracking records from rw_email_tracker
@@ -144,7 +162,7 @@ void showSentInvoices(int itype)
 
 	screcs = sqlhand.gpSqlGetRows(sqlstm);
 	if(screcs.size() == 0) return;
-	newlb.setRows(21); newlb.setMold("paging"); newlb.setMultiple(true);
+	newlb.setRows(21); newlb.setMold("paging"); newlb.setMultiple(true); newlb.setCheckmark(true);
 	newlb.addEventListener("onSelect", sentinvcliker );
 	ArrayList kabom = new ArrayList();
 	String[] fl = { "origid", "invoice_date", "invoice_no", "customer_name", "email" , "filename", "sentdate", "resenddate", "username" };
@@ -166,22 +184,37 @@ void showSentInvoices(int itype)
  */
 void extractTaxInvoiceMeta(String ipath, String ifilename, String[] iretvals)
 {
+	reader = null;
 	ifn = session.getWebApp().getRealPath(ipath + "/" + ifilename);
-	PdfReader reader = new PdfReader(ifn);
-	PdfReaderContentParser parser = new PdfReaderContentParser(reader);
-	TextExtractionStrategy strategy;
-	StringBuffer buff = new StringBuffer();  
-	for (int i = 1; i <= reader.getNumberOfPages(); i++)
+	StringBuffer buff = new StringBuffer();
+
+	try
 	{
-		strategy = parser.processContent(i, new SimpleTextExtractionStrategy());
-		buff.append(strategy.getResultantText());
-	}
-	reader.close();
+		PdfReader reader = new PdfReader(ifn);
+		PdfReaderContentParser parser = new PdfReaderContentParser(reader);
+		TextExtractionStrategy strategy;
+		
+		for (int i = 1; i <= reader.getNumberOfPages(); i++)
+		{
+			strategy = parser.processContent(i, new SimpleTextExtractionStrategy());
+			buff.append(strategy.getResultantText());
+		}
+		reader.close();
+	} catch (com.itextpdf.text.exceptions.InvalidPdfException e) {}
+
+/*
 	tis = buff.toString().replaceAll("\n"," ");
 	iretvals[0] = doregex(tis,"Invoice No.: (.*?) "); // invoice-no
 	iretvals[1] = doregex(tis,"Date: (.*?) "); // invoice-date
 	iretvals[2] = doregex(tis,"Issue To: (.*?) PO No"); // customer-name
 	iretvals[3] = doregex(tis,"Email: (.*?) a\\)");
+	if(iretvals[3].indexOf("@") == -1) iretvals[3] = ""; // not actually an email
+*/
+	tis = buff.toString();
+	iretvals[0] = doregex(tis,"Invoice No.: (.*?)\n"); // invoice-no
+	iretvals[1] = doregex(tis,"Date: (.*?)\n"); // invoice-date
+	iretvals[2] = doregex(tis,"Issue To: (.*?)\n"); // customer-name
+	iretvals[3] = doregex(tis,"(.*?)\nEmail:"); // email-addr
 	if(iretvals[3].indexOf("@") == -1) iretvals[3] = ""; // not actually an email
 }
 
@@ -220,7 +253,7 @@ void procImportTaxInvoices(File[] flist)
 					{
 						if(oldfile.renameTo(newfile)) // make sure file can be renamed..
 						{
-							topeople = "victor@rentwise.com";
+							topeople = DEBUGGING_EMAIL;
 							if(DEBUGGING == 0) topeople = invmeta[3]; // non-debugging, set real TO addr
 							// { alert("no debugging"); }
 							subj = "RE: Electronic TAX INVOICE - " + invmeta[0];
@@ -273,13 +306,71 @@ void batchEmailTaxInvoices()
 }
 
 /**
+ * Check whether PDF filename already in rw_email_tracker.filename, if exist, return true, else false
+ * @param  ifname filename to check
+ * @return        true=exist, false=nope
+ */
+boolean checkPDF_filename_exist_tracker(String ifname)
+{
+	sqlstm = "select origid from rw_email_invoice where filename='" + ifname + "';";
+	return (sqlhand.gpSqlFirstRow(sqlstm) == null) ? false : true;
+}
+
+/**
+ * Import tax-invoices PDF from folder into tracker ONLY - do not email them out. Later user can select multiple tax-invoices
+ * and send in batch
+ */
+void importTaxInvoicesOnly()
+{
+	todaydate = kiboo.todayISODateTimeString();
+	String[] invmeta = new String[4];
+	fcounter = 0;
+	sqlstm = msgtext = "";
+
+	File directory = new File(session.getWebApp().getRealPath(TAXINVOICES_FOLDER));
+	File[] flist = directory.listFiles(); // grab files list to start processing
+
+	for(d : flist)
+	{
+		if(d.isFile())
+		{
+			fn = d.getName();
+			if(fn.indexOf("sent") == -1) // don't have the word "sent" in filename, it's a new file, can import into tracker
+			{
+				// Check if filename already in rw_email_invoice.filename
+				if(!checkPDF_filename_exist_tracker(fn))
+				{
+					extractTaxInvoiceMeta(TAXINVOICES_FOLDER, fn, invmeta);
+					if(!invmeta[0].equals("")) // process valid invoice-no only
+					{
+						sqlstm += "insert into rw_email_invoice (datecreated,invoice_no,invoice_date,customer_name,email,filename,username) values " +
+							"('" + todaydate + "','" + invmeta[0] + "','" + invmeta[1] + "','" + invmeta[2] + "','" + invmeta[3] + "','" + 
+							fn + "','" + useraccessobj.username + "');";
+
+						fcounter++;
+					}
+				}
+			}
+		}
+	}
+
+	if(!sqlstm.equals(""))
+	{
+		sqlhand.gpSqlExecuter(sqlstm);
+		showSentInvoices(1);
+		guihand.showMessageBox("Imported: " + fcounter.toString() + " tax-invoices PDF");
+	}
+}
+
+/**
  * Send single email tax-invoice
  * @param itk email-tracker record ID - origid
  */
 void singleEmailTaxInvoice(String itk)
 {
 	msgtext = "";
-	String[] attchfn = new String[1];
+	String[] attchfn = new String[2];
+	reissfn = session.getWebApp().getRealPath("rwimg/REISSUANCE.pdf");
 
 	if(glob_sel_pdffilename.equals(""))
 	{
@@ -294,7 +385,8 @@ void singleEmailTaxInvoice(String itk)
 	{
 		subj = "RE: Electronic TAX INVOICE (RESEND) - " + glob_sel_invoiceno;
 		attchfn[0] = session.getWebApp().getRealPath(TAXINVOICES_FOLDER) + "/" + glob_sel_pdffilename;
-		topeople = "victor@rentwise.com";
+		attchfn[1] = reissfn;
+		topeople = DEBUGGING_EMAIL;
 		if(DEBUGGING == 0) topeople = glob_sel_email; // non-debugging, set real TO addr
 
 		if( gmail_sendEmailWithAttachment_2("", GMAIL_rwms_username, GMAIL_rwms_password, GMAIL_rwms_username,
@@ -393,22 +485,23 @@ void resendTaxInvoices()
 		Messagebox.YES | Messagebox.NO, Messagebox.QUESTION) != Messagebox.YES) return;
 
 	todaydate = kiboo.todayISODateTimeString();
-	String[] attchfn = new String[1];
+	String[] attchfn = new String[2];
 	markfn = session.getWebApp().getRealPath("rwimg/duplicate_word.jpg");
 	com.itextpdf.text.Image watermark_image = com.itextpdf.text.Image.getInstance(markfn);
 	sqlstm = msgtext = "";
+	reissfn = session.getWebApp().getRealPath("rwimg/REISSUANCE.pdf");
 
 	kx = sentinvoices_lb.getSelectedItems().toArray();
 	for(j=0; j<kx.length; j++)
 	{
-		origd = lbhand.getListcellItemLabel(kx[j],0); // tracker origid to update resenddate colm
-		eml = lbhand.getListcellItemLabel(kx[j],4); // invoice-no
-		pfn = lbhand.getListcellItemLabel(kx[j],5); // pdf filename from listbox
-		invn = lbhand.getListcellItemLabel(kx[j],2); // invoice-no
+		origd = lbhand.getListcellItemLabel(kx[j],IDX_ORIGID); // tracker origid to update resenddate colm
+		eml = lbhand.getListcellItemLabel(kx[j],IDX_EMAIL); // email addr
+		pfn = lbhand.getListcellItemLabel(kx[j],IDX_FILENAME); // pdf filename from listbox
+		invn = lbhand.getListcellItemLabel(kx[j],IDX_INVNO); // invoice-no
 		thefn = session.getWebApp().getRealPath(TAXINVOICES_FOLDER) + "/" + pfn;
 		waterfn = session.getWebApp().getRealPath(RESEND_TAXINVOICES_FOLDER) + "/" + pfn;
 
-		PdfReader rdpdfwater = new PdfReader(thefn);
+		PdfReader rdpdfwater = new PdfReader(thefn); // itext pdf funcs
 		int number_of_pages = rdpdfwater.getNumberOfPages();
 		PdfStamper stamp = new PdfStamper(rdpdfwater, new FileOutputStream(waterfn));
 		int i = 0;
@@ -422,9 +515,10 @@ void resendTaxInvoices()
 			add_watermark.addImage(watermark_image);
 		}
 		stamp.close();
-		attchfn[0] = waterfn;
+		rdpdfwater.close();
+		attchfn[0] = waterfn; attchfn[1] = reissfn;
 		subj = "RE: RESEND Electronic TAX INVOICE - " + invn;
-		topeople = "victor@rentwise.com";
+		topeople = DEBUGGING_EMAIL; // debugging email addr
 		if(DEBUGGING == 0) topeople = eml; // non-debugging, set real TO addr
 
 		if(gmail_sendEmailWithAttachment_2("", GMAIL_rwms_username, GMAIL_rwms_password, GMAIL_rwms_username,
@@ -492,13 +586,103 @@ void viewTaxInvoices()
 	lx = sentinvoices_lb.getSelectedItems().toArray();
 	for(i=0; i<lx.length; i++)
 	{
-		fncm = lbhand.getListcellItemLabel(lx[i],5); // refer to sndinvtckcols_headers
+		fncm = lbhand.getListcellItemLabel(lx[i],IDX_FILENAME); // refer to sndinvtckcols_headers
 		if(!fncm.equals(""))
 		{
 			theparam = "pfn=/taxinvoices/" + fncm;
 			uniqid = kiboo.makeRandomId("lvf");
 			guihand.globalActivateWindow(mainPlayground,"miscwindows","documents/viewfile_Local_v1.zul", uniqid, theparam, useraccessobj);
 		}
+	}
+}
+
+/**
+ * Multiple selections tax-invoices, check for non-same customer in case user select 'em wrongly. User able to change email
+ * address in popup.
+ */
+void emailMultiTaxInvoices()
+{
+	if(!lbhand.check_ListboxExist_SelectItem(sentinv_holder, "sentinvoices_lb")) return;
+
+	topeople = multiemailaddress_tb.getValue().trim();
+	if(topeople.equals("")) // no email address
+	{
+		guihand.showMessageBox("ERR: not email address, how to send");
+		return;
+	}
+
+	fndate = kiboo.todayISODateString();
+	todaydate = kiboo.todayISODateTimeString();
+	ArrayList thefiles = new ArrayList();
+	File oldfile,newfile;
+	found_customer = sqlstm = "";
+
+	kx = sentinvoices_lb.getSelectedItems().toArray();
+
+	if(DEBUGGING == 0) // If no debugging, do this check, else allow user to send multi-invoices from different customers
+	{
+		for(j=0; j<kx.length; j++) // check got selected non-same customer tax-invoices
+		{
+			cnm = lbhand.getListcellItemLabel(kx[j],IDX_CUSTOMER); // customer-name to check selected wrongly
+			if(found_customer.equals(""))
+			{
+				found_customer = cnm;
+			}
+			else
+			if(!found_customer.equals(cnm)) // previous selected customer must same as current one
+			{
+				guihand.showMessageBox("ERR: Yordpdfwateru have selected non-identical customers tax-invoices.. please check");
+				return;
+			}
+		}
+	}
+
+	for(j=0; j<kx.length; j++)
+	{
+		orig = lbhand.getListcellItemLabel(kx[j],IDX_ORIGID); // origid for table update 
+		pfn = lbhand.getListcellItemLabel(kx[j],IDX_FILENAME); // pdf filename from listbox
+		if(pfn.indexOf("sent") == -1) // only can send non 'sent' pdf in multi-pdfs email
+		{
+			kfn = pfn.replaceAll(".pdf",""); // remove .pdf extension from filename
+			kfn += "_sent" + fndate + ".pdf"; // append _sent and date
+			rnfn = session.getWebApp().getRealPath(TAXINVOICES_FOLDER) + "/" + kfn;
+			oldfile = new File( session.getWebApp().getRealPath(TAXINVOICES_FOLDER) + "/" + pfn );
+			newfile = new File( rnfn );
+
+			if(oldfile.renameTo(newfile)) // make sure file can be renamed..
+			{
+				thefiles.add(rnfn);
+				sqlstm += "update rw_email_invoice set sentdate='" + todaydate + "', filename='" + kfn + "' where origid=" + orig + ";";
+			}
+		}
+	}
+
+	// 01/06/2105: Auto attach Reissuance.pdf as requested to every email
+	reissfn = session.getWebApp().getRealPath("rwimg/REISSUANCE.pdf");
+	thefiles.add(reissfn);
+
+	if(DEBUGGING == 1) topeople = DEBUGGING_EMAIL; // debugging, set tester TO addr
+	subj = "RE: Electronic TAX INVOICES (MULTI)";
+
+	String[] attaxhments = thefiles.toArray(new String[thefiles.size()]);
+
+	if(attaxhments.length > 0)
+	{
+		if( gmail_sendEmailWithAttachment_2("", GMAIL_rwms_username, GMAIL_rwms_password, GMAIL_rwms_username,
+			topeople, subj, EMAILMSG, attaxhments, GMAIL_rwms_username) )
+		{
+		}
+
+		if(!sqlstm.equals(""))
+		{
+			sqlhand.gpSqlExecuter(sqlstm);
+			showSentInvoices(last_showthing);
+			guihand.showMessageBox("Multi tax-invoices emailed.");
+		}
+	}
+	else
+	{
+		guihand.showMessageBox("No tax-invoices to send..");
 	}
 }
 
@@ -538,6 +722,24 @@ void viewTaxInvoices()
 	</div>
 </popup>
 
+<popup id="multisend_pop">
+	<div sclass="shadowbox" style="background:#97b83a;" width="450px">
+		<grid sclass="GridLayoutNoBorder">
+			<rows>
+				<row style="background:#97b83a;">
+					<label value="Email" sclass="k9" />
+					<textbox id="multiemailaddress_tb" sclass="k9" width="400px" />
+				</row>
+				<row style="background:#97b83a;">
+					<separator />
+					<button label="Send multi tax-invoices in 1 email" sclass="k9mo" onClick="emailMultiTaxInvoices()" />
+				</row>
+			</rows>
+		</grid>
+		
+	</div>
+</popup>
+
 <style src="/real-world.css" />
 <style>
 	.GridLayoutNoBorder tr.z-row td.z-row-inner, tr.z-row .z-cell, div.z-grid
@@ -553,10 +755,12 @@ void viewTaxInvoices()
 	<label id="debugflag_lbl" sclass="k9" />
 	<separator height="5px" />
 	<hbox>
-		<separator width="10px" />
-		<button label="Kasi email tax-invoices" style="font-size:18px;font-weight:bold" onClick="batchEmailTaxInvoices()" />
-		<button label="Kasi resend tax-invoices" style="font-size:18px;font-weight:bold" onClick="resendTaxInvoices()" />
-		<button label="View tax-invoices" style="font-size:18px;font-weight:bold" onClick="viewTaxInvoices()" />
+		<separator width="5px" />
+		<button label="Import un-sent tax-invoices ONLY" style="font-size:14px;font-weight:bold" onClick="importTaxInvoicesOnly()" />
+		<button label="Email single or multi tax-invoices in 1 email" style="font-size:14px;font-weight:bold" onClick="multiemailaddress_tb.setValue(glob_sel_email);multisend_pop.open(self)" />
+		<button label="Auto email tax-invoices(1 by 1 email)" style="font-size:14px;font-weight:bold" onClick="batchEmailTaxInvoices()" visible="false" />
+		<button label="Resend tax-invoices" style="font-size:14px;font-weight:bold" onClick="resendTaxInvoices()" />
+		<button label="View tax-invoices" style="font-size:14px;font-weight:bold" onClick="viewTaxInvoices()" />
 	</hbox>
 	<separator height="5px" />
 	<div sclass="shadowbox" style="background:#849324" id="maintop_div" >
@@ -581,6 +785,8 @@ void viewTaxInvoices()
 
 <zscript>
 <![CDATA[
+
+// Temporary hide auto email 1 by 1 button -- might clash with multi-tax-invoices
 
 // TODO only authorized user can re-send original tax-invoice - to ensure no duplicate tax-invoice sent to customer
 sendasorig_b.setVisible(true);

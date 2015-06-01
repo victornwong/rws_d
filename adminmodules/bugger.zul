@@ -217,7 +217,7 @@ int calcFocusDate(String dstr)
 
 void procInvoicePDF()
 {
-	ifn = session.getWebApp().getRealPath("tmp/taxinvoices/RWI_15008-tcim_sent2015-05-27.pdf");
+	ifn = session.getWebApp().getRealPath("tmp/taxinvoices/RWI_15628-AMBANGWIRA.pdf");
 	PdfReader reader = new PdfReader(ifn);
 	PdfReaderContentParser parser = new PdfReaderContentParser(reader);
 	//PrintWriter out = new PrintWriter(new FileOutputStream(txt));
@@ -233,11 +233,12 @@ void procInvoicePDF()
 	//out.close();
 	reader.close();
 	//alert(buff.toString());
-	tis = buff.toString().replaceAll("\n"," ");
+	tis = buff.toString(); //.replaceAll("\n","  ");
 	thestring.setValue(tis);
-	doregex(tis,"Email: (.*?) a\\)");
-	doregex(tis,"Issue To: (.*?) PO No");
-	doregex(tis,"Invoice No.: (.*?) ");
+	doregex(tis,"(.*?)\nEmail:");
+	doregex(tis,"Issue To: (.*?)\n");
+	doregex(tis,"Invoice No.: (.*?)\n");
+	doregex(tis,"Date: (.*?)\n");
 
 /*
 	Pattern pattern = Pattern.compile("Issue To(.*?)PO No");
