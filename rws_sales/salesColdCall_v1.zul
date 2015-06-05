@@ -13,19 +13,20 @@
 <zscript>
 <![CDATA[
 MYTITLE = "Sales/Marketing Activities";
-MYVERSION = "v0.1.6";
+MYVERSION = "v0.1.7";
 MYPANEL = "salcolcla";
-/*
-@Author Victor Wong
-@Since 05/12/2013
-
-10/03/2014: only James and Mandy can download cold-call listings
-10/04/2014: add search box for customer-name and contact-name
-20/05/2014: additional things req by mandy
-29/05/2014: link to quotations created for cold-call customers
-18/11/2014: some optimization and requests by James
-
-*/
+/**
+ * @author Victor Wong
+ * @since 05/12/2013
+ *
+ * @notes
+ * 10/03/2014: only James and Mandy can download cold-call listings
+ * 10/04/2014: add search box for customer-name and contact-name
+ * 20/05/2014: additional things req by mandy
+ * 29/05/2014: link to quotations created for cold-call customers
+ * 18/11/2014: some optimization and requests by James
+ * 03/06/2015: Tham req to show Customer-grading on screen. Add button to send notif email when grading done
+ */
 import java.util.*;
 import java.text.*;
 import org.victor.*;
@@ -65,7 +66,7 @@ void contFunc(Object iwhat)
 	{
 		// 20/05/2014: add business-ROC, leadsource and campaign
 		Object[] ob = { a_cust_name, a_industry, a_designation, a_cust_address1, a_cust_address2, a_cust_address3, a_cust_address4,
-		a_cust_tel, a_cust_fax, a_cust_email, a_coldcdv, a_businessroc, a_leadsource, a_campaign };
+		a_cust_tel, a_cust_fax, a_cust_email, a_coldcdv, a_businessroc, a_leadsource, a_campaign, a_grading_remarks };
 
 		dt = ngfun.getString_fromUI(ob);
 		cntn = a_cont_temp.getSelectedItem().getLabel() + " " + kiboo.replaceSingleQuotes(a_contact_person.getValue().trim());
@@ -74,7 +75,7 @@ void contFunc(Object iwhat)
 		"designation='" + dt[2] + "',cust_address1='" + dt[3] + "',cust_address2='" + dt[4] + "'," +
 		"cust_address3='" + dt[5] + "', cust_address4='" + dt[6] + "', cust_tel='" + dt[7] + "', cust_fax='" + dt[8] + "'," +
 		"cust_email='" + dt[9] + "',call_div='" + dt[10] + "',contact_person='" + cntn + "', businessroc='" + dt[11] + "', leadsource='" + dt[12] + "'," +
-		"campaign='" + dt[13] + "' where origid=" + glob_sel_acticont;
+		"campaign='" + dt[13] + "', grading_remarks='" + dt[14] + "' where origid=" + glob_sel_acticont;
 	}
 
 	if(itype.equals("dnusecontact_b")) // mark a contact as DO NOT USE / deleted flag
@@ -103,7 +104,11 @@ void contFunc(Object iwhat)
 		"Please update the customer-grade in RWMS Sales Activities/Cold-Call module ASAP.";
 
 		gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, topeople, subj, msgb);
+	}
 
+	if(itype.equals("notifaftergrade_b")) // 03/06/2015: req by Tham, send notif email once graded
+	{
+		sendNotifEmail_aftergrading(glob_sel_acticont);
 	}
 
 	if(itype.equals("updgrade_b")) // update customer grade by CC or Tony
@@ -182,6 +187,38 @@ void actiFunc(Object iwhat)
 	if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
 	if(refresh) listActivities(glob_sel_acticont);
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
+}
+
+/**
+ * Requested by Tham 03/06/2015 to send out email notif after grading. Send to distribution list
+ * @param iwhat selected cold-call contact origid
+ */
+void sendNotifEmail_aftergrading(String iwhat)
+{
+	acr = getActivitiesContact_rec(iwhat);
+
+	custn = kiboo.checkNullString(acr.get("cust_name"));
+	grd = kiboo.checkNullString(acr.get("customer_grade"));
+
+	if(custn.equals("") || grd.equals("")) // no customer-name or grading, do nothing
+	{
+		guihand.showMessageBox("ERR: no customer-name or no grading, cannot send email");
+		return;
+	}
+
+	topeople = "rent@rentwise.com,victor@rentwise.com";
+	subj = "Customer evaluation : " + custn;
+	msgb = "Notification email for customer evaluation." +
+	"\n-----------------------------------------------------------------------" +
+	"\nCustomer: " + custn +
+	"\nRequester: " + kiboo.checkNullString(acr.get("username")) +
+	"\nRequest date: " + kiboo.dtf2.format(acr.get("grade_req")) +
+	"\n\nGRADING: " + grd +
+	"\nREMARKS: " + kiboo.checkNullString( acr.get("grading_remarks") ) + 
+	"\n\nFor any clarification, contact Mr Tham, Tony or Credit-Control department.";
+
+	gmail_sendEmail("", GMAIL_username, GMAIL_password, GMAIL_username, topeople, subj, msgb);
+	guihand.showMessageBox("Graded notification email sent..");
 }
 
 ]]>
@@ -351,14 +388,23 @@ void actiFunc(Object iwhat)
 						<separator height="3px" />
 						<hbox>
 							<div id="contmeta_holder" width="800px" />
-							<div sclass="shadowbox" style="background:#DF4A23">
-								<label value="Customer grading" sclass="subhead1" />
-								<separator height="3px" />
-								<hbox>
-									<listbox id="m_customer_grade" mold="select" />
-									<button id="updgrade_b" label="Update grade" style="font-weight:bold" onClick="contFunc(self)" disabled="true" />
-								</hbox>
-							</div>
+
+							<vbox>
+								<div sclass="shadowbox" style="background:#DF4A23">
+									<label value="Customer grading:" sclass="subhead1" />
+									<separator height="5px" />
+									<label id="currentcustomergrade_lbl" sclass="subhead1" />
+									<separator height="5px" />
+									<button id="notifaftergrade_b" label="Send email after grading" style="font-weight:bold" onClick="contFunc(self)" disabled="true" />
+								</div>
+
+								<div sclass="shadowbox" style="background:#DF4A23">
+									<hbox>
+										<listbox id="m_customer_grade" mold="select" />
+										<button id="updgrade_b" label="Update grade" style="font-weight:bold" onClick="contFunc(self)" disabled="true" />
+									</hbox>
+									</div>
+							</vbox>
 						</hbox>
 					</div>
 				</tabpanel>
@@ -430,6 +476,7 @@ glob_current_user = useraccessobj.username;
 if(sechand.allowedUser(useraccessobj.username,"CAN_UPDATE_GRADE"))
 {
 	updgrade_b.setDisabled(false);
+	notifaftergrade_b.setDisabled(false);
 }
 
 if(useraccessobj.username.equals("mandy") || useraccessobj.username.equals("james")) // 10/03/2014

@@ -13,10 +13,10 @@ void showActiContactMeta(String iwhat)
 	a_contact_person.setValue( cntp );
 
 	Object[] ob = { a_cust_name, a_industry, a_designation, a_cust_address1, a_cust_address2, a_cust_address3, a_cust_address4,
-	a_cust_tel, a_cust_fax, a_cust_email, a_businessroc, a_leadsource, a_campaign };
+	a_cust_tel, a_cust_fax, a_cust_email, a_businessroc, a_leadsource, a_campaign, a_grading_remarks, currentcustomergrade_lbl };
 
 	String[] fl = { "cust_name", "industry", "designation", "cust_address1", "cust_address2", "cust_address3", "cust_address4",
-	"cust_tel", "cust_fax", "cust_email", "businessroc", "leadsource", "campaign" };
+	"cust_tel", "cust_fax", "cust_email", "businessroc", "leadsource", "campaign", "grading_remarks", "customer_grade" };
 
 	ngfun.populateUI_Data(ob, fl, acr);
 

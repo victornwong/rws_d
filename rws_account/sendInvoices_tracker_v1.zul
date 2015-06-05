@@ -13,7 +13,7 @@
 <zscript>
 <![CDATA[
 MYTITLE = "Tax Invoice Emailer - Tracker";
-MYVERSION = "v0.1";
+MYVERSION = "v0.2";
 MYPANEL = "emailsendinvt";
 /**
  * @title Tax invoice emailer - tracker thing
@@ -27,6 +27,7 @@ MYPANEL = "emailsendinvt";
  * 
  *  01/06/2015: Mahes change email message body
  *  01/06/2105: Auto attach Reissuance.pdf as requested to every email
+ *  04/06/2015: move DELETE button outside to allow user to delete a tracker - do system audit-log
 */
 import java.util.*;
 import java.text.*;
@@ -447,7 +448,7 @@ void adminFunc(String itype)
 {
 	adminpop.close();
 	todaydate = kiboo.todayISODateTimeString();
-	sqlstm = msgtext = ""; refresh = false;
+	sqlstm = msgtext = fnms = lgstr = ""; refresh = false;
 
 	if(itype.equals("admdelete_rec"))
 	{
@@ -459,17 +460,22 @@ void adminFunc(String itype)
 		ox = "";
 		for(i=0; i<kx.length; i++) // form the list of origid to delete
 		{
-			ox += lbhand.getListcellItemLabel(kx[i],0) + ",";
+			ox += lbhand.getListcellItemLabel(kx[i],IDX_ORIGID) + ",";
+			fnms += lbhand.getListcellItemLabel(kx[i],IDX_FILENAME) + ", ";
 		}
 		try
 		{
 			ox = ox.substring(0,ox.length()-1);
 			sqlstm = "delete from rw_email_invoice where origid in (" + ox + ");";
 			refresh = true;
+
+			lgstr = "DELETE these tax-invoices PDF: " + fnms;
+
 		} catch (Exception e) {}
 	}
 
 	if(!sqlstm.equals("")) sqlhand.gpSqlExecuter(sqlstm);
+	if(!lgstr.equals("")) add_RWAuditLog(EMAILINVOICE_PREFIX,"",lgstr,useraccessobj.username); // inject audit-log if not empty string
 	if(refresh) showSentInvoices(last_showthing);
 	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
 }
@@ -543,6 +549,74 @@ void resendTaxInvoices()
 }
 
 /**
+ * Resend tax-invoice version 2 - different from above, only send 1 tax-invoice to 1 email ONLY
+ */
+void resendTaxInvoices_ver2()
+{
+	if(!lbhand.check_ListboxExist_SelectItem(sentinv_holder, "sentinvoices_lb")) return;
+	eml = resendemailaddress_tb.getValue().trim();
+	if(eml.equals("")) // no email address
+	{
+		guihand.showMessageBox("ERR: no email address, how to send");
+		return;
+	}
+
+	todaydate = kiboo.todayISODateTimeString();
+	String[] attchfn = new String[2];
+	markfn = session.getWebApp().getRealPath("rwimg/duplicate_word.jpg");
+	com.itextpdf.text.Image watermark_image = com.itextpdf.text.Image.getInstance(markfn);
+	sqlstm = msgtext = "";
+	reissfn = session.getWebApp().getRealPath("rwimg/REISSUANCE.pdf");
+
+	kx = sentinvoices_lb.getSelectedItem();
+
+	origd = lbhand.getListcellItemLabel(kx,IDX_ORIGID); // tracker origid to update resenddate colm
+	pfn = lbhand.getListcellItemLabel(kx,IDX_FILENAME); // pdf filename from listbox
+	invn = lbhand.getListcellItemLabel(kx,IDX_INVNO); // invoice-no
+	thefn = session.getWebApp().getRealPath(TAXINVOICES_FOLDER) + "/" + pfn;
+	waterfn = session.getWebApp().getRealPath(RESEND_TAXINVOICES_FOLDER) + "/" + pfn;
+
+	PdfReader rdpdfwater = new PdfReader(thefn); // itext pdf funcs
+	int number_of_pages = rdpdfwater.getNumberOfPages();
+	PdfStamper stamp = new PdfStamper(rdpdfwater, new FileOutputStream(waterfn));
+	int i = 0;
+
+	watermark_image.setAbsolutePosition(100, 200);
+	PdfContentByte add_watermark;
+	while (i < number_of_pages)
+	{
+		i++;
+		add_watermark = stamp.getUnderContent(i);
+		add_watermark.addImage(watermark_image);
+	}
+	stamp.close();
+	rdpdfwater.close();
+	attchfn[0] = waterfn; attchfn[1] = reissfn;
+	subj = "RE: RESEND Electronic TAX INVOICE - " + invn;
+	topeople = DEBUGGING_EMAIL; // debugging email addr
+	if(DEBUGGING == 0) topeople = eml; // non-debugging, set real TO addr
+
+	if(gmail_sendEmailWithAttachment_2("", GMAIL_rwms_username, GMAIL_rwms_password, GMAIL_rwms_username,
+		topeople, subj, RESEND_EMAILMSG, attchfn, GMAIL_rwms_username) )
+	{
+		sqlstm += "update rw_email_invoice set resenddate='" + todaydate + "', username='" + useraccessobj.username + "' where origid=" + origd + ";";
+		lgstr = "Resend tax-invoice " + glob_sel_invoiceno + " , customer: " + glob_sel_customer_name;
+		add_RWAuditLog(EMAILINVOICE_PREFIX,"",lgstr,useraccessobj.username);
+	}
+	else
+	{
+		msgtext += "\nERR: cannot resend " + thefn;
+	}
+
+	if(!sqlstm.equals(""))
+	{
+		sqlhand.gpSqlExecuter(sqlstm);
+		showSentInvoices(last_showthing);
+	}
+	if(!msgtext.equals("")) guihand.showMessageBox(msgtext);
+}
+
+/**
  * Dig audit-report customized for email-gst-invoice-tracker. Chopped from rws_customer/contBill_assets.zs
  * @param iwhat search string
  */
@@ -607,7 +681,7 @@ void emailMultiTaxInvoices()
 	topeople = multiemailaddress_tb.getValue().trim();
 	if(topeople.equals("")) // no email address
 	{
-		guihand.showMessageBox("ERR: not email address, how to send");
+		guihand.showMessageBox("ERR: no email address, how to send");
 		return;
 	}
 
@@ -692,7 +766,7 @@ void emailMultiTaxInvoices()
 <popup id="adminpop">
 	<div sclass="shadowbox" style="background:#D52121">
 		<vbox>
-			<button id="admdelete_rec" label="DELETE" onClick="adminFunc(self.getId())" />
+
 		</vbox>
 	</div>
 </popup>
@@ -736,9 +810,26 @@ void emailMultiTaxInvoices()
 				</row>
 			</rows>
 		</grid>
-		
 	</div>
 </popup>
+
+<popup id="resend_pop">
+	<div sclass="shadowbox" style="background:#97b83a;" width="450px">
+		<grid sclass="GridLayoutNoBorder">
+			<rows>
+				<row style="background:#97b83a;">
+					<label value="Email" sclass="k9" />
+					<textbox id="resendemailaddress_tb" sclass="k9" width="400px" />
+				</row>
+				<row style="background:#97b83a;">
+					<separator />
+					<button label="Resend tax-invoice" sclass="k9mo" onClick="resendTaxInvoices_ver2()" />
+				</row>
+			</rows>
+		</grid>
+	</div>
+</popup>
+
 
 <style src="/real-world.css" />
 <style>
@@ -759,7 +850,7 @@ void emailMultiTaxInvoices()
 		<button label="Import un-sent tax-invoices ONLY" style="font-size:14px;font-weight:bold" onClick="importTaxInvoicesOnly()" />
 		<button label="Email single or multi tax-invoices in 1 email" style="font-size:14px;font-weight:bold" onClick="multiemailaddress_tb.setValue(glob_sel_email);multisend_pop.open(self)" />
 		<button label="Auto email tax-invoices(1 by 1 email)" style="font-size:14px;font-weight:bold" onClick="batchEmailTaxInvoices()" visible="false" />
-		<button label="Resend tax-invoices" style="font-size:14px;font-weight:bold" onClick="resendTaxInvoices()" />
+		<button label="Resend tax-invoices" style="font-size:14px;font-weight:bold" onClick="resendemailaddress_tb.setValue(glob_sel_email);resend_pop.open(self)" />
 		<button label="View tax-invoices" style="font-size:14px;font-weight:bold" onClick="viewTaxInvoices()" />
 	</hbox>
 	<separator height="5px" />
@@ -774,6 +865,7 @@ void emailMultiTaxInvoices()
 			<button label="by sent-date" sclass="k9mo" onClick="showSentInvoices(2)" />
 			<button label="Dig audit-logs" sclass="k9mo" onClick="digauditlog_pop.open(self)" />
 			<button id="sendasorig_b" label="Send as original" sclass="k9mo" style="color:#DA0C0C" visible="false" onClick="doFunc(self.getId())" />
+			<button id="admdelete_rec" label="DELETE" style="font-weight:bold;color:#E32020" onClick="adminFunc(self.getId())" visible="false" />
 			<separator width="20px" />
 			<button id="adminbutt" label="ADMIN" sclass="k9mo" style="color:#D52121" visible="false" onClick="adminpop.open(self)" />
 		</hbox>
@@ -791,9 +883,15 @@ void emailMultiTaxInvoices()
 // TODO only authorized user can re-send original tax-invoice - to ensure no duplicate tax-invoice sent to customer
 sendasorig_b.setVisible(true);
 
+if(useraccessobj.username.equals("mahes"))
+{
+	admdelete_rec.setVisible(true);
+}
+
 if(useraccessobj.accesslevel >= 9)
 {
-	adminbutt.setVisible(true);
+	//adminbutt.setVisible(true);
+	admdelete_rec.setVisible(true);
 }
 
 ddg = Executions.getCurrent().getParameter("dbg");
