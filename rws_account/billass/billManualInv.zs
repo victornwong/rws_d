@@ -41,6 +41,9 @@ void procInstalmentPrintout(int itype)
 	if(fcmeta == null) { guihand.showMessageBox("ERR: Cannot access rental-invoice.."); return; }
 	rwitems = getFC_RWitems(rwstr);
 
+	alert(rwmeta + " :: " + rwitems);
+	return;
+
 	instype = 1;
 	kake = kiboo.checkNullString(rwmeta.get("insttypeyh")).toUpperCase();
 	if(kake.equals("QUARTERLY")) instype = 3;
@@ -115,13 +118,25 @@ void procInstalmentPrintout(int itype)
 			sheet.addMergedRegion(new CellRangeAddress(rowcnt+1,rowcnt+1,1,4));
 			sheet.addMergedRegion(new CellRangeAddress(rowcnt+2,rowcnt+2,1,4));
 
-			excelInsertString(sheet,rowcnt,5, nf0.format(d.get("unitqty")) );
+			kk = "0";
+			try { kk = nf0.format(d.get("unitqty")); } catch (Exception e) {}
+			excelInsertString(sheet,rowcnt,5, kk );
+
 			excelInsertString(sheet,rowcnt,6, (instype == 1) ? "1 Month" : "3 Months" );
-			excelInsertString(sheet,rowcnt,7, (d.get("perunit") > 0) ? "RM " + nf2.format(d.get("perunit")) : "" );
-			excelInsertString(sheet,rowcnt,8, (d.get("mthtotal") > 0) ? "RM " + nf2.format(d.get("mthtotal")) : "" );
-			excelInsertString(sheet,rowcnt,9, (d.get("mthtotal") > 0) ? "RM " + nf2.format(d.get("mthtotal")) : "" );
-			qtytot += d.get("unitqty");
-			montot += d.get("mthtotal");
+
+			kk = "";
+			try { kk = (d.get("perunit") != null) ? "RM " + nf2.format(d.get("perunit")) : ""; } catch (Exception e) {}
+			excelInsertString(sheet,rowcnt,7,kk);
+
+			kk = "";
+			try { kk = (d.get("mthtotal") != null) ? "RM " + nf2.format(d.get("mthtotal")) : ""; } catch (Exception e) {}
+			excelInsertString(sheet,rowcnt,8,kk);
+
+			excelInsertString(sheet,rowcnt,9,kk);
+
+			if(d.get("unitqty") != null) qtytot += d.get("unitqty");
+			if(d.get("mthtotal") != null) montot += d.get("mthtotal");
+
 			kc++;
 			rowcnt += xct; // blnk 1 row
 			if(d.get("rentperiod") != 0) rwper = d.get("rentperiod");

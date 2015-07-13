@@ -37,6 +37,22 @@ Object getGRN_rec_NEW(String iwhat)
 }
 
 /**
+ * [removeAllListitems description]
+ * @param ilb the listbox
+ */
+void removeAllListitems(Listbox ilb)
+{
+	icc = ilb.getItemCount();
+	if(icc > 0) // remove all list-items if any
+	{
+		for(i=0;i<icc;i++)
+		{
+			ilb.remoteItemAt(i);
+		}
+	}
+}
+
+/**
  * Fill a listbox with distinct column items from a table RWMS
  * @param itbn database table name
  * @param ifl  field-name
